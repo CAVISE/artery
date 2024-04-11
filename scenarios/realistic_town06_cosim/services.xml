@@ -3,6 +3,7 @@
 	<service type="artery.application.CaService">
 		<listener port="2001" />
 	</service>
-	<service type="artery.transfusion.TransfusionService" name="transfusion">
+	<service type="artery.application.ArteryManager">
+		<listener port="2002" />
 	</service>
 </services>
