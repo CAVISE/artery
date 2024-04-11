@@ -1,0 +1,16 @@
+# CMake generated Testfile for 
+# Source directory: /home/ilya-cavise/artery/scenarios
+# Build directory: /home/ilya-cavise/artery/scenarios/scenarios
+# 
+# This file includes the relevant testing commands required for 
+# testing this directory and lists subdirectories to be tested as well.
+add_test(mtits2017-test "/home/ilya-cavise/omnetpp/bin/opp_run_dbg" "-n" "/home/ilya-cavise/artery/src/artery:/home/ilya-cavise/artery/src/traci:/home/ilya-cavise/artery/extern/veins/examples/veins:/home/ilya-cavise/artery/extern/veins/src/veins:/home/ilya-cavise/artery/extern/inet/src:/home/ilya-cavise/artery/extern/inet/examples:/home/ilya-cavise/artery/extern/inet/tutorials:/home/ilya-cavise/artery/extern/inet/showcases" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/envmod/libartery_envmod.so" "-l" "/home/ilya-cavise/artery/scenarios/scenarios/highway-police/libartery_police.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/envmod/libartery_envmod.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/storyboard/libartery_storyboard.so" "-l" "/home/ilya-cavise/artery/scenarios/extern/libINET.so" "-l" "/home/ilya-cavise/artery/scenarios/extern/libveins.so" "-l" "/home/ilya-cavise/artery/scenarios/src/traci/libtraci.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/libartery_core.so" "omnetpp.ini" "-uCmdenv" "--sim-time-limit=30s")
+set_tests_properties(mtits2017-test PROPERTIES  WORKING_DIRECTORY "/home/ilya-cavise/artery/scenarios/mt-its2017" _BACKTRACE_TRIPLES "/home/ilya-cavise/artery/cmake/AddOppRun.cmake;170;add_test;/home/ilya-cavise/artery/scenarios/CMakeLists.txt;24;add_opp_test;/home/ilya-cavise/artery/scenarios/CMakeLists.txt;0;")
+add_test(car2car-grid-cam_bsp "/home/ilya-cavise/omnetpp/bin/opp_run_dbg" "-n" "/home/ilya-cavise/artery/src/artery:/home/ilya-cavise/artery/src/traci:/home/ilya-cavise/artery/extern/veins/examples/veins:/home/ilya-cavise/artery/extern/veins/src/veins:/home/ilya-cavise/artery/extern/inet/src:/home/ilya-cavise/artery/extern/inet/examples:/home/ilya-cavise/artery/extern/inet/tutorials:/home/ilya-cavise/artery/extern/inet/showcases" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/envmod/libartery_envmod.so" "-l" "/home/ilya-cavise/artery/scenarios/scenarios/highway-police/libartery_police.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/envmod/libartery_envmod.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/storyboard/libartery_storyboard.so" "-l" "/home/ilya-cavise/artery/scenarios/extern/libINET.so" "-l" "/home/ilya-cavise/artery/scenarios/extern/libveins.so" "-l" "/home/ilya-cavise/artery/scenarios/src/traci/libtraci.so" "-l" "/home/ilya-cavise/artery/scenarios/src/artery/libartery_core.so" "omnetpp.ini" "-uCmdenv" "-ccam_bsp" "--sim-time-limit=30s")
+set_tests_properties(car2car-grid-cam_bsp PROPERTIES  WORKING_DIRECTORY "/home/ilya-cavise/artery/scenarios/car2car-grid" _BACKTRACE_TRIPLES "/home/ilya-cavise/artery/cmake/AddOppRun.cmake;170;add_test;/home/ilya-cavise/artery/scenarios/CMakeLists.txt;40;add_opp_test;/home/ilya-cavise/artery/scenarios/CMakeLists.txt;0;")
+subdirs("artery")
+subdirs("gemv2")
+subdirs("highway-police")
+subdirs("single_town06_cosim")
+subdirs("rsu_grid")
+subdirs("storyboard")

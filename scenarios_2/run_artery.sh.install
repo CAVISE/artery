@@ -1,0 +1,21 @@
+#!/bin/bash
+OPP_RUNALL=/home/ilya-cavise/omnetpp/bin/opp_runall
+OPP_RUN=/home/ilya-cavise/omnetpp/bin/opp_run_dbg
+NED_FOLDERS="/usr/local/share/ned/artery:/usr/local/share/ned/traci:/usr/local/share/ned/veins/examples/veins:/usr/local/share/ned/veins/src/veins:/usr/local/share/ned/INET/src:/usr/local/share/ned/INET/examples:/usr/local/share/ned/INET/tutorials:/usr/local/share/ned/INET/showcases"
+LIBRARIES="-l/usr/local/lib/libartery_core.so -l/usr/local/lib/libtraci.so -l/usr/local/lib/libveins.so -l/usr/local/lib/libINET.so -l/usr/local/lib/libartery_storyboard.so -l/usr/local/lib/libartery_envmod.so"
+
+RUNALL=false
+for arg do
+    shift
+    [[ "$arg" == -j* ]] && RUNALL=true && J=$arg && continue
+    [[ "$arg" == -b* ]] && RUNALL=true && B=$arg && continue
+    # run opp_runall with default values for -j* and -b* options by just specifying '--all'
+    [[ "$arg" == "--all" ]] && RUNALL=true && continue
+    set -- "$@" "$arg"
+done
+
+if [ "$RUNALL" = true ] ; then
+    $OPP_RUNALL $J $B $OPP_RUN -n $NED_FOLDERS $LIBRARIES $@
+else
+    $OPP_RUN -n $NED_FOLDERS $LIBRARIES $@
+fi
