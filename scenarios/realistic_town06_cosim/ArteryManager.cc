@@ -35,14 +35,12 @@ using namespace vanetza;
 
 namespace artery
 {
-const std::string ArteryMessageFilename = "Memory_BIN/received_message_";
-const std::string ArteryMessageJsonFilename = "Messages_JSON/received_message_";
-const std::string OpenCDAMessageFilename = "Simulators_messages/OpenCDA_message.proto";
-const std::string ArteryManagerIndicateLogsFilename = "Logs/ArteryManager_indicate_logs.log";
-const std::string ArteryManagerTriggerLogsFilename = "Logs/ArteryManager_trigger_logs.log"; 
-
-
-
+// File paths for various data files
+const std::string ArteryMessageFilename = MEMORY_BIN"received_message_";
+const std::string ArteryMessageJsonFilename = MEMORY_JSON"received_message_";
+const std::string OpenCDAMessageFilename = OPENCDA_MESSAGE;
+const std::string ArteryManagerIndicateLogsFilename = INDICATE_LOGS;
+const std::string ArteryManagerTriggerLogsFilename = TRIGGER_LOGS; 
 
 
 void logToFile(const std::string& filename, const std::string& message) {
@@ -231,8 +229,7 @@ void ArteryManager::initialize()
 	m_self_msg = new cMessage("Artery Manager");
 	subscribe(scSignalCamReceived);
 
-	scheduleAt(simTime() + 3.0, m_self_msg);
-}
+	scheduleAt(simTime() + 3.0, m_self_msg);183
 
 void ArteryManager::finish()
 {
@@ -318,7 +315,6 @@ void ArteryManager::trigger()
 		}
 	}
 }
-
 void ArteryManager::receiveSignal(cComponent* source, simsignal_t signal, cObject*, cObject*)
 {
 	Enter_Method("receiveSignal");
@@ -328,5 +324,4 @@ void ArteryManager::receiveSignal(cComponent* source, simsignal_t signal, cObjec
 		EV_INFO << "Vehicle " << vehicle.getVehicleId() << " received a CAM in sibling serivce\n";
 	}
 }
-
 }

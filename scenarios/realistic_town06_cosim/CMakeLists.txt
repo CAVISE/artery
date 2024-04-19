@@ -16,6 +16,11 @@ target_include_directories(ArteryManager PRIVATE
                            ${PROTOBUF_INCLUDE_DIRS} 
                            ${CMAKE_CURRENT_BINARY_DIR})
 
+target_compile_definitions(ArteryManager PUBLIC MEMORY_BIN="Memory_BIN/")
+target_compile_definitions(ArteryManager PUBLIC MEMORY_JSON="Memory_BIN/")
+target_compile_definitions(ArteryManager PUBLIC OPENCDA_MESSAGE="Simulators_messages/OpenCDA_message.proto")
+target_compile_definitions(ArteryManager PUBLIC INDICATE_LOGS="Logs/ArteryManager_indicate_logs.log")
+target_compile_definitions(ArteryManager PUBLIC TRIGGER_LOGS="Logs/ArteryManager_trigger_logs.log") 
 # Линковка необходимых библиотек
 target_link_libraries(ArteryManager PRIVATE 
                       ${PROTOBUF_LIBRARIES})

@@ -13,6 +13,11 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
+/**
+ * @file ArteryManager.h
+ *
+ * @brief Declaration of ArteryManager module.
+ */
 #ifndef ARTERYMANAGERSERVICE_H_
 #define ARTERYMANAGERSERVICE_H_
 
@@ -25,15 +30,37 @@
 namespace artery
 {
 
+/**
+ * @brief Logs a message to a file with timestamp.
+ * @param filename Path to the log file.
+ * @param message Message to be logged.
+ */
+void logToFile(const std::string& filename, const std::string& message);
+/**
+ * @brief ArteryManager module for handling incoming data and triggering data requests.
+ */
 class ArteryManager : public ItsG5Service
 {
     public:
         ArteryManager();
         ~ArteryManager();
-
+        
+         /**
+        * @brief Indicates incoming data and processes it.
+        * @param ind Data indication received.
+        * @param packet Received packet.
+        * @param net Network interface.
+        */
         void indicate(const vanetza::btp::DataIndication&, omnetpp::cPacket*, const artery::NetworkInterface&) override;
 
         void trigger() override;
+        /**
+        * @brief Receives signals from other modules.
+        * @param source Source of the signal.
+        * @param signal Signal received.
+        * @param obj1 Object associated with the signal (unused).
+        * @param obj2 Object associated with the signal (unused).
+        */
         void receiveSignal(omnetpp::cComponent*, omnetpp::simsignal_t, omnetpp::cObject*, omnetpp::cObject*) override;
     
     protected:
@@ -42,7 +69,7 @@ class ArteryManager : public ItsG5Service
         void handleMessage(omnetpp::cMessage*) override;
 
     private:
-        omnetpp::cMessage* m_self_msg;
+        omnetpp::cMessage* m_self_msg; 
 };
 
 } // namespace artery
