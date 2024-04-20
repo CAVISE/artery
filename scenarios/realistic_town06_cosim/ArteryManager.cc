@@ -229,8 +229,8 @@ void ArteryManager::initialize()
 	m_self_msg = new cMessage("Artery Manager");
 	subscribe(scSignalCamReceived);
 
-	scheduleAt(simTime() + 3.0, m_self_msg);183
-
+	scheduleAt(simTime() + 3.0, m_self_msg);
+}
 void ArteryManager::finish()
 {
 	// you could record some scalars at this point
@@ -323,5 +323,6 @@ void ArteryManager::receiveSignal(cComponent* source, simsignal_t signal, cObjec
 		auto& vehicle = getFacilities().get_const<traci::VehicleController>();
 		EV_INFO << "Vehicle " << vehicle.getVehicleId() << " received a CAM in sibling serivce\n";
 	}
+}
 }
 }
