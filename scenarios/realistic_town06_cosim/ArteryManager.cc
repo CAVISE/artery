@@ -325,4 +325,3 @@ void ArteryManager::receiveSignal(cComponent* source, simsignal_t signal, cObjec
 	}
 }
 }
-}
