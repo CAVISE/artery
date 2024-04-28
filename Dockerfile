@@ -1,6 +1,11 @@
+# INSTRUCTION
+# sudo docker build --no-cache --build-arg ARG -t artery:develop .
+# xhost +local:docker  
+# sudo docker run --privileged --gpus all --network=host -e DISPLAY=$DISPLAY -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d -it artery:develop /bin/bash
 FROM ubuntu:18.04
 
 ARG SUMO=true
+# OMNeT version
 ARG VERSION=5.6.2
 ARG REPOSITORY='https://github.com/CAVISE/artery.git'
 ARG BRANCH='DRL_FL'
@@ -8,6 +13,7 @@ ARG BRANCH='DRL_FL'
 RUN mkdir -p /app/Cavise
 WORKDIR /app/Cavise
 ENV DEBIAN_FRONTEND=noninteractive
+
 # Install software-properties-common and pip3
 RUN apt-get update && apt-get install -y software-properties-common \
     build-essential \
@@ -19,11 +25,17 @@ RUN apt-get update && apt-get install -y software-properties-common \
     wget \
     python3-pip \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* 
 
+RUN set -xue && apt-key del 7fa2af80 \
+    && apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub \
+    && apt-get update \
+    && apt-get install -y build-essential cmake debhelper git wget xdg-user-dirs xserver-xorg libvulkan1 libsdl2-2.0-0 \
+    libsm6 libgl1-mesa-glx libomp5 unzip libjpeg8 libtiff5 software-properties-common nano fontconfig
+    
 RUN pip3 install pyzmq
 
-# Download and install specific version of CMake
+# Download and install CMake
 RUN apt-get update && \
     apt-get install -y software-properties-common lsb-release && \
     apt-get clean all && \
@@ -52,9 +64,6 @@ ENV SUMO_HOME=/usr/share/sumo
 ########################################################
 # Install OMNeT++
 ########################################################
-# Requires several packages to be installed on the computer. 
-# These packages include the C++ compiler (gcc or clang), 
-# the Java runtime, and several other libraries and programs.
 RUN apt-get install -y build-essential gcc g++ bison flex perl \
     python python3 qt5-default \
     libqt5opengl5-dev \
@@ -65,19 +74,21 @@ RUN apt-get install -y build-essential gcc g++ bison flex perl \
     && apt-get install -y openmpi-bin libopenmpi-dev \
     && apt-get install -y libpcap-dev \
     && apt-get install -y libprotobuf-dev protobuf-compiler \
-    && apt-get install -y libzmq3-dev
+    && apt-get install -y libzmq3-dev \
+    && apt-get install -y xorg
 
 # Clone Omnet repository
+WORKDIR /app/Cavise
 RUN wget https://github.com/omnetpp/omnetpp/releases/download/omnetpp-$VERSION/omnetpp-$VERSION-src-core.tgz \
-    --progress=bar:force:noscroll -O omnetpp-src-core.tgz && \
+    -O omnetpp-src-core.tgz && \
     tar xf omnetpp-src-core.tgz && \
-    rm omnetpp-src-core.tgz && \
-    mv omnetpp-$VERSION /omnetpp
-WORKDIR /omnetpp
-ENV PATH /omnetpp/bin:$PATH
-RUN ./configure WITH_QTENV=no WITH_OSG=no WITH_OSGEARTH=no && \
-    make -j $(nproc) base MODE=release && \
-    make -j $(nproc) base MODE=debug
+    rm omnetpp-src-core.tgz && ls
+
+# Build Omnetpp
+WORKDIR /app/Cavise/omnetpp-$VERSION
+ENV PATH /app/Cavise/omnetpp-$VERSION/bin:$PATH
+RUN ls && ./configure && \
+    make
 
 ########################################################
 # Install Artery 
@@ -92,6 +103,7 @@ WORKDIR /app/Cavise/artery
 RUN mkdir -p /app/Cavise/artery/build \
     && pwd \
     && cd /app/Cavise/artery/build \
-    && cmake .. \
+    && cmake -DWITH_GUI=1 .. \  
     && cmake --build .
 
+WORKDIR /app/Cavise
