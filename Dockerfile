@@ -1,7 +1,7 @@
 # INSTRUCTION
 # sudo docker build --no-cache --build-arg ARG -t artery:develop .
 # xhost +local:docker  
-# sudo docker run --privileged --gpus all --network=host -e DISPLAY=$DISPLAY -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d -it artery:develop /bin/bash
+# sudo docker run --privileged --gpus all --network=host -e DISPLAY=$DISPLAY -v /usr/share/vulkan/icd.d:/usr/share/vulkan/icd.d -v path/to/your/artery:/Cavise/artery -it artery:develop /bin/bash
 FROM ubuntu:18.04
 
 ARG SUMO=true
