@@ -59,6 +59,7 @@ RUN if [ true = true ] ; then \
     echo "Installation without SUMO" ; fi
 
 ENV SUMO_HOME=/usr/share/sumo
+
 # Добавляем необходимые пакеты для установки Python 3.7
 RUN apt-get update && apt-get install -y \
     software-properties-common \
