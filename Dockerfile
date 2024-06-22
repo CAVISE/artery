@@ -127,13 +127,15 @@ RUN apt install -y libgeographic-dev libcrypto++-dev \
     && apt install -y libboost-dev libboost-date-time-dev libboost-system-dev
 
 WORKDIR /Cavise/artery
-# RUN git clone --recurse-submodule $REPOSITORY --branch $BRANCH --single-branch
-COPY . /Cavise/artery/
-RUN mkdir -p /Cavise/artery/build \
-    && pwd \
-    && cd /Cavise/artery/build \
-    && cmake -DWITH_GUI=1 .. \  
-    && cmake --build . -j 4
+RUN git clone --recurse-submodules $REPOSITORY --branch $BRANCH --single-branch /Cavise/artery
 
+# Initialize and update git submodules
+WORKDIR /Cavise/artery
+RUN git submodule update --init --recursive
+
+RUN mkdir -p /Cavise/artery/build \
+    && cd /Cavise/artery/build \
+    && cmake -DWITH_GUI=1 .. \
+    && cmake --build . -j 4
 
 WORKDIR /Cavise
