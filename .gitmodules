@@ -20,3 +20,6 @@
 [submodule "extern/sim0mqpp"]
 	path = extern/sim0mqpp
 	url = https://github.com/riebl/sim0mqpp.git
+[submodule "etxern/omnetpp"]
+	path = etxern/omnetpp
+	url = https://github.com/omnetpp/omnetpp.git
