@@ -24,7 +24,12 @@ target_include_directories(protos PUBLIC
 
 target_link_libraries(protos PUBLIC protobuf::libprotobuf)
 
-protobuf_generate(TARGET protos IMPORT_DIRS ${PROTO_SOURCE_DIR} PROTOC_OUT_DIR ${PROTO_BINARY_DIR})
+protobuf_generate(
+    TARGET protos 
+    IMPORT_DIRS ${PROTO_SOURCE_DIR} 
+    PROTOC_OUT_DIR ${PROTO_BINARY_DIR}
+    GENERATE_EXTENSIONS python cpp
+)
 
 # Добавление исполняемого файла или библиотеки
 add_artery_feature(ArteryManager

@@ -21,8 +21,6 @@ Usage
        --config CONFIG  run for specified config. (Release, Debug) Default - only Debug.
                         You might invoke this multiple times.
        --link           create symlink in project root to Debug compile commands.
-       --copy           copies files from source or containerized environment to
-                        build directory. May be present multiple times.
 
 """
 
@@ -140,7 +138,6 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument('--config', action='append', dest='config')
     parser.add_argument('--link', action='store_true', dest='link')
     parser.add_argument('-j', action='store', dest='cores')
-    parser.add_argument('--copy', action='append', dest='copy')
 
     return parser.parse_args()
 
@@ -155,25 +152,6 @@ def get_common(args: argparse.Namespace) -> list[typing.Tuple[str, list[str]]]:
         configs = ['Debug']
 
     return directory, configs
-
-
-def copy(args: argparse.Namespace) -> None:
-    targets = getattr(args, 'copy', None)
-    directory, configs = get_common(args)
-    force = getattr(args, 'force', None)
-
-    for target in targets:
-        for config in configs:
-            dest = f'{directory}/{config}/{os.path.basename(os.path.normpath(target))}'
-            print(f'copying {target} to {dest}')
-            if os.path.exists(dest):
-                print('destination exists.', end=" ")
-                if not force:
-                    print('Cannot remove, use -f to force.')
-                    sys.exit(1)
-                print(f'Removing {dest}')
-                shutil.rmtree(dest)
-            shutil.copytree(target, f'{dest}')
 
 
 if __name__ == '__main__':
@@ -197,8 +175,5 @@ if __name__ == '__main__':
             link_compile_commands(directory + '/Debug/compile_commands.json')
         else:
             link_compile_commands(directory + '/Release/compile_commands.json')
-
-    if getattr(args, 'copy'):
-        copy(args)
 
     print('finished.')
