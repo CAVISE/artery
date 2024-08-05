@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC -shared -Wl,-soname,libvanetza_asn1.so -o ../../lib/libvanetza_asn1.so CMakeFiles/asn1.dir/asn1c_wrapper.cpp.o  -Wl,-rpath,/home/ilya-cavise/artery/scenarios/extern/vanetza/lib: ../../lib/libvanetza_asn1_its.so ../../lib/libvanetza_asn1_support.so 

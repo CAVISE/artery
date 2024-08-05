@@ -24,8 +24,8 @@
 #include "artery/application/ItsG5Service.h"
 #include "artery/application/NetworkInterface.h"
 
-#include "OpenCDA_message_structure.pb.h"
-#include "Artery_message_structure.pb.h"
+#include <cavise/messages/artery.pb.h>
+#include <cavise/messages/opencda.pb.h>
 
 namespace artery
 {

@@ -1,3 +1,10 @@
+# Clangd server cache
+.cache
+
+# CMake compile commands & build presets
+CMakeUserPresets.json
+compile_commands.json
+
 ansible/*.retry
 scenarios/**/*.pyc
 scenarios/*/results/*

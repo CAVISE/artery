@@ -23,9 +23,9 @@
 
 #include <fstream>
 #include <string>
-#include <zmq.hpp>
-#include "OpenCDA_message_structure.pb.h"
-#include "Artery_message_structure.pb.h"
+#include <zmq.h>
+#include <cavise/messages/artery.pb.h>
+#include <cavise/messages/opencda.pb.h>
 #include <google/protobuf/util/json_util.h>
 
 
