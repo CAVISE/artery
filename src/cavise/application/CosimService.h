@@ -11,8 +11,8 @@
 #include <artery/application/NetworkInterface.h>
 
 // communication
-#include <cavise/comms/SingletonHolder.h>
-#include <cavise/comms/CommunicationManager.h>
+// #include <cavise/comms/SingletonHolder.h>
+// #include <cavise/comms/CommunicationManager.h>
 
 // protos
 #include <cavise/capi.pb.h>
@@ -23,10 +23,10 @@ namespace cavise {
     class CosimService : public artery::ItsG5Service {
     public:
 
-        using CommunicationManager = cavise::CommunicationManager<
-            structure_capi::Artery_message, 
-            structure_capi::OpenCDA_message
-        >;
+        // using CommunicationManager = cavise::CommunicationManager<
+        //     structure_capi::Artery_message, 
+        //     structure_capi::OpenCDA_message
+        // >;
 
         CosimService();
         
@@ -38,7 +38,7 @@ namespace cavise {
         void initialize() override;
 
     private:
-        std::shared_ptr<CommunicationManager> communicationManager_;
+        // std::shared_ptr<CommunicationManager> communicationManager_;
 
     };
 

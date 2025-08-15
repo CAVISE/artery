@@ -18,8 +18,6 @@
 #include <plog/Severity.h>
 
 // proto
-#include <cavise/artery.pb.h>
-#include <cavise/opencda.pb.h>
 #include <google/protobuf/util/json_util.h>
 
 // omnetpp messages
@@ -27,8 +25,8 @@
 
 // communication
 #include <cavise/Init.h>
-#include <cavise/comms/CommunicationManager.h>
-#include <cavise/comms/SingletonHolder.h>
+// #include <cavise/comms/CommunicationManager.h>
+// #include <cavise/comms/SingletonHolder.h>
 
 // local
 #include <cavise/application/CosimService.h>
@@ -125,9 +123,9 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
         PLOG(plog::warning) << "failed to serialize to json: " << json;
     }
 
-    if (auto result = communicationManager_->push(id, std::move(message)); result.isError()) {
-        PLOG(plog::error) << "Error while adding artery message to the queue: " << result.error();
-    }
+    // if (auto result = communicationManager_->push(id, std::move(message)); result.isError()) {
+    //     PLOG(plog::error) << "Error while adding artery message to the queue: " << result.error();
+    // }
 
     delete packet;
 }
@@ -138,15 +136,15 @@ void CosimService::initialize()
 
     ItsG5Service::initialize();
     subscribe(scSignalCamReceived);
-    if (auto holder = cavise::SingletonHolder<std::shared_ptr<CommunicationManager>>(); !holder.initalized()) {
-        communicationManager_ = CommunicationManager::create("tcp://*:7777", 1024);
-        communicationManager_->initialize();
-        holder.initialize(communicationManager_);
-        PLOG(plog::info) << "object " << this << " initialized communication handler instance";
-    } else {
-        communicationManager_ = holder.getInstance();
-        PLOG(plog::debug) << "object " << this << " acquired communication handler instance";
-    }
+    // if (auto holder = cavise::SingletonHolder<std::shared_ptr<CommunicationManager>>(); !holder.initalized()) {
+    //     communicationManager_ = CommunicationManager::create("tcp://*:7777", 1024);
+    //     communicationManager_->initialize();
+    //     holder.initialize(communicationManager_);
+    //     PLOG(plog::info) << "object " << this << " initialized communication handler instance";
+    // } else {
+    //     communicationManager_ = holder.getInstance();
+    //     PLOG(plog::debug) << "object " << this << " acquired communication handler instance";
+    // }
 }
 
 void CosimService::trigger()
@@ -179,11 +177,11 @@ void CosimService::trigger()
         }
 
         std::unique_ptr<structure_capi::OpenCDA_message> message;
-        if (auto result = communicationManager_->collect(); result.isError()) {
-            PLOG(plog::debug) << "error acquiring message: " << result.error();
-        } else {
-            message = std::move(result.result());
-        }
+        // if (auto result = communicationManager_->collect(); result.isError()) {
+        //     PLOG(plog::debug) << "error acquiring message: " << result.error();
+        // } else {
+        //     message = std::move(result.result());
+        // }
 
         PLOG(plog::debug) << "Amount of CAVs and RSUs: " << message->entity_size() << '\n';
         for (const auto& entity : message->entity()) {
