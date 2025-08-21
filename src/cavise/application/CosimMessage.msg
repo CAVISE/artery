@@ -1,0 +1,3 @@
+packet CosimMessage {
+    string contents;
+};
