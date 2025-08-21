@@ -1,45 +1,33 @@
 #pragma once
 
-// STD
-#include <memory>
+#include "artery/application/ItsG5Service.h"
+#include "artery/application/NetworkInterface.h"
+#include "cavise/capi/Listener.h"
+#include "cavise/opencda.pb.h"
 
-// artery
-#include <omnetpp/simtime.h>
+#include <cavise/capi.pb.h>
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
-#include <artery/application/ItsG5Service.h>
-#include <artery/application/NetworkInterface.h>
-
-// communication
-#include <cavise/comms/SingletonHolder.h>
-#include <cavise/comms/CommunicationManager.h>
-
-// protos
-#include <cavise/capi.pb.h>
+#include <omnetpp/simtime.h>
 
 
-namespace cavise {
+namespace cavise
+{
 
-    class CosimService : public artery::ItsG5Service {
-    public:
+class CosimService : public artery::ItsG5Service, public CAPIOpenCDAListener
+{
+public:
+    CosimService();
 
-        using CommunicationManager = cavise::CommunicationManager<
-            structure_capi::Artery_message, 
-            structure_capi::OpenCDA_message
-        >;
+    /* artery::ItsG5Service implementation */
+    void trigger() override;
 
-        CosimService();
-        
-        void trigger() override;
-        void indicate(const vanetza::btp::DataIndication& ind, omnetpp::cPacket* packet, const artery::NetworkInterface& interface) override;
-        void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, omnetpp::cObject* obj1, omnetpp::cObject* obj2) override;
-    
-    protected:
-        void initialize() override;
+    /* CAPIOpenCDAListener implementation */
+    void cStep(CAPI* api) override;
 
-    private:
-        std::shared_ptr<CommunicationManager> communicationManager_;
+private:
+    capi::OpenCDAMessage* current_;
+    std::vector<capi::OpenCDAMessage> accumulated_;
+};
 
-    };
-
-} // namespace artery
+}  // namespace cavise

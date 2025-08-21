@@ -1,1 +1,13 @@
-../../../../cavise/messages/capi.proto
+syntax = "proto3";
+
+package capi;
+
+import "artery.proto";
+import "opencda.proto";
+
+message Message {
+    oneof message {
+        ArteryMessage artery = 1;
+        OpenCDAMessage opencda = 2;
+    }
+}
