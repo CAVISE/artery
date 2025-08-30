@@ -6,7 +6,6 @@
 #include <array>
 #include <fstream>
 #include <string>
-#include <tuple>
 #include <vector>
 
 using namespace artery::sionna;
@@ -27,22 +26,29 @@ namespace {
 
     bool pointInTri(double ax, double ay, double bx, double by, double cx, double cy, double px, double py) {
         auto sgn = [](double x1, double y1, double x2, double y2, double x3, double y3) { return (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3); };
-        const auto [d1, d2, d3] = std::make_tuple(sgn(px, py, ax, ay, bx, by), sgn(px, py, bx, by, cx, cy), sgn(px, py, cx, cy, ax, ay));
+
+        double d1 = sgn(px, py, ax, ay, bx, by);
+        double d2 = sgn(px, py, bx, by, cx, cy);
+        double d3 = sgn(px, py, cx, cy, ax, ay);
 
         bool hasNegative = (d1 < 0) || (d2 < 0) || (d3 < 0);
         bool hasPositive = (d1 > 0) || (d2 > 0) || (d3 > 0);
         return !(hasNegative && hasPositive);
     }
 
-    bool isEar(const std::vector<std::array<double, 2>>& poly, const std::vector<int>& idxs, int i) {
+    bool isEar(const std::vector<std::array<double, 2>>& poly, const std::vector<int>& idxs, int i, const double eps = 1e-12) {
         const int n = static_cast<int>(idxs.size());
-        int i0 = idxs[(i - 1 + n) % n], i1 = idxs[i], i2 = idxs[(i + 1) % n];
+
+        int i0 = idxs[(i - 1 + n) % n];
+        int i1 = idxs[i];
+        int i2 = idxs[(i + 1) % n];
+
         const auto& A = poly[i0];
         const auto& B = poly[i1];
         const auto& C = poly[i2];
 
         double cross = (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]);
-        if (cross <= 1e-12) {
+        if (cross <= eps) {
             return false;
         }
 
@@ -56,47 +62,59 @@ namespace {
                 }
             }
         }
+
         return true;
     }
 
     // this cuts provided shape to remove ears: https://en.wikipedia.org/wiki/Polygon_triangulation
-    std::vector<std::array<int, 3>> triangulateCCW(const std::vector<std::array<double, 2>>& polyCCW) {
-        const int n0 = static_cast<int>(polyCCW.size());
+    std::vector<std::array<int, 3>> triangulateCCW(const std::vector<std::array<double, 2>>& polyCCW, const std::size_t maxIters = 10000) {
+        std::vector<int> idxs;
         std::vector<std::array<int, 3>> tris;
-        if (n0 < 3) {
-            return tris;
-        }
 
-        std::vector<int> idxs(n0);
-        for (int i = 0; i < n0; ++i) {
-            idxs[i] = i;
+        if (const std::size_t n = polyCCW.size(); n < 3) {
+            return tris;
+        } else {
+            idxs.resize(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                idxs[i] = i;
+            }
         }
 
         int guard = 0;
-        while (static_cast<int>(idxs.size()) > 3 && guard < 10000) {
+        while (idxs.size() > 3 && guard < maxIters) {
             bool cut = false;
-            int n = static_cast<int>(idxs.size());
+            const std::size_t n = idxs.size();
 
-            for (int i = 0; i < n; ++i) {
+            for (std::size_t i = 0; i < n; ++i) {
                 if (isEar(polyCCW, idxs, i)) {
-                    int i0 = idxs[(i - 1 + n) % n], i1 = idxs[i], i2 = idxs[(i + 1) % n];
+                    int i0 = idxs[(i - 1 + n) % n];
+                    int i1 = idxs[i];
+                    int i2 = idxs[(i + 1) % n];
+
                     tris.push_back({i0, i1, i2});
                     idxs.erase(idxs.begin() + i);
                     cut = true;
                     break;
                 }
             }
+
             if (!cut) {
                 // fallback: fan triangulation from vertex 0
                 tris.clear();
-                for (int i = 1; i < (int)polyCCW.size() - 1; ++i) {
-                    tris.push_back({0, i, i + 1});
+                for (std::size_t i = 1; i < polyCCW.size() - 1; ++i) {
+                    int i0 = 0;
+                    int i1 = i;
+                    int i2 = i + 1;
+
+                    tris.push_back({i0, i1, i2});
                 }
                 return tris;
             }
+
             ++guard;
         }
-        if (static_cast<int>(idxs.size() == 3)) {
+
+        if (idxs.size() == 3) {
             tris.push_back({idxs[0], idxs[1], idxs[2]});
         }
 
@@ -117,7 +135,7 @@ void meshes::createPrismObject(const std::vector<std::array<double, 2>>& base_xy
         std::reverse(poly.begin(), poly.end());
     }
 
-    const int n = static_cast<int>(poly.size());
+    const std::size_t n = poly.size();
     auto cap_tris = triangulateCCW(poly);
 
     const double z0 = center_z ? -0.5 * height : 0.0;
@@ -130,10 +148,10 @@ void meshes::createPrismObject(const std::vector<std::array<double, 2>>& base_xy
         out << "o Prism\n";
 
         // Vertices: base ring at z0, then top ring at z1
-        for (int i = 0; i < n; ++i) {
+        for (std::size_t i = 0; i < n; ++i) {
             out << "v " << poly[i][0] << ' ' << poly[i][1] << ' ' << z0 << '\n';
         }
-        for (int i = 0; i < n; ++i) {
+        for (std::size_t i = 0; i < n; ++i) {
             out << "v " << poly[i][0] << ' ' << poly[i][1] << ' ' << z1 << '\n';
         }
 
@@ -151,7 +169,7 @@ void meshes::createPrismObject(const std::vector<std::array<double, 2>>& base_xy
         }
 
         // Side faces: each quad (i -> i+1) becomes 2 triangles
-        for (int i = 0; i < n; ++i) {
+        for (std::size_t i = 0; i < n; ++i) {
             int i0 = i;
             int i1 = (i + 1) % n;
             int j0 = i0 + n;  // top ring

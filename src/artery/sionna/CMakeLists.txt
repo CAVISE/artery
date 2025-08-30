@@ -9,9 +9,9 @@ add_artery_feature(sionna
     bridge/meshes/Sphere.cc
     bridge/meshes/Prism.cc
     bridge/meshes/Polyhedron.cc
-    bridge/meshes/Meshes.cc
+    bridge/meshes/Meshes.h
     environment/PhysicalEnvironment.h
     environment/PhysicalEnvironment.cc
 )
 
-target_link_libraries(sionna PRIVATE pybind11::pybind11 INET)
+target_link_libraries(sionna PRIVATE pybind11::pybind11 INET Eigen3::Eigen)

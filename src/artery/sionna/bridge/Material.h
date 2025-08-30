@@ -10,48 +10,55 @@ namespace artery {
 
     namespace sionna {
 
-        struct Color {
-            Color(double r, double g, double b);
-
-            double r;
-            double g;
-            double b;
-        };
+        using Color = std::tuple<double, double, double>;
 
         // Maps RadioMaterialBase, serves to ease later implementations of other materials.
         // This class is abstract - sionna does not allow creation of instances.
-        class RadioMaterialBase {
+        class RadioMaterialBase : public pybind11::object {
         public:
-            void setColor(Color color);
+            // Move-only ctor. Children are expected to pass their instance here.
+            RadioMaterialBase(pybind11::object object);
 
-            std::string name();
+            // Access outer color of the material.
             Color color() const;
 
-        protected:
-            virtual ~RadioMaterialBase() = 0;
+            // Access name, given to the material.
+            std::string name() const;
 
-        protected:
-            pybind11::object handle_;
+            // Set outer color of the material.
+            void setColor(Color color);
         };
 
         // Maps RadioMaterial from sionna, see https://nvlabs.github.io/sionna/rt/api/radio_materials.html#sionna.rt.RadioMaterial.
         // Current implementation assumes non-magnetic materials, so relative permeability that
         // is different to 1 will raise error.
-        class RadioMaterial : protected RadioMaterialBase {
+        class RadioMaterial : public RadioMaterialBase {
         public:
             // This callback takes frequency and returns a pair of (relative_permittivity, conductivity).
             using FrequencyUpdateCallbackType = std::function<std::tuple<double, double>(double)>;
 
-            RadioMaterial(
-                const std::string& name,
-                double thickness = 0.1,
-                double relativePermittivity = 1.0,
-                double conductivity = 0.0,
-                double scatteringCoefficient = 0.0,
-                double xpdCoefficient = 0.0,
-                double relativePermeability = 1,
-                const std::string& pattern = "lambertian",
-                std::optional<FrequencyUpdateCallbackType> callback = std::nullopt);
+            struct CtorArguments {
+                // name for material.
+                const std::string& name;
+                // thickness of material.
+                double thickness = 0.1;
+                // permittivity calculated relevant to vacuum.
+                double relativePermittivity = 1.0;
+                // conductivity of this material/
+                double conductivity = 0.0;
+                // TODO: document
+                double scatteringCoefficient = 0.0;
+                // TODO: document
+                double xpdCoefficient = 0.0;
+                // should always equal 1.
+                double relativePermeability = 1.0;
+                // TODO: document
+                const std::string& pattern = "lambertian";
+                // function for frequency -> (relative_permittivity, conductivity)
+                std::optional<FrequencyUpdateCallbackType> callback = std::nullopt;
+            };
+
+            RadioMaterial(CtorArguments args);
 
             void setRelativePermittivity(double relativePermittivity);
             void setConductivity(double conductivity);
@@ -73,6 +80,8 @@ namespace artery {
             virtual ~RadioMaterial() = default;
 
         private:
+            pybind11::object initialize(CtorArguments args);
+
             pybind11::function makeFrequencyUpdateCallback(const FrequencyUpdateCallbackType& cb);
         };
 

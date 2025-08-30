@@ -13,8 +13,8 @@ namespace artery {
         // Propagating them back to Artery may be done with this method - it also casts
         // property (attribute) value to a standard python type before returning it.
         template <typename T>
-        T access(const pybind11::object& obj, const std::string attribute) {
-            pybind11::object property = obj.attr(attribute.c_str());
+        T access(const pybind11::object* obj, const std::string attribute) {
+            pybind11::object property = obj->attr(attribute.c_str());
 
             try {
                 if constexpr (std::is_integral_v<T>) {
@@ -25,18 +25,18 @@ namespace artery {
                     property = pybind11::str(property);
                 }
             } catch (const pybind11::error_already_set& error) {
-                throw omnetpp::cRuntimeError("sionna: failed to convert property %s for object at %d", attribute, obj.ptr());
+                throw omnetpp::cRuntimeError("sionna: failed to convert property %s for object at %d", attribute, obj->ptr());
             }
 
             return property.cast<T>();
         }
 
         template <typename T>
-        void set(pybind11::object& obj, const std::string attribute, T value) {
+        void set(pybind11::object* obj, const std::string attribute, T value) {
             try {
                 pybind11::setattr(obj, attribute, pybind11::cast(value));
             } catch (const pybind11::error_already_set& error) {
-                throw omnetpp::cRuntimeError("sionna: failed set property %s of object at %d", attribute, obj.ptr());
+                throw omnetpp::cRuntimeError("sionna: failed set property %s of object at %d", attribute, obj->ptr());
             }
         }
 
