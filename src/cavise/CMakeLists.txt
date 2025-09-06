@@ -38,6 +38,7 @@ target_include_directories(protos PUBLIC ${PROTO_BINARY_DIR})
 
 generate_opp_message(application/CosimMessage.msg TARGET capi DIRECTORY cavise_msgs)
 
+target_link_libraries(protos PUBLIC protobuf::libprotobuf)
 target_link_libraries(capi PUBLIC protos cppzmq)
 
 target_include_directories(capi PUBLIC ${ROOT_DIR})

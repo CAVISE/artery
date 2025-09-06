@@ -2,6 +2,7 @@
 
 #include "artery/application/ItsG5Service.h"
 #include "artery/application/NetworkInterface.h"
+#include "cavise/artery.pb.h"
 #include "cavise/capi/Listener.h"
 #include "cavise/opencda.pb.h"
 
@@ -21,13 +22,14 @@ public:
 
     /* artery::ItsG5Service implementation */
     void trigger() override;
+    void indicate(const vanetza::btp::DataIndication& ind, omnetpp::cPacket* packet, const artery::NetworkInterface& interface) override;
 
     /* CAPIOpenCDAListener implementation */
     void cStep(CAPI* api) override;
 
 private:
-    capi::OpenCDAMessage* current_;
-    std::vector<capi::OpenCDAMessage> accumulated_;
+    capi::OpenCDAMessage current_;
+    std::vector<capi::ArteryMessage::Transmission> accumulatedTransmissions_;
 };
 
 }  // namespace cavise
