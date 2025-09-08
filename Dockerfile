@@ -1,58 +1,88 @@
-FROM archlinux:base-devel
+# Distribution tag
+ARG TAG=base-devel
+
+FROM archlinux:${TAG} AS setup
 
 SHELL [ "/bin/bash", "-c"]
 
-# OMNeT release tag
+RUN pacman -Syu --noconfirm     \
+    --disable-download-timeout  \
+    cmake python3 python-pip    \
+    xerces-c fox gdal proj      \
+    gl2ps jre17-openjdk swig    \
+    maven eigen flex bison git  \
+    gcc sdl2 libsm openmp       \
+    openscenegraph qt5-base     \
+    pacman-contrib sudo         \
+    boost crypto++ xorg         \
+    ttf-ubuntu-font-family      \
+    ninja protobuf cppzmq       \
+    && paccache -r -k 0
+
+FROM setup AS build
+
+# SUMO version (github tag)
+ARG SUMO_TAG=v1_23_1
+# OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
-# SUMO tag
-ARG SUMO_TAG=v1_23_0
+# GeographicLib version (github tag)
+ARG GEOGRAPHICLIB_TAG=v2.5
 
-WORKDIR /cavise
+RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
+WORKDIR /omnetpp
+RUN mv configure.user.dist configure.user
+RUN source setenv -f                                            \
+    && ./configure WITH_QTENV=no WITH_OSG=no WITH_OSGEARTH=no   \
+    && make -j$(nproc --all) base MODE=release
 
-RUN pacman -Syu --noconfirm pacman-contrib &&\
-    pacman -S --noconfirm cmake python3 python-pip pyenv wget bison git gcc14 ninja &&\
-    pacman -S --noconfirm xorg nvidia-utils mesa sdl2 libsm openmp openscenegraph &&\
-    pacman -Sc --noconfirm && \
-    rm -rf /var/cache/pacman/pkg/* /tmp/*
+WORKDIR /
+RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo
+WORKDIR /sumo
+RUN cmake -B build .                                    \
+        -G Ninja                                        \
+        -DCMAKE_BUILD_CONFIG=Release                    \
+        -DCMAKE_INSTALL_PREFIX=/sumo-prefix             \
+        -DENABLE_CS_BINDINGS=OFF                        \
+        -DENABLE_JAVA_BINDINGS=OFF                      \
+        -DENABLE_PYTHON_BINDINGS=OFF                    \
+        -DNETEDIT=OFF                                   \
+    && cmake --build build --parallel $(nproc --all)    \
+    && cmake --install build
 
-# Temporary: Using conan==2.17 to avoid errors with Pathlib
-RUN pip install --no-cache-dir --break-system-packages conan==2.17
+WORKDIR /
+RUN git clone --recurse --depth 1 --branch ${GEOGRAPHICLIB_TAG} https://github.com/geographiclib/geographiclib
+WORKDIR /geographiclib
+RUN cmake -B build . && cmake --build build --parallel $(nproc --all)
 
-# OmnetPP
-ENV OMNETPP_ROOT=/cavise/${OMNETPP_TAG}/bin \
-    PATH=/cavise/${OMNETPP_TAG}/bin:${PATH}
-RUN pacman -S --noconfirm clang lld gdb bison flex perl qt5-base && \
-    rm -rf /var/cache/pacman/pkg/* /tmp/*
-RUN wget -c https://github.com/omnetpp/omnetpp/releases/download/${OMNETPP_TAG}/${OMNETPP_TAG}-src-linux.tgz -O source.tgz &&\
-    tar -xvzf source.tgz && rm source.tgz
-RUN cd ${OMNETPP_TAG} && sed -i 's/^WITH_OSGEARTH=yes$/WITH_OSGEARTH=no/' configure.user
-RUN cd ${OMNETPP_TAG} && source setenv -f && ./configure
-RUN cd ${OMNETPP_TAG} && make -j$(nproc --all)
+FROM setup AS final
 
-# SUMO
-# reference https://sumo.dlr.de/docs/Installing/Linux_Build.html
-ENV SUMO_HOME="/usr/local/share/sumo"
-RUN pacman -S --noconfirm xerces-c fox gdal proj gl2ps jre17-openjdk swig maven eigen && \
-    rm -rf /cavise/sumo /var/cache/pacman/pkg/* /tmp/*
+COPY --from=build /omnetpp/bin /omnetpp/bin
+COPY --from=build /omnetpp/include /omnetpp/include
+COPY --from=build /omnetpp/lib /omnetpp/lib
+COPY --from=build /omnetpp/images /omnetpp/images
+COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
-RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo && \
-    cd sumo && \
-    cmake -B build . && \
-    cmake --build build -- -j$(nproc) && \
-    cmake --install build && \
-    rm -rf /cavise/sumo /var/cache/pacman/pkg/* /tmp/*
+COPY --from=build /sumo-prefix/ /usr/local
 
-RUN paccache -r -k 0
+RUN cd /usr/local/bin && \
+    curl -sSL -O https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py && \
+    chmod +x clang-tidy-diff.py
+
+ENV PATH=/omnetpp/bin:$PATH
+ENV SUMO_HOME=/usr/local/share/sumo
 
 # Artery build params
 ARG ARTERY_DIR=/cavise/artery
 ARG BUILD_CONFIG=Release
-ARG CONAN_PROFILE=container.ini
 
 COPY artery/ ${ARTERY_DIR}
 COPY cavise/ /cavise/cavise
 
+COPY --from=build /geographiclib /geographiclib
+RUN cmake --install /geographiclib/build
+
 WORKDIR ${ARTERY_DIR} 
-RUN ./tools/build.py -cib --config ${BUILD_CONFIG} --pr:a tools/profiles/container.ini
+# RUN ./tools/build.py -cb --config ${BUILD_CONFIG}
+RUN cmake -B /cavise/artery/build/Release -S /cavise/artery -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_BUILD_TYPE=Release --trace
 
 CMD ["echo", "'run this interactively'"]
