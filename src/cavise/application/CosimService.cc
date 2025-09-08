@@ -69,17 +69,14 @@ void CosimService::trigger()
             EV_DEBUG << "Entity id: " << entity.id();
         }
 
-        if (current_.mutable_entity()->size() > 0) {
-            capi::ArteryMessage::Transmission transmission;
-            transmission.set_id(id);
-            transmission.mutable_entity()->CopyFrom(*current_.mutable_entity());
+        capi::ArteryMessage::Transmission transmission;
+        transmission.set_id(id);
+        transmission.mutable_entity()->Add(current_);
 
-            auto* message = new CosimMessage;
-            auto string = transmission.SerializeAsString();
-            message->setContents(string.c_str());
-            request(req, message, network.get());
-            continue;
-        }
+        auto* message = new CosimMessage;
+        auto string = transmission.SerializeAsString();
+        message->setContents(string.c_str());
+        request(req, message, network.get());
     }
 }
 
@@ -88,5 +85,17 @@ void CosimService::cStep(CAPI* api) {
         api->transmit(std::move(message));
     }
 
-    current_ = api->OpenCDAState();
+    capi::OpenCDAMessage message = api->OpenCDAState();
+
+    for (auto& entity : *message.mutable_entity()) {
+        const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
+        std::string id = vehicle.getVehicleId();
+        if (entity.id != id) {
+            continue;
+        } 
+
+        current_ = entity;
+    }
+
+
 }

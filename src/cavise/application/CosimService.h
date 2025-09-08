@@ -28,7 +28,7 @@ public:
     void cStep(CAPI* api) override;
 
 private:
-    capi::OpenCDAMessage current_;
+    capi::Entity current_;
     std::vector<capi::ArteryMessage::Transmission> accumulatedTransmissions_;
 };
 

@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ConnectionHandler.h"
 
 #include <omnetpp/cexception.h>
