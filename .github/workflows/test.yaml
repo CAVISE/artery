@@ -1,0 +1,37 @@
+name: Run integration tests
+
+on:
+  workflow_call:
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/riebl/artery-gh-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Create virtual environment
+        run: python3 -m venv .venv
+
+      - name: Install pip dependencies
+        run: . .venv/bin/activate && pip install -r tools/ci/requirements.txt
+
+      - name: Configure and build CMake
+        run: |
+          tools/build.py -cb --config Release \
+            --generator Ninja                 \
+            -D WITH_SIMULTE:BOOL=ON           \
+            -D WITH_OTS:BOOL=ON               \
+            -D WITH_TESTBED:BOOL=ON           \
+            -D WITH_TRANSFUSION:BOOL=ON
+
+      - name: Run tests
+        run: . .venv/bin/activate && PYTHONPATH=$PWD python3 tools/ci/run.py -l build/Release/run-artery.ini -s scenarios
