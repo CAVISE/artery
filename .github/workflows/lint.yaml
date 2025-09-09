@@ -33,4 +33,4 @@ jobs:
       - name: Run clang-tidy
         run: |
           git config --global --add safe.directory $PWD
-          git diff -U0 origin/master | clang-tidy-diff.py -p1 -path .
+          git diff -U0 origin/main | clang-tidy-diff.py -p1 -path .

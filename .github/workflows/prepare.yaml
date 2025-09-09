@@ -1,8 +1,8 @@
-name: Prepare GitHub container
+name: Prepare GitHub containers
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_call:
 
 jobs:
@@ -11,6 +11,14 @@ jobs:
     permissions:
       contents: read
       packages: write
+
+    strategy:
+      matrix:
+        include:
+          - name: ci-minimal
+            build_artery: "false"
+          - name: full-image
+            build_artery: "true"
 
     steps:
       - name: Log in to GHCR
@@ -25,11 +33,13 @@ jobs:
       - name: Set up Docker buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ghcr.io/cavise/artery-gh-runner:latest
+          tags: ghcr.io/cavise/artery-gh-runner:${{ matrix.name }}
+          build-args: |
+            BUILD_ARTERY=${{ matrix.build_artery }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
