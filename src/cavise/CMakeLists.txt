@@ -2,12 +2,7 @@
 # CAVISE SUBMODULE #
 ####################
 
-# This file is entrypoint for common CAVISE tools & enhancements to Artery.
-cmake_minimum_required(VERSION 3.16)
-
-project(cavise-artery VERSION 1.0 LANGUAGES CXX)
-
-add_artery_feature(${PROJECT_NAME}
+add_artery_feature(cavise
     Init.cc 
     Init.h
     application/CosimService.cc
@@ -16,49 +11,10 @@ add_artery_feature(${PROJECT_NAME}
     comms/SingletonHolder.h
 )
 
-set(PROTO_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/messages)
-set(PROTO_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protos)
-set(PROTO_GENERATOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protos/cavise)
+add_protobuf(capi-protos PROTOS messages/capi.proto)
 
-set(PROTOS )
-list(APPEND PROTOS ${PROTO_SOURCE_DIR}/capi.proto)
+add_opp_message(capi-opp-message MESSAGE application/Opencda.msg MSG_PREFIX cavise_msgs)
 
-add_library(protos OBJECT ${PROTOS})
-protobuf_generate(
-    TARGET protos 
-    IMPORT_DIRS ${PROTO_SOURCE_DIR} 
-    PROTOC_OUT_DIR ${PROTO_GENERATOR_DIR}
-    LANGUAGE cpp)
+target_link_libraries(cavise PUBLIC capi-protos PkgConfig::ZEROMQ)
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    target_compile_options(protos PUBLIC "${CMAKE_CXX_FLAGS}" "-Wall" "-Wextra" "-fPIC")
-    target_compile_options(${PROJECT_NAME} PUBLIC "${CMAKE_CXX_FLAGS}" "-Wall" "-Wextra")
-else()
-    message(WARNING "Make sure PIC (Position Independent Code) is supported by default by your compiler!")
-endif()
-
-# I think version 5.xx.x renamed protoc component, so it is necessary yo link this with
-# protobuf::libprotoc 
-target_link_libraries(protos PUBLIC protobuf::libprotoc protobuf::libprotobuf)
-
-target_include_directories(protos PUBLIC 
-    ${PROTO_BINARY_DIR}
-    # include libprotobuf headers to override system libprotobuf if present
-    ${protobuf_INCLUDE_DIRS}
-)
-
-generate_opp_message(application/Opencda.msg TARGET ${PROJECT_NAME} DIRECTORY cavise_msgs)
-
-target_link_libraries(
-    ${PROJECT_NAME} PUBLIC
-    protos
-    cppzmq 
-    plog::plog
-)
-
-target_include_directories(
-    ${PROJECT_NAME} PUBLIC 
-    ${ROOT_DIR} 
-    ${plog_INCLUDE_DIRS}
-    ${cppzmq_INCLUDE_DIRS}
-)
+target_include_directories(cavise PUBLIC ${PROJECT_SOURCE_DIR}/src)

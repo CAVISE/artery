@@ -32,6 +32,9 @@ option(WITH_TRANSFUSION "Build Artery with transfusion feature" OFF)
 option(WITH_SCENARIOS "Build Artery with scenarios" ON)
 option(VSCODE_LAUNCH_INTEGRATION "Generate VS Code configuration for debugging Artery (requires debug build)" OFF)
 
+# CAVISE
+option(WITH_CAPI "Build Artery with OpenCDA integration" ON)
+
 ##############################
 # Artery build configuration #
 ##############################
@@ -107,11 +110,11 @@ endmacro()
 # Artery #
 ##########
 
-add_subdirectory(src/cavise)
 add_subdirectory(src/traci)
 add_subdirectory(src/artery)
 
 add_artery_subdirectory(src/ots REQUIRES INET PkgConfig::ZEROMQ SWITCH WITH_OTS)
+add_artery_subdirectory(src/cavise REQUIRES protobuf::libprotobuf PkgConfig::ZEROMQ SWITCH WITH_CAPI)
 
 # scenarios directory is part of repository but omitted for Docker build context
 if(WITH_SCENARIOS)

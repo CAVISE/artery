@@ -13,13 +13,12 @@
 #include <vanetza/net/packet_variant.hpp>
 
 // plog
-#include <plog/Initializers/RollingFileInitializer.h>
-#include <plog/Log.h>
-#include <plog/Severity.h>
+// #include <plog/Initializers/RollingFileInitializer.h>
+// #include <plog/Log.h>
+// #include <plog/Severity.h>
 
 // proto
-#include <cavise/artery.pb.h>
-#include <cavise/opencda.pb.h>
+#include <capi.pb.h>
 #include <google/protobuf/util/json_util.h>
 
 // omnetpp messages
@@ -55,9 +54,9 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
 
     const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
     if (!strcmp(packet->getClassName(), STRINGIFY(OpencdaPayload))) {
-        PLOG(plog::debug) << "receiving message " << STRINGIFY(OpencdaPayload) << " on vehicle " << vehicle.getVehicleId();
+        // PLOG(plog::debug) << "receiving message " << STRINGIFY(OpencdaPayload) << " on vehicle " << vehicle.getVehicleId();
     } else {
-        PLOG(plog::warning) << "receiving unknown message " << packet->getClassName() << " on vehicle " << vehicle.getVehicleId();
+        // PLOG(plog::warning) << "receiving unknown message " << packet->getClassName() << " on vehicle " << vehicle.getVehicleId();
         delete packet;
         return;
     }
@@ -65,19 +64,19 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     OpencdaPayload* payload = static_cast<OpencdaPayload*>(packet);
     structure_capi::OpenCDA_message received_message;
     if (auto status = google::protobuf::util::JsonStringToMessage(payload->getJson(), &received_message); !status.ok()) {
-        PLOG(plog::debug) << "error parsing JSON: " << status.ToString();
+        // PLOG(plog::debug) << "error parsing JSON: " << status.ToString();
     }
 
     std::string id = vehicle.getVehicleId();
-    PLOG(plog::debug) << "Vehicle ID: " << id;
+    // PLOG(plog::debug) << "Vehicle ID: " << id;
 
     if (!(id.rfind("rsu", 0) == 0 || id.rfind("cav", 0) == 0 || id.rfind("platoon", 0) == 0)) {
-        PLOG(plog::debug) << "Skipping vehicle '" << id << "' — not RSU/CAV/Platoon";
+        // PLOG(plog::debug) << "Skipping vehicle '" << id << "' — not RSU/CAV/Platoon";
         delete packet;
         return;
     }
 
-    PLOG(plog::debug) << "Vehicle '" << id << "' passed prefix check";
+    // PLOG(plog::debug) << "Vehicle '" << id << "' passed prefix check";
 
     auto message = std::make_unique<structure_capi::Artery_message>();
     auto* received_info = message->add_received_information();
@@ -87,7 +86,7 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     for (const auto& prefix : {"rsu", "cav", "platoon"}) {
         if (id.rfind(prefix, 0) == 0) {
             matchedPrefix = prefix;
-            PLOG(plog::debug) << "Matched prefix: " << matchedPrefix;
+            // PLOG(plog::debug) << "Matched prefix: " << matchedPrefix;
             break;
         }
     }
@@ -97,36 +96,36 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     }
 
     for (const auto& entity : received_message.entity()) {
-        PLOG(plog::debug) << "  - entity.id() = " << entity.id();
+        // PLOG(plog::debug) << "  - entity.id() = " << entity.id();
     }
 
     for (const auto& entity : received_message.entity()) {
-        PLOG(plog::debug) << "Processing entity with ID: " << entity.id();
+        // PLOG(plog::debug) << "Processing entity with ID: " << entity.id();
         if (entity.id() == received_info->id()) {
-            PLOG(plog::debug) << "Skipping own entity ID: " << entity.id();
+            // PLOG(plog::debug) << "Skipping own entity ID: " << entity.id();
             continue;
         }
-    
+
         auto* new_entity = received_info->add_entity();
         new_entity->set_id(entity.id());
-        PLOG(plog::debug) << "Copying fields from entity " << entity.id();
-        
+        // PLOG(plog::debug) << "Copying fields from entity " << entity.id();
+
         new_entity->CopyFrom(entity);
     }
 
-    google::protobuf::util::JsonOptions options;
-    options.add_whitespace = true;
-    options.always_print_primitive_fields = true;
+    // google::protobuf::util::JsonOptions options;
+    // options.add_whitespace = true;
+    // options.always_print_primitive_fields = true;
 
-    std::string json;
-    if (auto status = google::protobuf::util::MessageToJsonString(*message, &json, options); status.ok()) {
-        PLOG(plog::debug) << "JSON: " << json;
-    } else {
-        PLOG(plog::warning) << "failed to serialize to json: " << json;
-    }
+    // std::string json;
+    // if (auto status = google::protobuf::util::MessageToJsonString(*message, &json, options); status.ok()) {
+    //     // PLOG(plog::debug) << "JSON: " << json;
+    // } else {
+    //     // PLOG(plog::warning) << "failed to serialize to json: " << json;
+    // }
 
     if (auto result = communicationManager_->push(id, std::move(message)); result.isError()) {
-        PLOG(plog::error) << "Error while adding artery message to the queue: " << result.error();
+        // PLOG(plog::error) << "Error while adding artery message to the queue: " << result.error();
     }
 
     delete packet;
@@ -142,10 +141,10 @@ void CosimService::initialize()
         communicationManager_ = CommunicationManager::create("tcp://*:7777", 1024);
         communicationManager_->initialize();
         holder.initialize(communicationManager_);
-        PLOG(plog::info) << "object " << this << " initialized communication handler instance";
+        // PLOG(plog::info) << "object " << this << " initialized communication handler instance";
     } else {
         communicationManager_ = holder.getInstance();
-        PLOG(plog::debug) << "object " << this << " acquired communication handler instance";
+        // PLOG(plog::debug) << "object " << this << " acquired communication handler instance";
     }
 }
 
@@ -160,7 +159,7 @@ void CosimService::trigger()
     for (const auto& channel : mco.allChannels(example_its_aid)) {
         std::shared_ptr<artery::NetworkInterface> network = networks.select(channel);
         if (!network) {
-            PLOG(plog::warning) << "no network interface available for channel " << channel << "\n";
+            // PLOG(plog::warning) << "no network interface available for channel " << channel << "\n";
         }
 
         vanetza::btp::DataRequestB req;
@@ -180,20 +179,20 @@ void CosimService::trigger()
 
         std::unique_ptr<structure_capi::OpenCDA_message> message;
         if (auto result = communicationManager_->collect(); result.isError()) {
-            PLOG(plog::debug) << "error acquiring message: " << result.error();
+            // PLOG(plog::debug) << "error acquiring message: " << result.error();
         } else {
             message = std::move(result.result());
         }
 
-        PLOG(plog::debug) << "Amount of CAVs and RSUs: " << message->entity_size() << '\n';
+        // PLOG(plog::debug) << "Amount of CAVs and RSUs: " << message->entity_size() << '\n';
         for (const auto& entity : message->entity()) {
-            PLOG(plog::debug) << "Entity id: " << entity.id();
+            // PLOG(plog::debug) << "Entity id: " << entity.id();
         }
 
         if (message->entity_size() > 0) {
             google::protobuf::util::JsonPrintOptions options;
             options.add_whitespace = true;
-            options.always_print_primitive_fields = true;
+            // options.always_print_primitive_fields = true;
 
             std::string json;
             if (auto status = google::protobuf::util::MessageToJsonString(*message, &json); status.ok()) {
@@ -203,7 +202,7 @@ void CosimService::trigger()
                 request(req, packet, network.get());
                 continue;
             } else {
-                PLOG(plog::debug) << "failed to serialize opencda payload: " << status.ToString();
+                // PLOG(plog::debug) << "failed to serialize opencda payload: " << status.ToString();
             }
         }
     }
@@ -214,6 +213,6 @@ void CosimService::receiveSignal(cComponent* /* source */, omnetpp::simsignal_t 
     CAVISE_STUB();
     if (signal == scSignalCamReceived) {
         const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
-        PLOG(plog::debug) << "vehicle " << vehicle.getVehicleId() << " received a CAM in sibling service";
+        // PLOG(plog::debug) << "vehicle " << vehicle.getVehicleId() << " received a CAM in sibling service";
     }
 }

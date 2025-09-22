@@ -17,6 +17,7 @@ RUN pacman -Syu --noconfirm     \
     boost crypto++ xorg         \
     ttf-ubuntu-font-family      \
     ninja protobuf cppzmq       \
+    pkg-config                  \
     && paccache -r -k 0
 
 FROM setup AS build
@@ -63,6 +64,8 @@ FROM setup AS final
 # Whether to build Artery or not. 
 # We provide both image versions - in case you need smaller image.
 ARG BUILD_ARTERY=true
+# Configuration to build
+ARG BUILD_CONFIG=Release
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
 COPY --from=build /omnetpp/include /omnetpp/include
@@ -83,6 +86,6 @@ ENV SUMO_HOME=/usr/local/share/sumo
 COPY . /cavise/artery
 
 WORKDIR /cavise/artery
-RUN if [[ ${BUILD_ARTERY} ]]; then ./tools/build.py -cb --config ${BUILD_CONFIG}; fi
+RUN if [[ "${BUILD_ARTERY}" == "true" ]]; then ./tools/build.py -cb --config ${BUILD_CONFIG}; fi
 
 CMD ["echo", "'run this interactively'"]

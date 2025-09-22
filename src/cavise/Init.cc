@@ -2,24 +2,26 @@
 #include <mutex>
 
 // plog
-#include <plog/Log.h>
-#include <plog/Severity.h>
-#include <plog/Initializers/RollingFileInitializer.h>
+// #include <plog/Initializers/RollingFileInitializer.h>
+// #include <plog/Log.h>
+// #include <plog/Severity.h>
 
 // local
 #include <cavise/Init.h>
 
-namespace {
+namespace
+{
 
-    static struct State {
-        std::once_flag init;
-    } state;
+static struct State {
+    std::once_flag init;
+} state;
 
-}
+}  // namespace
 
-void cavise::init() {
+void cavise::init()
+{
     std::call_once(state.init, []() {
-        plog::init(plog::Severity::debug, "communication.log", 1024 * 1024, 2);
-		PLOG(plog::info) << "initalized logging, recording API calls";
+        // plog::init(plog::Severity::debug, "communication.log", 1024 * 1024, 2);
+        // PLOG(plog::info) << "initalized logging, recording API calls";
     });
 }
