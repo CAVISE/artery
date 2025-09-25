@@ -52,7 +52,12 @@ ARG CONAN_PROFILE=container.ini
 COPY artery/ ${ARTERY_DIR}
 COPY cavise/ /cavise/cavise
 
-WORKDIR ${ARTERY_DIR} 
-RUN ./tools/build.py -cib --config ${BUILD_CONFIG} --pr:a tools/profiles/container.ini
+COPY --from=build /sumo-prefix/ /usr/local
+COPY --from=build /geographiclib-prefix/ /usr/local
 
-CMD ["echo", "'run this interactively'"]
+RUN cd /usr/local/bin && \
+    curl -sSL -O https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py && \
+    chmod +x clang-tidy-diff.py
+
+ENV PATH=/omnetpp/bin:$PATH
+ENV SUMO_HOME=/usr/local/share/sumo
