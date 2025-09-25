@@ -8,7 +8,7 @@ SHELL ["/bin/bash", "-c"]
 RUN pacman -Syu --noconfirm \
       base-devel cmake git python python-pip \
       bison flex wget curl \
-      libxml2 zlib boost crypto++ fox gdal proj geographiclib xerces-c \
+      libxml2 zlib boost crypto++ fox gdal proj xerces-c \
       ninja pkgconf zeromq protobuf \
       clang clang-tools-extra \
   && pacman -Scc --noconfirm
@@ -19,6 +19,8 @@ FROM setup AS build
 ARG SUMO_TAG=v1_21_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
+# GeographicLib version (github tag)
+ARG GEOGRAPHICLIB_TAG=v2.5
 
 RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
 WORKDIR /omnetpp
@@ -41,6 +43,16 @@ RUN cmake -B build .                                    \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
+WORKDIR /
+RUN git clone --recurse --depth 1 --branch ${GEOGRAPHICLIB_TAG} https://github.com/geographiclib/geographiclib
+WORKDIR /geographiclib
+RUN cmake -B build .                                    \
+        -G Ninja                                        \
+        -DCMAKE_BUILD_CONFIG=Release                    \
+        -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \    
+    && cmake --build build --parallel $(nproc --all)    \
+    && cmake --install build
+
 FROM setup AS final
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
@@ -49,7 +61,9 @@ COPY --from=build /omnetpp/lib /omnetpp/lib
 COPY --from=build /omnetpp/images /omnetpp/images
 COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
-COPY --from=build /sumo-prefix/ /usr/local
+COPY --from=build /sumo-prefix /usr/local
+
+COPY --from=build /geographiclib-prefix /usr/local
 
 RUN cd /usr/local/bin && \
     curl -sSL -O https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py && \
