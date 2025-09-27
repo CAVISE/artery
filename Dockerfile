@@ -50,8 +50,7 @@ RUN cmake -B build .                                    \
         -G Ninja                                        \
         -DCMAKE_BUILD_CONFIG=Release                    \
         -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \
-        -DBUILD_DOCUMENTATION=OFF                       \
-        -DBUILD_MANPAGES=OFF                            \
+        -DCMAKE_INSTALL_MANDIR=share/no-man             \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
