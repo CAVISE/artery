@@ -50,7 +50,6 @@ RUN cmake -B build .                                    \
         -G Ninja                                        \
         -DCMAKE_BUILD_CONFIG=Release                    \
         -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \
-        -DCMAKE_INSTALL_MANDIR=share/no-man             \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
@@ -64,6 +63,7 @@ COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
 COPY --from=build /sumo-prefix /usr/local
 
+RUN rm /usr/local/share/man
 COPY --from=build /geographiclib-prefix /usr/local
 
 RUN cd /usr/local/bin && \
