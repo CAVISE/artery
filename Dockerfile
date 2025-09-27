@@ -51,6 +51,7 @@ RUN cmake -B build .                                    \
         -DCMAKE_BUILD_CONFIG=Release                    \
         -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \
         -DBUILD_DOCUMENTATION=OFF                       \
+        -DBUILD_MANPAGES=OFF                            \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
