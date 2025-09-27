@@ -73,7 +73,7 @@ RUN cd /usr/local/bin && \
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
 
-FROM final AS cache-build
+FROM final AS cached-build
 
 ARG USER=container
 
