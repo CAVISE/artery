@@ -80,6 +80,9 @@ ARG USER=container
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
 
+COPY --from=setup /omnetpp /omnetpp
+COPY --from=setup /usr/local /usr/local
+
 RUN groupadd sudo && useradd -m -G sudo ${USER}
 RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
 
@@ -97,7 +100,5 @@ RUN for cfg in ${BUILD_CONFIGS}; do                 \
         --generator Ninja                           \
         --config "$cfg";                            \
     done
-
-RUN mkdir -p /opt/build-image && mv build/ /opt/build-cache/
 
 USER ${USER}
