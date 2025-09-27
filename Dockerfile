@@ -75,6 +75,14 @@ ENV SUMO_HOME=/usr/local/share/sumo
 
 FROM setup AS cache-artery
 
+ARG USER=container
+
+ENV PATH=/omnetpp/bin:$PATH
+ENV SUMO_HOME=/usr/local/share/sumo
+
+RUN groupadd sudo && useradd -m -G sudo ${USER}
+RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
+
 WORKDIR /workspace/artery
 
 # Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
@@ -91,3 +99,5 @@ RUN for cfg in ${BUILD_CONFIGS}; do                 \
     done
 
 RUN mkdir -p /opt/build-image && mv build/ /opt/build-cache/
+
+USER ${USER}
