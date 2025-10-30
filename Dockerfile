@@ -49,7 +49,8 @@ WORKDIR /geographiclib
 RUN cmake -B build .                                    \
         -G Ninja                                        \
         -DCMAKE_BUILD_CONFIG=Release                    \
-        -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \    
+        -DCMAKE_INSTALL_PREFIX=/geographiclib-prefix    \
+        -DMANDIR=OFF                                    \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
@@ -62,7 +63,6 @@ COPY --from=build /omnetpp/images /omnetpp/images
 COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
 COPY --from=build /sumo-prefix /usr/local
-
 COPY --from=build /geographiclib-prefix /usr/local
 
 RUN cd /usr/local/bin && \
@@ -71,3 +71,33 @@ RUN cd /usr/local/bin && \
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
+
+FROM final AS cached-build
+
+ARG USER=container
+
+COPY --from=final /omnetpp /omnetpp
+COPY --from=final /usr/local /usr/local
+
+ENV PATH=/omnetpp/bin:$PATH
+ENV SUMO_HOME=/usr/local/share/sumo
+
+RUN groupadd sudo && useradd -m -G sudo ${USER}
+RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
+
+WORKDIR /workspace/artery
+
+# Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
+ARG BUILD_CONFIGS="Debug"
+
+COPY . .
+
+RUN for cfg in ${BUILD_CONFIGS}; do                 \
+      echo "building config: $cfg";                 \
+      ./tools/build.py -cb                          \
+        --build-dir /opt/build                      \
+        --generator Ninja                           \
+        --config "$cfg";                            \
+    done
+
+USER ${USER}
