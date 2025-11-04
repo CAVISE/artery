@@ -77,7 +77,7 @@ WORKDIR /workspace/artery
 # Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
 ARG BUILD_CONFIGS="Debug"
 
-COPY . .
+COPY --chown=${USER} . .
 
 RUN for cfg in ${BUILD_CONFIGS}; do                 \
       echo "building config: $cfg";                 \
