@@ -34,6 +34,12 @@ jobs:
 
   build-cached:
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        distribution: [arch-linux, debian]
+
     needs: build-base
     permissions: 
       contents: read
@@ -54,8 +60,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: .github/docker/cached/Dockerfile
+          file: .devcontainer/${{ matrix.distribution }}/Dockerfile
           push: true
-          tags: ghcr.io/cavise/artery:cached
+          target: cached-build
+          tags: ghcr.io/cavise/artery-cached:${{ matrix.distribution }}-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
