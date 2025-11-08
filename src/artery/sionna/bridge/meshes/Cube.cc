@@ -7,9 +7,7 @@
 #include <string>
 #include <tuple>
 
-using namespace artery::sionna;
-
-void meshes::createCubeObject(const std::array<double, 3>& sizes, const std::string& path) {
+void artery::sionna::meshes::createCubeObject(const std::array<double, 3>& sizes, const std::string& path) {
     // Calculate center of cube, then write 8 vertices.
     const auto [hx, hy, hz] = std::make_tuple(sizes[0] * 0.5, sizes[1] * 0.5, sizes[2] * 0.5);
 

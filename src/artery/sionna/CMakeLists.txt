@@ -1,3 +1,5 @@
+find_package(Mitsuba MODULE)
+
 add_artery_feature(sionna
     bridge/Scene.cc
     bridge/Scene.h
@@ -14,4 +16,11 @@ add_artery_feature(sionna
     environment/PhysicalEnvironment.cc
 )
 
-target_link_libraries(sionna PRIVATE pybind11::pybind11 INET Eigen3::Eigen)
+target_link_libraries(sionna PRIVATE
+    INET
+    pybind11::pybind11
+    Eigen3::Eigen
+    Mitsuba::Mitsuba
+)
+
+set_target_properties(sionna PROPERTIES CMAKE_CXX_COMPILE_OPTIONS_VISIBILITY hidden)

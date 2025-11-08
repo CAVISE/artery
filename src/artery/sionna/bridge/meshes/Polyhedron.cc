@@ -11,8 +11,6 @@
 #include <utility>
 #include <vector>
 
-using namespace artery::sionna;
-
 using E3 = Eigen::Vector3d;
 
 namespace {
@@ -220,7 +218,7 @@ namespace {
 
 }  // namespace
 
-void meshes::createPolyhedronObject(const std::vector<std::array<double, 3>>& points, const std::string& path) {
+void artery::sionna::meshes::createPolyhedronObject(const std::vector<std::array<double, 3>>& points, const std::string& path) {
     std::vector<E3> P;
 
     if (const std::size_t n = points.size(); n < 4) {

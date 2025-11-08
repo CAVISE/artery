@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pybind11/pybind11.h>
+#include <mitsuba/core/vector.h>
 
 namespace artery {
 
@@ -11,8 +12,6 @@ namespace artery {
         // that are used to support INET's scene objects' configuration.
         // defined meshes might be found here: https://github.com/NVlabs/sionna-rt/blob/main/src/sionna/rt/scene.py
         class SceneObject {};
-
-        inline static
 
     }  // namespace sionna
 

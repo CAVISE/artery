@@ -15,18 +15,19 @@ namespace artery {
         // Maps RadioMaterialBase, serves to ease later implementations of other materials.
         // This class is abstract - sionna does not allow creation of instances.
         class RadioMaterialBase : public pybind11::object {
-        public:
-            // Move-only ctor. Children are expected to pass their instance here.
-            RadioMaterialBase(pybind11::object object);
-
+        public:            
             // Access outer color of the material.
             Color color() const;
-
+            
             // Access name, given to the material.
             std::string name() const;
-
+            
             // Set outer color of the material.
             void setColor(Color color);
+
+        protected:
+            // Move-only ctor. Children are expected to pass their instance here.
+            RadioMaterialBase(pybind11::object object);
         };
 
         // Maps RadioMaterial from sionna, see https://nvlabs.github.io/sionna/rt/api/radio_materials.html#sionna.rt.RadioMaterial.

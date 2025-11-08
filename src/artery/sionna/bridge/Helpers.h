@@ -1,6 +1,8 @@
 #pragma once
 
 #include <omnetpp/cexception.h>
+#include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 
 #include <type_traits>
@@ -32,9 +34,13 @@ namespace artery {
         }
 
         template <typename T>
-        void set(pybind11::object* obj, const std::string attribute, T value) {
+        void set(pybind11::object* obj, const std::string& attribute, T value) {
             try {
-                pybind11::setattr(obj, attribute, pybind11::cast(value));
+                if constexpr (std::is_base_of<pybind11::handle, T>::value) {
+                    pybind11::setattr(*obj, attribute.c_str(), value);    
+                } else {
+                    pybind11::setattr(*obj, attribute.c_str(), pybind11::cast(std::move(value)));
+                }
             } catch (const pybind11::error_already_set& error) {
                 throw omnetpp::cRuntimeError("sionna: failed set property %s of object at %d", attribute, obj->ptr());
             }

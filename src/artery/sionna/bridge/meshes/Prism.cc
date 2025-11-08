@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-using namespace artery::sionna;
-
 namespace {
 
     // Returns squared area for arbitrary polyhedra.
@@ -123,7 +121,7 @@ namespace {
 }  // namespace
 
 
-void meshes::createPrismObject(const std::vector<std::array<double, 2>>& base_xy, double height, const std::string& path, bool center_z) {
+void artery::sionna::meshes::createPrismObject(const std::vector<std::array<double, 2>>& base_xy, double height, const std::string& path, bool center_z) {
     if (height <= 0.0) {
         throw omnetpp::cRuntimeError("height must be greater than 0, but is %d", height);
     } else if (std::size_t points = base_xy.size(); points < 3) {

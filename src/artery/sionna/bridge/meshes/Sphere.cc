@@ -6,9 +6,7 @@
 #include <fstream>
 #include <string>
 
-using namespace artery::sionna;
-
-void meshes::createSphereObject(double radius, const std::string& path, int slices, int stacks) {
+void artery::sionna::meshes::createSphereObject(double radius, const std::string& path, int slices, int stacks) {
     if (radius <= 0.0) {
         throw omnetpp::cRuntimeError("radius must be greater than 0, but is %d", radius);
     } else if (slices < 3) {
