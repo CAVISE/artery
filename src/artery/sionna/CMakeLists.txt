@@ -21,6 +21,7 @@ target_link_libraries(sionna PRIVATE
     pybind11::pybind11
     Eigen3::Eigen
     Mitsuba::Mitsuba
+    tsl::robin_map
 )
 
-set_target_properties(sionna PROPERTIES CMAKE_CXX_COMPILE_OPTIONS_VISIBILITY hidden)
+set_target_properties(sionna PROPERTIES CXX_VISIBILITY_PRESET hidden)
