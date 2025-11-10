@@ -1,11 +1,12 @@
 find_package(Mitsuba MODULE)
 
+# Ensure domains are shared with Mitsuba, and DrJit in turn.
+set(MI_DOMAIN drjit)
+
 add_artery_feature(sionna
     bridge/Scene.cc
     bridge/Scene.h
-    bridge/Material.cc
     bridge/Material.h
-    bridge/SceneObject.cc
     bridge/SceneObject.h
     bridge/meshes/Cube.cc
     bridge/meshes/Sphere.cc
