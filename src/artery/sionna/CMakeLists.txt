@@ -1,7 +1,5 @@
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 find_package(Mitsuba MODULE)
-
-# Ensure domains are shared with Mitsuba, and DrJit in turn.
-set(MI_DOMAIN drjit)
 
 add_artery_feature(sionna
     bridge/Scene.cc
@@ -19,10 +17,13 @@ add_artery_feature(sionna
 
 target_link_libraries(sionna PRIVATE
     INET
-    pybind11::pybind11
     Eigen3::Eigen
-    Mitsuba::Mitsuba
     tsl::robin_map
+    ${MITSUBA_LIBRARIES}
 )
 
 set_target_properties(sionna PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+if(WITH_TESTS)
+    add_subdirectory(tests)
+endif()

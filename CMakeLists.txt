@@ -33,6 +33,8 @@ option(WITH_SIONNA "Build Artery with Sionna integration" OFF)
 option(WITH_SCENARIOS "Build Artery with scenarios" ON)
 option(VSCODE_LAUNCH_INTEGRATION "Generate VS Code configuration for debugging Artery (requires debug build)" OFF)
 
+option(WITH_TESTS "Build Artery tests" OFF)
+
 ##############################
 # Artery build configuration #
 ##############################
@@ -78,6 +80,10 @@ endif()
 
 if(SEA_V2X_FOUND)
     mark_as_advanced(SEA_V2X_DIR)
+endif()
+
+if(WITH_TESTS)
+    find_package(GTest)
 endif()
 
 add_subdirectory(extern)
