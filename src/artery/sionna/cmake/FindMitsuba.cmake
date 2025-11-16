@@ -92,12 +92,11 @@ endforeach()
 add_library(mi INTERFACE)
 add_library(Mitsuba::mi ALIAS mi)
 
-target_link_libraries(mi INTERFACE
-    drjit
-    ${MITSUBA_LIBRARIES}
+set_target_properties(mi
+    PROPERTIES
+        INTERFACE_LINK_LIBRARIES "drjit;${MITSUBA_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${MITSUBA_INCLUDE_DIRS}"
 )
-
-target_include_directories(mi INTERFACE ${MITSUBA_INCLUDE_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Mitsuba
