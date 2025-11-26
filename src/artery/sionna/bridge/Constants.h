@@ -7,7 +7,6 @@
 
 #include "Helpers.h"
 
-
 namespace artery {
 
     namespace sionna {

@@ -21,6 +21,14 @@ find_package(drjit CONFIG HINTS ${_python_site_packages_path}/drjit/cmake REQUIR
 # Nanobind is required to access Mitsuba objects later
 find_package(nanobind CONFIG HINTS ${_python_site_packages_path}/nanobind/cmake REQUIRED)
 
+#########
+# DrJit #
+#########
+
+# DrJit does not provide aliases for imported targets.
+add_library(drjit::drjit ALIAS drjit)
+add_library(drjit::drjit-core ALIAS drjit-core)
+
 ###############################
 # Include directory discovery #
 ###############################
@@ -61,16 +69,17 @@ list(APPEND MITSUBA_INCLUDE_DIRS ${NB_DIR}/include)
 ######################################
 
 # To use with nanobind.
-set(MI_DOMAIN drjit)
+set(_domain drjit)
 
 # Mitsuba compiles python bindings by MI_VARIANTS, which are types
 # that are used in Mitsuba core library. All those variants are compiled into
 # Mitsuba core library, and get chosen at runtime per user needs.
 
 set(MITSUBA_LIBRARIES )
-set(_libraries mitsuba mitsuba-ext nanobind-${MI_DOMAIN})
+set(_libraries mitsuba nanobind-${_domain})
 
 foreach(_library IN ITEMS ${_libraries})
+    unset(_library_path CACHE)
     find_library(_library_path NAMES ${_library} HINTS ${_mi_root} NO_DEFAULT_PATH REQUIRED)
 
     set(_library_name mitsuba-${_library})
@@ -94,7 +103,7 @@ add_library(Mitsuba::mi ALIAS mi)
 
 set_target_properties(mi
     PROPERTIES
-        INTERFACE_LINK_LIBRARIES "drjit;${MITSUBA_LIBRARIES}"
+        INTERFACE_LINK_LIBRARIES "drjit;drjit-core;${MITSUBA_LIBRARIES}"
         INTERFACE_INCLUDE_DIRECTORIES "${MITSUBA_INCLUDE_DIRS}"
 )
 

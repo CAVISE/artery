@@ -1,2 +1,3 @@
+setuptools
 sionna-rt
 nanobind
