@@ -3,10 +3,11 @@
 #include <nanobind/nanobind.h>
 
 #include <mitsuba/core/fwd.h>
+#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/config.h>
 
-#include <mitsuba/core/fwd.h>
+#include <artery/sionna/bridge/Fwd.h>
 
 namespace nb = nanobind;
 
@@ -44,11 +45,30 @@ TEST(PythonEmbedTest, TestTypesLaidOutProperly) {
     using Float = float;
     using Spectrum = mitsuba::Color<Float, 3>;
 
-    using namespace mitsuba;
-    MI_IMPORT_CORE_TYPES();
+    // Max __VA_ARGS__ support is 31 for this macro.
+    SIONNA_IMPORT_CORE_TYPES(
+        Vector1i, Vector2i, Vector3i, Vector4i,
+        Vector1u, Vector2u, Vector3u, Vector4u,
+        Vector1f, Vector2f, Vector3f, Vector4f,
+        Vector1d, Vector2d, Vector3d, Vector4d,
+        Point1i, Point2i, Point3i, Point4i,
+        Point1u, Point2u, Point3u, Point4u,
+        Point1f, Point2f, Point3f, Point4f
+    )
+
+    SIONNA_IMPORT_CORE_TYPES(
+        Point1d, Point2d, Point3d, Point4d,
+        Normal3f, Normal3d,
+        Matrix2f, Matrix2d, Matrix3f, Matrix3d, Matrix4f, Matrix4d,
+        Color1f, Color3f, Color1d, Color3d
+    )
+
+    ASSERT_EQ(MI_DEFAULT_VARIANT, "scalar_rgb")
+        << "Default variant is not scalar_rgb, which means this test will ineventby fail. "
+        << "Please recompile with different Mitsuba presets.";
 
     auto mi = nb::module_::import_("mitsuba");
-    mi.attr("set_variant")("scalar_rgb");
+    mi.attr("set_variant")(MI_DEFAULT_VARIANT);
 
     checkCoreTypeLayout<Vector1i>("Vector1i");
     checkCoreTypeLayout<Vector2i>("Vector2i");

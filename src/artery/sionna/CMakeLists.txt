@@ -46,26 +46,28 @@ target_link_libraries(sionna-core
         tsl::robin_map
 )
 
-# add_artery_feature(sionna
-#     bridge/Scene.h
-#     bridge/Material.h
-#     bridge/Constants.h
-#     bridge/SceneObject.h
-#     bridge/meshes/Cube.cc
-#     bridge/meshes/Sphere.cc
-#     bridge/meshes/Prism.cc
-#     bridge/meshes/Polyhedron.cc
-#     bridge/meshes/Meshes.h
-#     environment/PhysicalEnvironment.h
-#     environment/PhysicalEnvironment.cc
-# )
+add_artery_feature(sionna
+    bridge/Scene.h
+    bridge/Material.h
+    bridge/Constants.h
+    bridge/SceneObject.h
+    bridge/meshes/Cube.cc
+    bridge/meshes/Sphere.cc
+    bridge/meshes/Prism.cc
+    bridge/meshes/Polyhedron.cc
+    bridge/meshes/Meshes.h
+    environment/Ground.h
+    environment/PathLoss.h
+    environment/PathLoss.cc
+    environment/PhysicalEnvironment.h
+    environment/PhysicalEnvironment.cc
+)
 
-# target_link_libraries(sionna PRIVATE
-#     INET
-#     pybind11::embed
-#     Eigen3::Eigen
-#     Artery::sionna-core
-# )
+target_link_libraries(sionna PRIVATE
+    INET
+    Eigen3::Eigen
+    Artery::sionna-core
+)
 
 if(WITH_TESTS)
     add_subdirectory(tests)

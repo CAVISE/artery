@@ -16,9 +16,6 @@ namespace artery {
         public:
             PhysicalEnvironment() = default;
 
-            // API: query the RT scene
-            sionna::Scene* getScene();
-
             // inet::physicalenvironment::IPhysicalEnvironment implementation
             virtual inet::physicalenvironment::IObjectCache* getObjectCache() const override;
             virtual inet::physicalenvironment::IGround* getGround() const override;
@@ -48,8 +45,6 @@ namespace artery {
             void initializeSceneWithConfig();
 
         private:
-            std::unique_ptr<sionna::Scene> scene_;
-
             struct Parameters {
                 std::string rtBackend;
                 std::string materialSet;

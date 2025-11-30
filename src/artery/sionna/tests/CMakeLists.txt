@@ -14,7 +14,6 @@ add_executable(arch-flags-unix ArchFlagsUnix.cc)
 
 target_link_libraries(test_mitsuba_linkage
     PRIVATE
-        pybind11::embed
         GTest::gtest
         Artery::sionna-core
 )

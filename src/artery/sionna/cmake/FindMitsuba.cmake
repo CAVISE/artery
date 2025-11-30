@@ -98,15 +98,6 @@ foreach(_library IN ITEMS ${_libraries})
     )
 endforeach()
 
-add_library(mi INTERFACE)
-add_library(Mitsuba::mi ALIAS mi)
-
-set_target_properties(mi
-    PROPERTIES
-        INTERFACE_LINK_LIBRARIES "drjit;drjit-core;${MITSUBA_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${MITSUBA_INCLUDE_DIRS}"
-)
-
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Mitsuba
     REQUIRED_VARS MITSUBA_INCLUDE_DIRS MITSUBA_LIBRARIES

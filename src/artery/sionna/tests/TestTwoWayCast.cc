@@ -1,12 +1,13 @@
+#include <Python.h>
+
 #include <gtest/gtest.h>
-#include <pybind11/embed.h>
 #include <nanobind/nanobind.h>
 
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/config.h>
+#include <pylifecycle.h>
 
-namespace py = pybind11;
 namespace nb = nanobind;
 
 TEST(PythonEmbedTest, CastMitsubaRay) {
@@ -66,6 +67,7 @@ TEST(PythonEmbedTest, CastMitsubaRay) {
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
-    py::scoped_interpreter guard;
-    return RUN_ALL_TESTS();
+    Py_Initialize();
+    int ret = RUN_ALL_TESTS();
+    Py_Finalize();
 }
