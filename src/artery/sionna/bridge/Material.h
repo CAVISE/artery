@@ -9,6 +9,7 @@
 #include <mitsuba/core/properties.h>
 
 #include "Constants.h"
+#include "artery/sionna/bridge/Helpers.h"
 
 
 namespace artery {
@@ -103,7 +104,7 @@ MI_VARIANT artery::sionna::RadioMaterial<Float, Spectrum> artery::sionna::RadioM
     using namespace nanobind::literals;
 
     if (relativePermeability != 1.0) {
-        throw omnetpp::cRuntimeError("sionna::RadioMaterial is non-magnetic, relativePermeability should be 1.0, but is %f", relativePermeability);
+        throw wrapRuntimeError("sionna::RadioMaterial is non-magnetic, relativePermeability should be 1.0, but is %f", relativePermeability);
     }
 
     nb::object cb = nb::none();

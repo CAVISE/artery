@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <pybind11/embed.h>
 #include <nanobind/nanobind.h>
 
 #include <mitsuba/core/fwd.h>

@@ -9,15 +9,12 @@ add_executable(test_mitsuba_linkage
     TestStructAlignments.cc
 )
 
-# Prints arch flags.
-add_executable(arch-flags-unix ArchFlagsUnix.cc)
-
 target_link_libraries(test_mitsuba_linkage
     PRIVATE
         GTest::gtest
-        Artery::sionna-core
+        Artery::sionna::helpers
 )
 
-target_compile_options(arch-flags-unix PRIVATE -march=native)
+sionna_target_compile_detached(test_mitsuba_linkage)
 
 add_test(NAME test_cmake_configuration COMMAND test_mitsuba_linkage)

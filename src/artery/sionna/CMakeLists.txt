@@ -3,41 +3,107 @@
 ##########
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# Sionna is based on Mitsuba rendering library, which provides native cpp API.
 find_package(Mitsuba MODULE)
 
-###########
-# Options #
-###########
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-march=native HAVE_NATIVE_ARCH_SUPPORT)
 
-set(SIONNA_COMPILATION_FLAGS "-mavx2" CACHE STRING "Additional compilation arguments. Make sure to adjust this option to match Mitsuba's")
+if(NOT HAVE_NATIVE_ARCH_SUPPORT)
+    message(WARNING "Your compiler does not support optimizing for current arch. This may break linkage with Mitsuba!")
+    set(SIONNA_CXX_COMPILER_FLAGS )
+else()
+    set(SIONNA_CXX_COMPILER_FLAGS $<$<COMPILE_LANGUAGE:CXX>:-march=native>)
+endif()
+
+if(NOT DEFINED ENV{VIRTUAL_ENV})
+    message(SEND_ERROR 
+        "It looks like you are not use virtual environment - which normally means something went wrong. "
+        "If you really want to continue, set VIRTUAL_ENV environment variable to system python home."
+    )
+elseif(NOT IS_DIRECTORY $ENV{VIRTUAL_ENV})
+    message(SEND_ERROR "Cannot find virtual environment directory, aborting.")
+endif()
+
+# Compile target detached from OmnetPP runtime dependencies.
+
+macro(sionna_target_compile_detached target)
+    if(NOT TARGET ${target})
+        message(SEND_ERROR "sionna_target_compile_detached: could not find target ${target}")
+    endif()
+    target_compile_definitions(${target} PRIVATE SIONNA_OMNETPP_DETACHED)
+endmacro()
+
+# This variable hints Sionna bridge at virtual environment, as we know it
+# during configuration phase. At runtime, Sionna should fall back to these if
+# all other options fail.
+
+set(SIONNA_VIRTUAL_ENV $ENV{VIRTUAL_ENV})
 
 ###############
 # Main target #
 ###############
 
-# Sionna dummy target that populates all settings that most Sionna targets would prefer.
-add_library(sionna-core INTERFACE)
-add_library(Artery::sionna-core ALIAS sionna-core)
+# Dummy that just populates settings.
+add_library(sionna-bridge-common INTERFACE)
 
-target_include_directories(sionna-core
-    INTERFACE
-        $<TARGET_PROPERTY:Artery::Core,INTERFACE_INCLUDE_DIRECTORIES>
+# Main target.
+add_artery_feature(sionna-bridge)
+
+# Composite targets, some of them may be used independently.
+add_library(sionna-bridge-inet STATIC)
+add_library(sionna-bridge-core STATIC)
+add_library(sionna-bridge-helpers STATIC)
+
+# Aliases.
+add_library(Artery::sionna::common ALIAS sionna-bridge-common)
+add_library(Artery::sionna::bridge ALIAS sionna-bridge)
+add_library(Artery::sionna::inet ALIAS sionna-bridge-inet)
+add_library(Artery::sionna::core ALIAS sionna-bridge-core)
+add_library(Artery::sionna::helpers ALIAS sionna-bridge-helpers)
+
+target_sources(sionna-bridge-inet
+    PRIVATE
+        environment/PathLoss.cc
+        environment/PhysicalEnvironment.cc
+    PUBLIC
+        environment/Ground.h
+        environment/PathLoss.h
+        environment/PhysicalEnvironment.h
 )
 
-target_compile_definitions(sionna-core
+target_sources(sionna-bridge-core
+    PRIVATE
+        bridge/meshes/Cube.cc
+        bridge/meshes/Sphere.cc
+        bridge/meshes/Prism.cc
+        bridge/meshes/Polyhedron.cc
+    PUBLIC
+        bridge/Scene.h
+        bridge/Material.h
+        bridge/Constants.h
+        bridge/SceneObject.h
+        bridge/meshes/Meshes.h
+)
+
+target_sources(sionna-bridge-helpers 
+    PRIVATE
+        bridge/Helpers.cc
+    PUBLIC
+        bridge/Fwd.h
+        bridge/Helpers.h
+)
+
+target_compile_options(sionna-bridge-common INTERFACE ${SIONNA_CXX_COMPILER_FLAGS})
+target_compile_definitions(sionna-bridge-common INTERFACE SIONNA_VENV_HINT="${SIONNA_VIRTUAL_ENV}")
+target_include_directories(sionna-bridge-common INTERFACE $<TARGET_PROPERTY:Artery::Core,INTERFACE_INCLUDE_DIRECTORIES>)
+
+target_compile_definitions(sionna-bridge-common
     INTERFACE
         NB_SHARED
         NB_DOMAIN=drjit
 )
 
-target_compile_options(sionna-core
-    INTERFACE
-        ${SIONNA_COMPILATION_FLAGS}
-)
-
-target_link_libraries(sionna-core
+target_link_libraries(sionna-bridge-common
     INTERFACE
         Mitsuba::nanobind-drjit
         Mitsuba::mitsuba
@@ -46,27 +112,32 @@ target_link_libraries(sionna-core
         tsl::robin_map
 )
 
-add_artery_feature(sionna
-    bridge/Scene.h
-    bridge/Material.h
-    bridge/Constants.h
-    bridge/SceneObject.h
-    bridge/meshes/Cube.cc
-    bridge/meshes/Sphere.cc
-    bridge/meshes/Prism.cc
-    bridge/meshes/Polyhedron.cc
-    bridge/meshes/Meshes.h
-    environment/Ground.h
-    environment/PathLoss.h
-    environment/PathLoss.cc
-    environment/PhysicalEnvironment.h
-    environment/PhysicalEnvironment.cc
+target_link_libraries(sionna-bridge
+    PUBLIC
+        sionna-bridge-inet
+        sionna-bridge-core
+        sionna-bridge-helpers
 )
 
-target_link_libraries(sionna PRIVATE
-    INET
-    Eigen3::Eigen
-    Artery::sionna-core
+target_link_libraries(sionna-bridge-inet
+    PUBLIC
+        INET
+        sionna-bridge-core
+        sionna-bridge-helpers
+        sionna-bridge-common
+)
+
+target_link_libraries(sionna-bridge-core
+    PUBLIC
+        Eigen3::Eigen
+        sionna-bridge-helpers
+        sionna-bridge-common
+)
+
+target_link_libraries(sionna-bridge-helpers
+    PUBLIC
+        Python::Python
+        sionna-bridge-common
 )
 
 if(WITH_TESTS)

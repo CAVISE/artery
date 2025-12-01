@@ -1,12 +1,11 @@
-#include <Python.h>
-
 #include <gtest/gtest.h>
 #include <nanobind/nanobind.h>
 
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/config.h>
-#include <pylifecycle.h>
+
+#include <artery/sionna/bridge/Helpers.h>
 
 namespace nb = nanobind;
 
@@ -67,7 +66,6 @@ TEST(PythonEmbedTest, CastMitsubaRay) {
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
-    Py_Initialize();
-    int ret = RUN_ALL_TESTS();
-    Py_Finalize();
+    artery::sionna::ScopedInterpreter guard(SIONNA_VENV_HINT);
+    return RUN_ALL_TESTS();
 }
