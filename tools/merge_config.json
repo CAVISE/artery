@@ -1,0 +1,11 @@
+{
+  "prefer_theirs": [
+    "src/artery"
+  ],
+  "prefer_ours": [
+    "src/cavise"
+  ],
+  "default_behavior": "manual_resolution",
+  "upstream_remote": "upstream",
+  "upstream_branch": "master"
+}
