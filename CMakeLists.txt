@@ -72,7 +72,6 @@ include(GNUInstallDirs)
 find_package(Protobuf QUIET)
 find_package(PkgConfig MODULE QUIET)
 find_package(SEA_V2X CONFIG QUIET)
-find_package(Eigen3 CONFIG QUIET)
 
 if(PkgConfig_FOUND)
     pkg_check_modules(ZEROMQ QUIET IMPORTED_TARGET libzmq)

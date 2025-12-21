@@ -51,8 +51,8 @@ add_artery_feature(sionna-bridge)
 
 # Composite targets, some of them may be used independently.
 add_library(sionna-bridge-inet STATIC)
-add_library(sionna-bridge-core STATIC)
-add_library(sionna-bridge-helpers STATIC)
+add_library(sionna-bridge-core INTERFACE)
+add_library(sionna-bridge-helpers INTERFACE)
 
 # Aliases.
 add_library(Artery::sionna::common ALIAS sionna-bridge-common)
@@ -72,23 +72,16 @@ target_sources(sionna-bridge-inet
 )
 
 target_sources(sionna-bridge-core
-    PRIVATE
-        bridge/meshes/Cube.cc
-        bridge/meshes/Sphere.cc
-        bridge/meshes/Prism.cc
-        bridge/meshes/Polyhedron.cc
-    PUBLIC
+    INTERFACE
         bridge/Scene.h
         bridge/Material.h
         bridge/Constants.h
         bridge/SceneObject.h
-        bridge/meshes/Meshes.h
+        bridge/Meshes.h
 )
 
-target_sources(sionna-bridge-helpers 
-    PRIVATE
-        bridge/Helpers.cc
-    PUBLIC
+target_sources(sionna-bridge-helpers
+    INTERFACE
         bridge/Fwd.h
         bridge/Helpers.h
 )
@@ -115,8 +108,8 @@ target_link_libraries(sionna-bridge-common
 target_link_libraries(sionna-bridge
     PUBLIC
         sionna-bridge-inet
-        sionna-bridge-core
         sionna-bridge-helpers
+        sionna-bridge-core
 )
 
 target_link_libraries(sionna-bridge-inet
@@ -128,14 +121,13 @@ target_link_libraries(sionna-bridge-inet
 )
 
 target_link_libraries(sionna-bridge-core
-    PUBLIC
-        Eigen3::Eigen
+    INTERFACE
         sionna-bridge-helpers
         sionna-bridge-common
 )
 
 target_link_libraries(sionna-bridge-helpers
-    PUBLIC
+    INTERFACE
         Python::Python
         sionna-bridge-common
 )

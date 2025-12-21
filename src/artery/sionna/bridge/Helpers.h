@@ -6,7 +6,7 @@
 
 #include <nanobind/nanobind.h>
 
-#if defined(SIONNA_OMNETPP_DETACHED)
+#if not defined(SIONNA_OMNETPP_DETACHED)
     #include <omnetpp/cexception.h>
 #else
     #include <stdexcept>
@@ -15,18 +15,19 @@
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
 
-/**
- * @brief Throw an exception - either one of OmnetPP's or runtime error.
- * @return auto constructed exception object.
- */
 template<typename... Args>
-auto wrapRuntimeError(const char* fmt, Args... args) {
-    #if defined(SIONNA_OMNETPP_DETACHED)
-        return omnetpp::cRuntimeError(fmt, args...);
+auto wrapRuntimeError(const std::string& fmt, Args... args) {
+    #if not defined(SIONNA_OMNETPP_DETACHED)
+        return omnetpp::cRuntimeError(fmt.c_str(), args...);
     #else
-        char buf[256];
-        std::snprintf(buf, sizeof(buf), fmt, args...);
-        return std::runtime_error(buf);
+        if constexpr (sizeof...(args) == 0) {
+            return std::runtime_error(fmt);
+        } else if (const int size = std::snprintf(nullptr, 0, fmt.c_str(), args...) + 1; size > 0) {
+            auto buf = std::make_unique<char[]>(size);
+            std::snprintf(buf.get(), size, fmt.c_str(), args...);
+            return std::runtime_error(buf.get());
+        }
+        return std::runtime_error("error occurred: failed to format: std::snprintf returned invalid size");
     #endif
 }
 
@@ -42,14 +43,33 @@ public:
      * @brief Initialize interpreter, considering \ref root as root directory.
      * @param root prefix for python installation.
      */
-    ScopedInterpreter(const std::filesystem::path& root, bool verbose = true);
-    ~ScopedInterpreter();
+    ScopedInterpreter(const std::filesystem::path& root, bool verbose = true) {
+        namespace nb = nanobind;
+
+        initialize(root);
+        try {
+            Py_InitializeFromConfig(&config_);            
+        } catch (const nb::python_error& error) {
+            PyConfig_Clear(&config_);
+            throw wrapRuntimeError("sionna: failed to start interpreter, reported error: %s", error.what());
+        }
+
+        PyConfig_Clear(&config_);
+    }
+
+    ~ScopedInterpreter() {
+        Py_Finalize();
+    }
 
     // You may override the functions below to customize how this class
     // manages paths to various directories.
+    virtual path program(const path& root) const {
+        return root / "bin" / "python3";
+    }
 
-    virtual path program(const path& root) const;
-    virtual path pythonpath(const path& root) const;
+    virtual path pythonpath(const path& root) const {
+        return root.parent_path();
+    }
 
 protected:
 
@@ -58,7 +78,19 @@ protected:
      * Update \ref config_ with options you want. This method is invoked before python 
      * is initialized, so take care: CPython API usage is heavily limited.
      */
-    virtual void initialize(const path& root);
+    virtual void initialize(const path& root) {
+        PyConfig_InitPythonConfig(&config_);
+    
+        // Program name is usually enough - the rest is discovered by python automatically.
+        std::wstring program = this->program(root).wstring();
+        PyConfig_SetString(&config_, &config_.program_name, program.c_str());
+
+        // Add project root to PYTHONPATH when running in-place.
+        #if not defined(NDEBUG)
+            std::wstring python = this->pythonpath(root).wstring();
+            PyConfig_SetString(&config_, &config_.pythonpath_env, python.c_str());
+        #endif
+    }
 
 private:
     PyConfig config_;
