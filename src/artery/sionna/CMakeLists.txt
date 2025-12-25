@@ -75,7 +75,7 @@ target_sources(sionna-bridge-core
     INTERFACE
         bridge/Scene.h
         bridge/Material.h
-        bridge/Constants.h
+        bridge/Defaulted.h
         bridge/SceneObject.h
         bridge/Meshes.h
 )

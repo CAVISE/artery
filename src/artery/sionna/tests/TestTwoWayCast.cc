@@ -63,9 +63,3 @@ TEST(PythonEmbedTest, CastMitsubaRay) {
     EXPECT_FLOAT_EQ(cppRay.d.y(), 0.0f);
     EXPECT_FLOAT_EQ(cppRay.d.z(), 0.0f);
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    artery::sionna::ScopedInterpreter guard(SIONNA_VENV_HINT);
-    return RUN_ALL_TESTS();
-}

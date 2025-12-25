@@ -5,7 +5,7 @@
 #include <mitsuba/core/platform.h>
 
 /**
- * @brief Forward declarations for Sionna bridge classes.
+ * @file Forward declarations for Sionna bridge classes.
  * We follow Mitsuba library style, which forward declares all classes
  * and uses special struct for convenient aliasing in this library and its consumers.
  */

@@ -111,9 +111,3 @@ TEST_F(SionnaLightTest, GeneratedCubeObjLoadableByMitsuba) {
     //     sensor->film()->write(mitsuba::filesystem::path(path));
     // ) << "Mitsuba failed to write rendered image to a file.";
 }
-
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    artery::sionna::ScopedInterpreter guard(SIONNA_VENV_HINT);
-    return RUN_ALL_TESTS();
-}
