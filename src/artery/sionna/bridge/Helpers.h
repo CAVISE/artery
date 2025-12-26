@@ -118,7 +118,7 @@ T access(const nanobind::object obj, const std::string& attribute, bool convert 
     try {
         return nb::cast<T>(obj.attr(attribute.c_str()), convert);
     } catch (const nb::python_error& error) {
-        throw wrapRuntimeError("sionna: failed to convert property %s for object at %p", attribute.c_str(), obj.ptr());
+        throw wrapRuntimeError("sionna: failed to convert property \"%s\" for object at %p: %s", attribute.c_str(), obj.ptr(), error.what());
     }
 }
 
@@ -135,7 +135,7 @@ void set(nanobind::object obj, const std::string& attribute, T value)
             nb::setattr(obj, attribute.c_str(), nb::cast(std::move(value)));
         }
     } catch (const nb::python_error& error) {
-        throw wrapRuntimeError("sionna: failed to set property %s of object at %p", attribute.c_str(), obj.ptr());
+        throw wrapRuntimeError("sionna: failed to set property \"%s\" of object at %p: %s", attribute.c_str(), obj.ptr(), error.what());
     }
 }
 

@@ -74,29 +74,63 @@ constexpr Key operator""_a(const char* s, std::size_t /* size */)
     return Key{s};
 }
 
-template <typename T>
-inline void put(nanobind::dict& d, const char* key, const typename Defaulted<T>::Argument& a)
+template<typename>
+struct IsDefaulted : std::false_type {
+};
+
+template<typename T>
+struct IsDefaulted<Defaulted<T>> : std::true_type {
+};
+
+template<typename V>
+inline constexpr bool IsDefaultedV = IsDefaulted<std::decay_t<V>>::value;
+
+template<typename>
+struct IsDefaultedArgument : std::false_type {
+};
+
+template<typename T>
+struct IsDefaultedArgument<std::variant<T, Defaulted<T>>> : std::true_type {
+};
+
+template<typename V>
+inline constexpr bool IsDefaultedArgumentV = IsDefaultedArgument<std::decay_t<V>>::value;
+
+template<typename>
+struct DefaultedArgumentValueType;
+
+template<typename T>
+struct DefaultedArgumentValueType<std::variant<T, Defaulted<T>>> {
+    using type = T;
+};
+
+template<typename T>
+inline void emplace(nanobind::dict& d, const char* key, T&& v)
 {
-    if (T v = std::get_if<T>(&a); v) {
-        d[key] = *v;
+    using D = std::decay_t<T>;
+
+    if constexpr (IsDefaultedV<D>) {
+        // Let python handle defaults.
+    } else if constexpr (IsDefaultedArgumentV<D>) {
+        using ValueType = typename DefaultedArgumentValueType<D>::type;
+
+        const D& view = v;
+        if (const ValueType* value = std::get_if<ValueType>(&view)) {
+            d[key] = *value;
+        }
+    } else {
+        d[key] = std::forward<T>(v);
     }
-
-    // Omit key here, as python constant should already be provided.
 }
 
-template <typename V>
-inline void put(nanobind::dict& d, const char* key, V&& v)
-{
-    d[key] = std::forward<V>(v);
-}
-
-template <typename... Items>
+template<typename... Items>
 inline nanobind::dict kwargs(Items&&... items)
 {
     nanobind::dict d;
-    (put(d, items.first, items.second), ...);
+    (emplace(d, items.first, std::forward<decltype(items.second)>(items.second)), ...);
     return d;
 }
+
 
 NAMESPACE_END(literals)
 
