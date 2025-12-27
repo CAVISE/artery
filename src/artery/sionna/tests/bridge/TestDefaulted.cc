@@ -18,6 +18,8 @@ class DefaultedTest : public testing::Test
 public:
     void SetUp() override
     {
+        // For some reason WORKING_DIRECTORY is not enough, we have to append to system path
+        // manually.
         auto sys = nb::module_::import_("sys");
         auto cwd = std::filesystem::current_path().string();
         sys.attr("path").attr("insert")(0, cwd);
@@ -26,6 +28,16 @@ public:
         echo_ = std::make_unique<nb::object>(mod_->attr("echo_kwargs"));
     }
 
+    bool dictContains(nb::dict d, const std::string& attribute) {
+        return nb::cast<bool>(d.attr("__contains__")(attribute.c_str()));
+    }
+
+    template<typename T>
+    T dictFetch(nb::dict d, const std::string& attribute) {
+        return nb::cast<T>(d[attribute.c_str()]);
+    }
+
+    // Handles do not have defaults - so have to allocate them.
     std::unique_ptr<nb::object> echo_;
     std::unique_ptr<nb::module_> mod_;
 };
@@ -36,12 +48,16 @@ TEST_F(DefaultedTest, PassingRegularArgsWorks)
 {
     using namespace artery::sionna::literals;
 
-    auto kw = kwargs("a"_a = 1, "b"_a = 2.5, "s"_a = nb::str("hello"));
+    auto kw = kwargs("integer"_a = 1, "double"_a = 2.5, "string"_a = nb::str("hello"));
     nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
-    EXPECT_EQ(nb::cast<int>(d["a"]), 1);
-    EXPECT_DOUBLE_EQ(nb::cast<double>(d["b"]), 2.5);
-    EXPECT_EQ(nb::cast<std::string>(d["s"]), "hello");
+    ASSERT_TRUE(dictContains(d, "integer"));
+    ASSERT_TRUE(dictContains(d, "double"));
+    ASSERT_TRUE(dictContains(d, "string"));
+
+    EXPECT_EQ(dictFetch<int>(d, "integer"), 1);
+    EXPECT_DOUBLE_EQ(dictFetch<double>(d, "double"), 2.5);
+    EXPECT_EQ(dictFetch<std::string>(d, "string"), "hello");
 }
 
 TEST_F(DefaultedTest, ResolveWorks)
@@ -69,17 +85,17 @@ TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
     D defaulted{"mod", "GLOBAL_CONST"};
 
     {
+        // Make sure kwargs() resolves Defaulted type - if passed
+        // to caster, this will break nanobind core library (nanobind-drjit).
         auto kw = kwargs("x"_a = defaulted, "y"_a = 42);
 
         nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
-        bool hasX = nb::cast<bool>(d.attr("__contains__")("x"));
-        bool hasY = nb::cast<bool>(d.attr("__contains__")("y"));
+        // Default arguments are left out intentionally.
+        ASSERT_FALSE(dictContains(d, "x"));
+        ASSERT_TRUE(dictContains(d, "y"));
 
-        EXPECT_FALSE(hasX);
-        EXPECT_TRUE(hasY);
-
-        EXPECT_EQ(nb::cast<int>(d["y"]), 42);
+        EXPECT_EQ(dictFetch<int>(d, "y"), 42);
     }
 
     {
@@ -88,9 +104,7 @@ TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
         auto kw = kwargs("x"_a = x);
         nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
-        bool hasX = nb::cast<bool>(d.attr("__contains__")("x"));
-        EXPECT_TRUE(hasX);
-
-        EXPECT_EQ(nb::cast<int>(d["x"]), 99);
+        ASSERT_TRUE(dictContains(d, "x"));
+        EXPECT_EQ(dictFetch<int>(d, "x"), 99);
     }
 }
