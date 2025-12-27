@@ -4,29 +4,23 @@ ARG TAG=base-devel
 FROM archlinux:${TAG} AS setup
 
 SHELL [ "/bin/bash", "-c"]
-
-RUN pacman -Syu --noconfirm     \
-    --disable-download-timeout  \
-    cmake python3 python-pip    \
-    xerces-c fox gdal proj      \
-    gl2ps jre17-openjdk swig    \
-    maven eigen flex bison git  \
-    gcc sdl2 libsm openmp       \
-    openscenegraph qt5-base     \
-    pacman-contrib sudo         \
-    boost crypto++ xorg         \
-    ttf-ubuntu-font-family      \
-    ninja protobuf cppzmq       \
-    && paccache -r -k 0
+RUN apt-get update && apt-get install -y        \
+    bison build-essential flex git python3-dev  \
+    libxml2-dev wget zlib1g-dev cmake           \
+    libboost-all-dev libcrypto++-dev            \
+    libfox-1.6-dev libgdal-dev libproj-dev      \
+    libgeographiclib-dev libxerces-c-dev        \
+    ninja-build curl python3-venv clang-tidy    \
+    pkg-config libzmq5-dev libprotobuf-dev      \
+    protobuf-compiler                           \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM setup AS build
 
 # SUMO version (github tag)
-ARG SUMO_TAG=v1_23_1
+ARG SUMO_TAG=v1_21_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
-# GeographicLib version (github tag)
-ARG GEOGRAPHICLIB_TAG=v2.5
 
 RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
 WORKDIR /omnetpp
@@ -49,11 +43,6 @@ RUN cmake -B build .                                    \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 
-WORKDIR /
-RUN git clone --recurse --depth 1 --branch ${GEOGRAPHICLIB_TAG} https://github.com/geographiclib/geographiclib
-WORKDIR /geographiclib
-RUN cmake -B build . && cmake --build build --parallel $(nproc --all)
-
 FROM setup AS final
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
@@ -70,19 +59,3 @@ RUN cd /usr/local/bin && \
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
-
-# Artery build params
-ARG ARTERY_DIR=/cavise/artery
-ARG BUILD_CONFIG=Release
-
-COPY artery/ ${ARTERY_DIR}
-COPY cavise/ /cavise/cavise
-
-COPY --from=build /geographiclib /geographiclib
-RUN cmake --install /geographiclib/build
-
-WORKDIR ${ARTERY_DIR} 
-# RUN ./tools/build.py -cb --config ${BUILD_CONFIG}
-RUN cmake -B /cavise/artery/build/Release -S /cavise/artery -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCMAKE_BUILD_TYPE=Release --trace
-
-CMD ["echo", "'run this interactively'"]

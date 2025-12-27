@@ -1,12 +1,16 @@
 # Distribution tag
 ARG TAG=bookworm
+
 FROM debian:${TAG} AS setup
+
 SHELL [ "/bin/bash", "-c"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash-completion bison build-essential cmake flex git git-lfs python3 python3-pip \
     libboost-all-dev libcrypto++-dev libfox-1.6-dev libgdal-dev libgeographiclib-dev \
     libopenscenegraph-dev libproj-dev libqt5opengl5-dev libxerces-c-dev \
-    ninja-build qtbase5-dev sudo \
+    ninja-build qtbase5-dev sudo pkg-config libzmq5-dev libprotobuf-dev \
+    protobuf-compiler \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN pip install --break-system-packages conan 
 
@@ -17,7 +21,7 @@ RUN pip install --break-system-packages conan
 FROM setup AS build
 
 # SUMO version (github tag)
-ARG SUMO_TAG=v1_21_0
+ARG SUMO_TAG=v1_23_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 
@@ -56,3 +60,29 @@ USER ${USER}
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
+
+FROM final AS cached-build
+
+ARG USER=devcontainer
+
+COPY --from=final /omnetpp /omnetpp
+COPY --from=final /usr/local /usr/local
+
+USER root
+RUN mkdir workspace && chown ${USER} workspace 
+
+USER ${USER}
+WORKDIR /workspace/artery
+
+# Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
+ARG BUILD_CONFIGS="Debug"
+
+COPY --chown=${USER} . .
+
+RUN for cfg in ${BUILD_CONFIGS}; do                 \
+      echo "building config: $cfg";                 \
+      ./tools/build.py -cb                          \
+        --build-dir /workspace/cached-build         \
+        --generator Ninja                           \
+        --config "$cfg";                            \
+    done
