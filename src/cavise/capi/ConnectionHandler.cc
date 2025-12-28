@@ -15,7 +15,7 @@ ZmqCAPIConnectionHandler::ZmqCAPIConnectionHandler() : context_(1), socket_(cont
 void ZmqCAPIConnectionHandler::connect()
 {
     auto address = par("address").stdstringValue();
-    EV_DEBUG << "trying to pair with opencda on address: " << address;
+    EV_DEBUG << "trying to pair with OpenCDA on address: " << address;
 
     if (int timeout = par("receiveTimeout").intValue(); timeout > 0) {
         socket_.set(zmq::sockopt::rcvtimeo, timeout);

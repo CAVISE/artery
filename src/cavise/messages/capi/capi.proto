@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package capi;
 
-import "artery.proto";
-import "opencda.proto";
+import "capi/artery.proto";
+import "capi/opencda.proto";
 
 message Message {
     oneof message {

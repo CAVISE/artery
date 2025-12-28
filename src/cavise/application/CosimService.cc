@@ -1,5 +1,3 @@
-#include <cavise_msgs/CosimMessage_m.h>
-
 #include <omnetpp.h>
 
 #include <memory>
@@ -13,6 +11,8 @@
 #include <vanetza/net/packet_variant.hpp>
 
 #include <google/protobuf/util/json_util.h>
+
+#include <cavise_msgs/CosimMessage_m.h>
 
 #include "CosimService.h"
 
@@ -32,12 +32,12 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     }
 
     auto payload = static_cast<CosimMessage*>(packet);
-    capi::ArteryMessage::Transmission receivedMessage;
+    capi::Entity receivedMessage;
     if (auto status = receivedMessage.ParseFromString(payload->getContents()); !status) {
         EV_ERROR << "error parsing message contents: " << status;
     }
 
-    accumulatedTransmissions_.push_back(std::move(receivedMessage));
+    accumulated_.push_back(std::move(receivedMessage));
     delete packet;
 }
 
@@ -61,41 +61,34 @@ void CosimService::trigger()
         req.gn.communication_profile = vanetza::geonet::CommunicationProfile::ITS_G5;
         req.gn.its_aid = itsAid;
 
-        const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
-        std::string id = vehicle.getVehicleId();
-
-        EV_DEBUG << "Amount of CAVs and RSUs: " << current_.mutable_entity()->size() << '\n';
-        for (const auto& entity : *current_.mutable_entity()) {
-            EV_DEBUG << "Entity id: " << entity.id();
-        }
-
-        capi::ArteryMessage::Transmission transmission;
-        transmission.set_id(id);
-        transmission.mutable_entity()->Add(current_);
-
         auto* message = new CosimMessage;
-        auto string = transmission.SerializeAsString();
+        auto string = current_.SerializeAsString();
         message->setContents(string.c_str());
         request(req, message, network.get());
     }
 }
 
 void CosimService::cStep(CAPI* api) {
-    for (auto& message : accumulatedTransmissions_) {
-        api->transmit(std::move(message));
+    capi::ArteryMessage::Transmission transmission;
+    for (auto& message : accumulated_) {
+        transmission.mutable_entity()->Add(std::move(message));
     }
+
+    const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
+    std::string id = vehicle.getVehicleId();
+    transmission.set_id(id);
+
+    api->transmit(std::move(transmission));
 
     capi::OpenCDAMessage message = api->OpenCDAState();
 
     for (auto& entity : *message.mutable_entity()) {
         const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
         std::string id = vehicle.getVehicleId();
-        if (entity.id != id) {
+        if (entity.id() != id) {
             continue;
         } 
 
         current_ = entity;
     }
-
-
 }

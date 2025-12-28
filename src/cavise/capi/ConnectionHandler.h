@@ -3,7 +3,7 @@
 #include <zmq.hpp>
 #include <omnetpp/csimplemodule.h>
 
-#include <cavise/capi.pb.h>
+#include <capi/capi.pb.h>
 
 
 namespace cavise {

@@ -2,11 +2,11 @@
 
 #include "artery/application/ItsG5Service.h"
 #include "artery/application/NetworkInterface.h"
-#include "cavise/artery.pb.h"
+#include "capi/artery.pb.h"
 #include "cavise/capi/Listener.h"
-#include "cavise/opencda.pb.h"
+#include "capi/opencda.pb.h"
 
-#include <cavise/capi.pb.h>
+#include <capi/capi.pb.h>
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
 #include <omnetpp/simtime.h>
@@ -29,7 +29,7 @@ public:
 
 private:
     capi::Entity current_;
-    std::vector<capi::ArteryMessage::Transmission> accumulatedTransmissions_;
+    std::vector<capi::Entity> accumulated_;
 };
 
 }  // namespace cavise

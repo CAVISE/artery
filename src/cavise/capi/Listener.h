@@ -1,7 +1,6 @@
 #pragma once
 
-#include "cavise/capi/Core.h"
-
+#include <cavise/capi/Core.h>
 #include <omnetpp/clistener.h>
 
 namespace cavise

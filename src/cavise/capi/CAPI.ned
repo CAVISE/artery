@@ -7,16 +7,17 @@ module CAPIManager
 
         // pass-through params for core
         string address = default("tcp://127.0.0.1:5555");
-        bool   bind    = default(true);
-        double period  = default(1s);
+        bool bind = default(true);
+        double period = default(1s);
 
         // pass-through params for handler
-        string handlerAddress        = default("tcp://127.0.0.1");
-        int    handlerPort           = default(5555);
-        bool   handlerBind           = default(false);
-        int    handlerReceiveTimeout = default(200);
+        string handlerAddress = default("tcp://127.0.0.1");
+        int handlerPort = default(5555);
+        bool handlerBind = default(false);
+        int handlerReceiveTimeout = default(200);
 
         @display("bgb=600,220");
+
     submodules:
         core: ManagerCore {
             parameters:

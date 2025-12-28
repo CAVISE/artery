@@ -1,10 +1,11 @@
 #pragma once
 
-#include "ConnectionHandler.h"
+#include <cavise/capi/ConnectionHandler.h>
 
-#include <cavise/artery.pb.h>
-#include <cavise/capi.pb.h>
-#include <cavise/opencda.pb.h>
+#include <capi/artery.pb.h>
+#include <capi/capi.pb.h>
+#include <capi/opencda.pb.h>
+
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
 #include <omnetpp/simkerneldefs.h>

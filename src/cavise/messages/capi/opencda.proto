@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package capi;
 
-import "entity.proto";
+import "capi/entity.proto";
 
 message OpenCDAMessage {
     repeated Entity entity = 1;

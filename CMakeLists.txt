@@ -70,6 +70,7 @@ include(GNUInstallDirs)
 find_package(Protobuf QUIET)
 find_package(PkgConfig MODULE QUIET)
 find_package(SEA_V2X CONFIG QUIET)
+find_package(cppzmq QUIET)
 
 if(PkgConfig_FOUND)
     pkg_check_modules(ZEROMQ QUIET IMPORTED_TARGET libzmq)
@@ -110,6 +111,7 @@ endmacro()
 add_subdirectory(src/traci)
 add_subdirectory(src/artery)
 
+add_artery_subdirectory(src/cavise REQUIRES INET cppzmq protobuf::libprotobuf)
 add_artery_subdirectory(src/ots REQUIRES INET PkgConfig::ZEROMQ SWITCH WITH_OTS)
 
 # scenarios directory is part of repository but omitted for Docker build context
