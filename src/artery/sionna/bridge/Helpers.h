@@ -1,9 +1,11 @@
 #pragma once
 
+#include <artery/sionna/bridge/Defaulted.h>
 #include <nanobind/nanobind.h>
 
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <type_traits>
 
 #if not defined(SIONNA_OMNETPP_DETACHED)
@@ -19,7 +21,7 @@ NAMESPACE_BEGIN(sionna)
  * @brief Formats with std::snprintf and returns std::string.
  */
 template <typename... Args>
-std::string format(const std::string& fmt, Args... args)
+std::string format(const std::string& fmt, Args... args) noexcept
 {
     if (sizeof...(args) == 0) {
         return fmt;
@@ -107,13 +109,16 @@ private:
     PyConfig config_;
 };
 
-// Some of sionna's objects use non-standard integer, floating point etc. types.
-// Propagating them back to Artery may be done with this method - it also casts
-// property (attribute) value to a standard python type before returning it.
+/**
+ * @brief Some of sionna's objects use non-standard integer, floating point etc. types.
+ * Propagating them back to Artery may be done with this method - it also casts
+ * property (attribute) value to a standard python type before returning it.
+ */
 template <typename T>
 T access(const nanobind::object obj, const std::string& attribute, bool convert = true)
 {
     namespace nb = nanobind;
+    nb::gil_scoped_acquire gil;
 
     try {
         return nb::cast<T>(obj.attr(attribute.c_str()), convert);
@@ -122,11 +127,14 @@ T access(const nanobind::object obj, const std::string& attribute, bool convert 
     }
 }
 
-// Set an attribute on a Sionna Python object, with automatic type wrapping.
+/**
+ * @brief Set an attribute on a Sionna Python object, with automatic type wrapping.
+ */
 template <typename T>
 void set(nanobind::object obj, const std::string& attribute, T value)
 {
     namespace nb = nanobind;
+    nb::gil_scoped_acquire gil;
 
     try {
         if constexpr (std::is_base_of_v<nb::handle, T>) {
@@ -136,6 +144,23 @@ void set(nanobind::object obj, const std::string& attribute, T value)
         }
     } catch (const nb::python_error& error) {
         throw wrapRuntimeError("sionna: failed to set property \"%s\" of object at %p: %s", attribute.c_str(), obj.ptr(), error.what());
+    }
+}
+
+/**
+ * @brief Call an a specified attribute on an object.
+ */
+template <typename ReturnT, typename... Args>
+ReturnT call(nanobind::object obj, const std::string& method, Args&&... args)
+{
+    namespace nb = nanobind;
+    nb::gil_scoped_acquire gil;
+
+    nb::dict kw = kwargs(std::forward<Args>(args)...);
+    try {
+        return sionna::access<nb::object>(obj, method)(**kw);
+    } catch (const nb::python_error& error) {
+        throw wrapRuntimeError("sionna: failed to call method \"%s\" of object at %p: %s", method.c_str(), obj.ptr(), error.what());
     }
 }
 

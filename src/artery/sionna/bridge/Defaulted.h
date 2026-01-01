@@ -1,7 +1,7 @@
 #pragma once
 
 #include <artery/sionna/bridge/Fwd.h>
-#include <artery/sionna/bridge/Layout.h>
+#include <artery/sionna/bridge/Helpers.h>
 #include <nanobind/nanobind.h>
 
 #include <variant>
@@ -133,20 +133,6 @@ inline nanobind::dict kwargs(Items&&... items)
 
 
 NAMESPACE_END(literals)
-
-MI_VARIANT
-class Constants
-{
-public:
-    SIONNA_IMPORT_CORE_TYPES(Float64, Int32)
-
-    inline static Defaulted<Float64> DEFAULT_THICKNESS{ModuleLayout::sionnaConstants, "DEFAULT_THICKNESS"};
-    inline static Defaulted<Int32> INTERSECTION_NONE{ModuleLayout::sionnaConstants, "NONE", ModuleLayout::Classes::IntersectionTypes};
-    inline static Defaulted<Int32> INTERSECTION_SPECULAR{ModuleLayout::sionnaConstants, "SPECULAR", ModuleLayout::Classes::IntersectionTypes};
-    inline static Defaulted<Int32> INTERSECTION_DIFFUSE{ModuleLayout::sionnaConstants, "DIFFUSE", ModuleLayout::Classes::IntersectionTypes};
-    inline static Defaulted<Int32> INTERSECTION_REFRACTION{ModuleLayout::sionnaConstants, "REFRACTION", ModuleLayout::Classes::IntersectionTypes};
-    inline static Defaulted<Int32> INTERSECTION_DIFFRACTION{ModuleLayout::sionnaConstants, "DIFFRACTION", ModuleLayout::Classes::IntersectionTypes};
-};
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)

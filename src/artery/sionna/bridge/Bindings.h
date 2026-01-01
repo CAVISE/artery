@@ -1,3 +1,5 @@
+#pragma once
+
 #include <artery/sionna/bridge/Defaulted.h>
 #include <artery/sionna/bridge/Fwd.h>
 #include <artery/sionna/bridge/Helpers.h>
@@ -13,7 +15,7 @@ NAMESPACE_BEGIN(py)
 namespace nb = nanobind;
 
 template <typename ModTag>
-class Module : std::enable_shared_from_this<Module<ModTag>>
+class Module : public std::enable_shared_from_this<Module<ModTag>>
 {
 public:
     static constexpr const char* name() noexcept { return ModTag::name(); }
@@ -21,27 +23,13 @@ public:
     template <typename FnTag, typename... Args>
     nanobind::object function(Args&&... args) const
     {
-        return call(FnTag::name(), std::forward<Args>(args)...);
-    }
-
-    template <typename... Args>
-    nb::object call(const char* func, Args&&... args) const
-    {
-        nb::gil_scoped_acquire gil;
-
-        nb::object f = module().attr(func);
-        nb::dict kw = kwargs(std::forward<Args>(args)...);
-
-        try {
-            return f(**kw);
-        } catch (const nb::python_error& err) {
-            throw wrapRuntimeError("failed to invoke \"%s\" method on \"%s\" module, err: %s", func, ModTag::name(), err.what());
-        }
+        return sionna::call(module(), FnTag::name(), std::forward<Args>(args)...);
     }
 
     nb::module_ module() const
     {
         if (!mod_) {
+            nb::gil_scoped_acquire gil;
             mod_ = std::make_unique<nb::module_>(nb::module_::import_(name()));
         }
         return *mod_;
@@ -73,40 +61,19 @@ public:
     template <typename ReturnT>
     ReturnT attr(const char* name) const
     {
-        nb::gil_scoped_acquire gil;
         return access<ReturnT>(type(), name);
     }
 
     template <typename... Args>
     nb::object ctor(Args&&... args) const
     {
-        nb::gil_scoped_acquire gil;
-        nb::dict kw = kwargs(std::forward<Args>(args)...);
-        try {
-            return type()(**kw);
-        } catch (const nb::python_error& err) {
-            throw wrapRuntimeError("failed to construct \"%s\" from \"%s\": %s", name(), owner_->name(), err.what());
-        }
+        return sionna::call<nb::object>(owner_->module(), name(), std::forward<Args>(args)...);
     }
 
     template <typename FnTag, typename ReturnT, typename... Args>
     ReturnT method(Args&&... args) const
     {
-        return call_method<ReturnT>(FnTag::name(), std::forward<Args>(args)...);
-    }
-
-    template <typename ReturnT, typename... Args>
-    ReturnT call_method(const char* method, Args&&... args) const
-    {
-        nb::gil_scoped_acquire gil;
-
-        nb::dict kw = kwargs(std::forward<Args>(args)...);
-        try {
-            nb::object m = type().attr(method);
-            return m(**kw);
-        } catch (const nb::python_error& err) {
-            throw wrapRuntimeError("failed to call \"%s.%s\" in \"%s\": %s", name(), owner_->name(), err.what());
-        }
+        return sionna::call<ReturnT>(*bound_, FnTag::name(), std::forward<Args>(args)...);
     }
 
 protected:
@@ -117,14 +84,26 @@ protected:
 
 
 // Convenience macro for module declaration.
-#define PY_MODULE(NAME, PYNAME) struct NAME : ::artery::sionna::py::ModuleCRTP<PYNAME>
+#define PY_MODULE(NAME, PYNAME) struct NAME : public ::artery::sionna::py::Module<PYNAME>
+
+#define PY_BASE_IMPL(...) public __VA_ARGS__
+
+// Pass bases.
+#define PY_BASE(T) PY_BASE_IMPL T
+
+// Convenience macro for class declaration (with optional extra bases/mixins).
+// Extra bases must be default-constructible.
+#define PY_CLASS(NAME, PYNAME, MODULE, ...)                     \
+    struct NAME                                                 \
+        : public ::artery::sionna::py::Class<MODULE, PYNAME>    \
+        __VA_OPT__(, __VA_ARGS__)
+
 
 // Convenience macro for tag declaration.
-#define PY_IDENTITY_TAG(NAME) \
-    struct NAME##Tag { \
-        static constexpr const char* name() { return #NAME; } \
-    };
-
+#define PY_IDENTITY_TAG(TAG, VALUE) \
+    struct TAG##Tag { \
+        static constexpr const char* name() { return #VALUE; } \
+    }
 
 NAMESPACE_END(py)
 
