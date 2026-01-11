@@ -3,6 +3,7 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/platform.h>
+#include <nanobind/nanobind.h>
 
 /**
  * @file Forward declarations for Sionna bridge classes.
@@ -43,6 +44,9 @@ MI_VARIANT struct SionnaBridgeAliases {
     using SionnaBridge = SionnaScene<Float, Spectrum>;
     // using UnevenTerrain = UnevenTerrain<Float, Spectrum>;
 };
+
+template <typename T>
+T access(const nanobind::object obj, const std::string& attribute, bool convert = true);
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)

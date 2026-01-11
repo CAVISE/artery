@@ -1,11 +1,11 @@
 #pragma once
 
 #include <artery/sionna/bridge/Bindings.h>
-#include <artery/sionna/bridge/bindings/Material.h>
-#include <artery/sionna/bridge/bindings/Constants.h>
-
 #include <artery/sionna/bridge/Defaulted.h>
 #include <artery/sionna/bridge/Fwd.h>
+#include <artery/sionna/bridge/bindings/Constants.h>
+#include <artery/sionna/bridge/bindings/Material.h>
+#include <inet/common/INETDefs.h>
 #include <inet/environment/contract/IMaterial.h>
 
 #include <string>
@@ -25,7 +25,7 @@ public:
      * is different to 1 will raise error.
      */
     RadioMaterial(
-        const std::string& name, Float conductivity = 0.0, Float relativePermittivity = 1.0, Float relativePermeability = 1.0,
+        const std::string& name, Float64 conductivity = 0.0, Float64 relativePermittivity = 1.0,
         typename Defaulted<Float64>::Argument thickness = Constants::DEFAULT_THICKNESS);
 
     // inet::physicalenvironment::IMaterial implementation.
@@ -46,19 +46,9 @@ NAMESPACE_END(artery)
 
 MI_VARIANT
 artery::sionna::RadioMaterial<Float, Spectrum>::RadioMaterial(
-    const std::string& name, Float conductivity, Float relativePermittivity, Float relativePermeability,
-    typename Defaulted<Float64>::Argument thickness)
+    const std::string& name, Float64 conductivity, Float64 relativePermittivity, typename Defaulted<Float64>::Argument thickness) :
+    py_(name, conductivity, relativePermittivity, thickness)
 {
-    namespace nb = nanobind;
-    using namespace sionna::literals;
-
-    if (relativePermeability != 1.0) {
-        throw wrapRuntimeError("sionna::RadioMaterial is non-magnetic, relativePermeability should be 1.0, but is %f", relativePermeability);
-    }
-
-    nb::object radioMaterial = Access::getClass(Access::sionnaRt(), ModuleLayout::Classes::radioMaterial);
-    auto kw = kwargs("name"_a = name, "thickness"_a = thickness, "relative_permittivity"_a = relativePermittivity, "conductivity"_a = conductivity);
-    return radioMaterial(**kw);
 }
 
 MI_VARIANT inet::physicalenvironment::Ohmm artery::sionna::RadioMaterial<Float, Spectrum>::getResistivity() const
@@ -82,34 +72,34 @@ MI_VARIANT double artery::sionna::RadioMaterial<Float, Spectrum>::getRelativePer
 
 MI_VARIANT double artery::sionna::RadioMaterial<Float, Spectrum>::getDielectricLossTangent(inet::physicalenvironment::Hz frequency) const
 {
-    const double f = frequency;
-    if (!(f > 0.0)) {
-        return 0.0;
-    }
+    const double f = frequency.get();
 
     const double sigma = static_cast<double>(py_->conductivity());
-    const double eps_r = static_cast<double>(py_->relativePermittivity());
-
+    const double epsR = static_cast<double>(py_->relativePermittivity());
+    
     const double omega = 2.0 * M_PI * f;
-    const double denom = omega * EPS0 * eps_r;
-    if (!(denom > 0.0)) {
+    const double e0 = inet::units::constants::e0.get();
+
+    if (const double denom = omega * epsR * e0; denom <= 0.0 || epsR <= 0) {
         return 0.0;
+    } else {
+        return sigma / denom;
     }
-    return sigma / denom;
 }
 
-MI_VARIANT double RadioMaterial::getRefractiveIndex() const
+MI_VARIANT double artery::sionna::RadioMaterial<Float, Spectrum>::getRefractiveIndex() const
 {
-    const double eps_r = static_cast<double>(py_->relativePermittivity());
-    return std::sqrt(std::max(0.0, eps_r)); // mu_r=1
+    const double epsR = static_cast<double>(py_->relativePermittivity());
+    return std::sqrt(std::max(0.0, epsR));
 }
 
-MI_VARIANT inet::physicalenvironment::mps RadioMaterial::getPropagationSpeed() const
+MI_VARIANT inet::physicalenvironment::mps artery::sionna::RadioMaterial<Float, Spectrum>::getPropagationSpeed() const
 {
-    const double n = getRefractiveIndex();
-    if (!(n > 0.0)) {
-        return inet::physicalenvironment::mps(C0);
+    if (const double epsR = static_cast<double>(py_->relativePermittivity()); epsR <= 0.0) {
+        return inet::units::constants::c;
+    } else if (const double n = std::sqrt(epsR); n <= 0.0) {
+        return inet::units::constants::c;
+    } else {
+        return inet::units::constants::c / n;
     }
-    return inet::physicalenvironment::mps(C0 / n);
 }
-

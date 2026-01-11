@@ -73,11 +73,11 @@ target_sources(sionna-bridge-inet
 
 target_sources(sionna-bridge-core
     INTERFACE
-        bridge/Scene.h
-        bridge/Material.h
         bridge/Defaulted.h
-        bridge/SceneObject.h
+        bridge/Bindings.h
         bridge/Meshes.h
+        bridge/bindings/Constants.h
+        bridge/bindings/Material.h
 )
 
 target_sources(sionna-bridge-helpers

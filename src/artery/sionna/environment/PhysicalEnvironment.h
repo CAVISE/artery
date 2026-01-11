@@ -3,7 +3,6 @@
 
 #include "omnetpp/csimplemodule.h"
 
-#include <artery/sionna/bridge/Scene.h>
 #include <inet/environment/contract/IPhysicalEnvironment.h>
 
 #include <memory>

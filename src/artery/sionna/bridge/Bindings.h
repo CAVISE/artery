@@ -14,6 +14,8 @@ NAMESPACE_BEGIN(py)
 
 namespace nb = nanobind;
 
+using literals::operator""_a;
+
 template <typename ModTag>
 class Module : public std::enable_shared_from_this<Module<ModTag>>
 {
@@ -47,7 +49,8 @@ public:
 
     static constexpr const char* name() noexcept { return ClassTag::name(); }
 
-    explicit Class(std::shared_ptr<const Module<ModTag>> owner) : owner_(owner), bound_(std::make_unique<nb::object>(ctor())) {}
+    template <typename... Args>
+    explicit Class(std::shared_ptr<const Module<ModTag>> owner, Args... args) : owner_(owner), bound_(std::make_unique<nb::object>(ctor(std::forward<Args>(args)...))) {}
 
     nb::object type() const
     {
@@ -81,23 +84,6 @@ protected:
     std::unique_ptr<nb::object> bound_ = nullptr;
     std::shared_ptr<const Module<ModTag>> owner_ = nullptr;
 };
-
-
-// Convenience macro for module declaration.
-#define PY_MODULE(NAME, PYNAME) struct NAME : public ::artery::sionna::py::Module<PYNAME>
-
-#define PY_BASE_IMPL(...) public __VA_ARGS__
-
-// Pass bases.
-#define PY_BASE(T) PY_BASE_IMPL T
-
-// Convenience macro for class declaration (with optional extra bases/mixins).
-// Extra bases must be default-constructible.
-#define PY_CLASS(NAME, PYNAME, MODULE, ...)                     \
-    struct NAME                                                 \
-        : public ::artery::sionna::py::Class<MODULE, PYNAME>    \
-        __VA_OPT__(, __VA_ARGS__)
-
 
 // Convenience macro for tag declaration.
 #define PY_IDENTITY_TAG(TAG, VALUE) \

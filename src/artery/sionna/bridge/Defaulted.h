@@ -1,9 +1,9 @@
 #pragma once
 
 #include <artery/sionna/bridge/Fwd.h>
-#include <artery/sionna/bridge/Helpers.h>
 #include <nanobind/nanobind.h>
 
+#include <type_traits>
 #include <variant>
 
 NAMESPACE_BEGIN(artery)
@@ -32,7 +32,7 @@ public:
         namespace nb = nanobind;
 
         auto module = nb::module_::import_(module_.c_str());
-        return access<T>((cls_ != "") ? nb::getattr(module, cls_.c_str()) : module, name_);
+        return sionna::access<T>(((cls_ != "") ? nb::getattr(module, cls_.c_str()) : module), name_);
     }
 
     /**
@@ -131,8 +131,15 @@ inline nanobind::dict kwargs(Items&&... items)
     return d;
 }
 
-
 NAMESPACE_END(literals)
+
+template<typename T>
+inline Defaulted<T> makeDefaulted(const std::string& mod, const std::string& constant, const std::string& cls = "") {
+    if (cls.size() > 0) {
+        return Defaulted<T>(mod, constant, cls);
+    }
+    return Defaulted<T>(mod, constant);
+}
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)

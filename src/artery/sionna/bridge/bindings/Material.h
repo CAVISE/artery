@@ -1,7 +1,8 @@
 #pragma once
 
-#include <artery/sionna/bridge/Helpers.h>
 #include <artery/sionna/bridge/Bindings.h>
+#include <artery/sionna/bridge/Helpers.h>
+#include <artery/sionna/bridge/bindings/Constants.h>
 
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
@@ -12,34 +13,38 @@ PY_IDENTITY_TAG(SionnaRt, sionna.rt);
 PY_IDENTITY_TAG(RadioMaterial, RadioMaterial);
 PY_IDENTITY_TAG(RadioMaterialBase, RadioMaterialBase);
 
-MI_VARIANT PY_CLASS(RadioMaterialBase, RadioMaterialBaseTag, SionnaRtTag)
+MI_VARIANT
+class RadioMaterialBase : public Class<SionnaRtTag, RadioMaterialBaseTag>
 {
     // Color type used by material objects (RGB format).
     using ColorType = std::tuple<Float, Float, Float>;
 
     // Name for this material.
-    std::string materialName() const
-    {
-        return sionna::access<std::string>(*bound_, "name");
-    }
+    std::string materialName() const { return sionna::access<std::string>(*bound_, "name"); }
 
     // Color for this material (RGB tuple).
-    ColorType color() const
-    {
-        return sionna::access<ColorType>(*bound_, "color");
-    }
+    ColorType color() const { return sionna::access<ColorType>(*bound_, "color"); }
 
     // Set color on this material (RGB tuple).
-    void setColor(ColorType newColor)
-    {
-        sionna::set<ColorType>(*bound_, "color", std::move(newColor));
-    }
+    void setColor(ColorType newColor) { sionna::set<ColorType>(*bound_, "color", std::move(newColor)); }
 };
 
-/* clang-format off */
-MI_VARIANT PY_CLASS(RadioMaterial, RadioMaterialTag, SionnaRtTag, PY_BASE((RadioMaterialBase<Float, Spectrum>)))
+MI_VARIANT
+class RadioMaterial : public Class<SionnaRtTag, RadioMaterialTag>
 {
     SIONNA_IMPORT_CORE_TYPES(Float64)
+
+    using Constants = py::Constants<Float, Spectrum>;
+
+    RadioMaterial(
+        const std::string& name, Float64 conductivity = 0.0, Float64 relativePermittivity = 1.0,
+        typename Defaulted<Float64>::Argument thickness = Constants::DEFAULT_THICKNESS
+    ) : Class{ctor(
+        "name"_a = name,
+        "thickness"_a = thickness,
+        "relative_permittivity"_a = relativePermittivity,
+        "conductivity"_a = conductivity
+    )} {}
 
     // Relative permittivity for material.
     Float64 relativePermittivity() const
@@ -77,7 +82,6 @@ MI_VARIANT PY_CLASS(RadioMaterial, RadioMaterialTag, SionnaRtTag, PY_BASE((Radio
         sionna::set(*bound_, "thickness", thickness);
     }
 };
-/* clang-format on */
 
 NAMESPACE_END(py)
 

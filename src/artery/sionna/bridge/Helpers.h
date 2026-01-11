@@ -115,7 +115,7 @@ private:
  * property (attribute) value to a standard python type before returning it.
  */
 template <typename T>
-T access(const nanobind::object obj, const std::string& attribute, bool convert = true)
+T access(const nanobind::object obj, const std::string& attribute, bool convert)
 {
     namespace nb = nanobind;
     nb::gil_scoped_acquire gil;
