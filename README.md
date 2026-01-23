@@ -13,14 +13,3 @@ Please visit [artery.v2x-research.eu](http://artery.v2x-research.eu).
 The [install instructions](http://artery.v2x-research.eu/install/) previously found in this README have also been moved to this website.
 We welcome your contribution to this documentation effort just as to Artery itself.
 If you want to build the website yourself see also [our mkdocs guide](http://artery.v2x-research.eu/mkdocs).
-
-## Custom merge driver
-Use first four commands below to setup custom merge driver for upstream. Use the last to make merge.
-```
-git config merge.custom-driver.name "Custom merge driver for Artery/Cavise"
-git config merge.custom-driver.driver "python3 tools/custom_merge.py %O %A %B %P"
-git remote add upstream https://github.com/riebl/artery.git
-git fetch upstream
-git merge upstream/master --no-ff
-```
-

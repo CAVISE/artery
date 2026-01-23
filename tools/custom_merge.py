@@ -20,16 +20,9 @@ def load_config(config_path: Path) -> Config:
         return {}
     try:
         return json.loads(config_path.read_text(encoding='utf-8'))
-    except Exception:
+    except json.JSONDecodeError:
+        # Catching only specific JSON error as requested
         return {}
-
-def is_binary(filepath: Path) -> bool:
-    '''Check if a file is binary by searching for a null byte in the first 8KB.'''
-    try:
-        with open(filepath, 'rb') as f:
-            return b'\x00' in f.read(8192)
-    except Exception:
-        return False
 
 async def run_git_merge_file(base: Path, current: Path, other: Path) -> int:
     '''Run the standard git merge-file command asynchronously.'''
@@ -43,16 +36,15 @@ async def run_git_merge_file(base: Path, current: Path, other: Path) -> int:
 
 async def get_git_rev(ref: str) -> str:
     '''Resolve a git reference to a commit hash asynchronously.'''
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            'git', 'rev-parse', '-q', '--verify', ref,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL
-        )
-        stdout, _ = await proc.communicate()
-        return stdout.decode().strip()
-    except Exception:
+    proc = await asyncio.create_subprocess_exec(
+        'git', 'rev-parse', '-q', '--verify', ref,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL
+    )
+    stdout, _ = await proc.communicate()
+    if proc.returncode != 0:
         return ''
+    return stdout.decode().strip()
 
 async def is_upstream_merge(config: Config) -> bool:
     '''Check if the current operation is a merge from the upstream branch.'''
@@ -65,8 +57,21 @@ async def is_upstream_merge(config: Config) -> bool:
 
     return merge_head == upstream_rev if merge_head else False
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(description='Custom Git Merge Driver')
+async def main() -> int:
+    usage_info = """
+Setup instructions:
+  git config merge.custom-driver.name "Custom merge driver for Artery/Cavise"
+  git config merge.custom-driver.driver "python3 tools/custom_merge.py %O %A %B %P"
+  git remote add upstream https://github.com/riebl/artery.git
+  git fetch upstream
+  git merge upstream/master --no-ff
+    """
+
+    parser = argparse.ArgumentParser(
+        description='Custom Git Merge Driver',
+        epilog=usage_info,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument('base', type=Path, help='%O: Ancestor file')
     parser.add_argument('current', type=Path, help='%A: Current branch file')
     parser.add_argument('other', type=Path, help='%B: Other branch file')
@@ -80,33 +85,41 @@ async def main() -> None:
     # 1. Binary check
     if is_binary(args.current) or is_binary(args.other):
         print(f'[Custom Merge] Binary: {norm_path} -> Strategy: KEEP OURS')
-        sys.exit(0)
+        return 0
 
     # 2. UPSTREAM CHECK
     if not await is_upstream_merge(config):
-        sys.exit(await run_git_merge_file(args.base, args.current, args.other))
+        return await run_git_merge_file(args.base, args.current, args.other)
 
     # 3. Path-specific rules
     for path_prefix in config.get('prefer_theirs', []):
         if norm_path.startswith(path_prefix):
             print(f'[Custom Merge] Path rule: {norm_path} -> Strategy: PREFER THEIRS')
             shutil.copyfile(args.other, args.current)
-            sys.exit(0)
+            return 0
 
     for path_prefix in config.get('prefer_ours', []):
         if norm_path.startswith(path_prefix):
             print(f'[Custom Merge] Path rule: {norm_path} -> Strategy: PREFER OURS')
-            sys.exit(0)
+            return 0
 
     # 4. Default behavior for upstream
     behavior = config.get('default_behavior', 'manual_resolution')
     if behavior == 'prefer_theirs':
         shutil.copyfile(args.other, args.current)
-        sys.exit(0)
+        return 0
     elif behavior == 'prefer_ours':
-        sys.exit(0)
+        return 0
     else:
-        sys.exit(await run_git_merge_file(args.base, args.current, args.other))
+        return await run_git_merge_file(args.base, args.current, args.other)
+
+def is_binary(filepath: Path) -> bool:
+    '''Check if a file is binary by searching for a null byte in the first 8KB.'''
+    try:
+        with open(filepath, 'rb') as f:
+            return b'\x00' in f.read(8192)
+    except OSError:
+        return False
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    sys.exit(asyncio.run(main()))
