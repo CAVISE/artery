@@ -72,10 +72,10 @@ Setup instructions:
         epilog=usage_info,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('base', type=Path, help='%O: Ancestor file')
-    parser.add_argument('current', type=Path, help='%A: Current branch file')
-    parser.add_argument('other', type=Path, help='%B: Other branch file')
-    parser.add_argument('path', type=str, help='%P: Original file path')
+    parser.add_argument('base', type=Path, help='O: Ancestor file')
+    parser.add_argument('current', type=Path, help='A: Current branch file')
+    parser.add_argument('other', type=Path, help='B: Other branch file')
+    parser.add_argument('path', type=str, help='P: Original file path')
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent.resolve()
