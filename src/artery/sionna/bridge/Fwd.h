@@ -38,10 +38,19 @@ NAMESPACE_BEGIN(sionna)
  */
 
 MI_VARIANT class SionnaScene;
-MI_VARIANT class UnevenTerrain;
+MI_VARIANT class RadioMaterialBase;
+MI_VARIANT class RadioMaterial;
+MI_VARIANT class ConstantsBase;
+MI_VARIANT class Constants;
+MI_VARIANT class SceneObject;
 
 MI_VARIANT struct SionnaBridgeAliases {
     using SionnaBridge = SionnaScene<Float, Spectrum>;
+    using RadioMaterial = RadioMaterial<Float, Spectrum>;
+    using RadioMaterialBase = RadioMaterialBase<Float, Spectrum>;
+    using Constants = Constants<Float, Spectrum>;
+    using ConstantsBase = ConstantsBase<Float, Spectrum>;
+    using SceneObject = SceneObject<Float, Spectrum>;
     // using UnevenTerrain = UnevenTerrain<Float, Spectrum>;
 };
 

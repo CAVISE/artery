@@ -6,6 +6,7 @@
 #include <nanobind/nanobind.h>
 
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 NAMESPACE_BEGIN(artery)
@@ -169,6 +170,9 @@ public:
 
 protected:
     OwnedPy<nb::object> bound_;
+
+    template <typename T, typename>
+    friend struct nanobind::detail::type_caster;
 };
 
 /**
@@ -207,8 +211,42 @@ protected:
     }
 };
 
-
 NAMESPACE_END(py)
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)
+
+NAMESPACE_BEGIN(nanobind)
+NAMESPACE_BEGIN(detail)
+
+template <typename T>
+struct sionna_wrap_caster_enabled : std::false_type {};
+
+template <typename T>
+using enable_if_wrap_caster = std::enable_if_t<sionna_wrap_caster_enabled<T>::value &&
+                                               std::is_default_constructible_v<T>, int>;
+
+/**
+ * @brief Generic caster for wrappers opted-in via nb_wrap_caster_enabled trait.
+ */
+template <typename T>
+struct type_caster<T, enable_if_wrap_caster<T>> {
+    NB_TYPE_CASTER(T, const_name<T>())
+
+    bool from_python(handle src, uint8_t, cleanup_list *) noexcept {
+        value = Value();
+        value.init(borrow<object>(src));
+        return true;
+    }
+
+    static handle from_cpp(const Value& src, rv_policy, cleanup_list *) noexcept {
+        return src.bound_->release();
+    }
+
+    static handle from_cpp(Value&& src, rv_policy policy, cleanup_list *cleanup) noexcept {
+        return from_cpp(static_cast<const Value&>(src), policy, cleanup);
+    }
+};
+
+NAMESPACE_END(detail)
+NAMESPACE_END(NB_NAMESPACE)

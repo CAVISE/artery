@@ -6,8 +6,10 @@
 #include <artery/sionna/bridge/bindings/Material.h>
 #include <inet/common/INETDefs.h>
 #include <inet/environment/contract/IMaterial.h>
+#include <nanobind/nanobind.h>
 
 #include <string>
+#include <utility>
 
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
@@ -27,6 +29,8 @@ public:
         const std::string& name, Float64 conductivity = 0.0, Float64 relativePermittivity = 1.0,
         typename Defaulted<Float64>::Argument thickness = Constants::DEFAULT_THICKNESS);
 
+    explicit RadioMaterial(nanobind::object obj);
+
     // inet::physicalenvironment::IMaterial implementation.
     inet::physicalenvironment::Ohmm getResistivity() const override;
     double getRelativePermittivity() const override;
@@ -35,6 +39,9 @@ public:
     double getDielectricLossTangent(inet::physicalenvironment::Hz frequency) const override;
     double getRefractiveIndex() const override;
     inet::physicalenvironment::mps getPropagationSpeed() const override;
+
+    py::RadioMaterial<Float, Spectrum>& object();
+    const py::RadioMaterial<Float, Spectrum>& object() const;
 
 private:
     py::RadioMaterial<Float, Spectrum> py_;
@@ -47,6 +54,11 @@ MI_VARIANT
 artery::sionna::RadioMaterial<Float, Spectrum>::RadioMaterial(
     const std::string& name, Float64 conductivity, Float64 relativePermittivity, typename Defaulted<Float64>::Argument thickness)
     : py_(name, conductivity, relativePermittivity, thickness) {
+}
+
+MI_VARIANT
+artery::sionna::RadioMaterial<Float, Spectrum>::RadioMaterial(nanobind::object obj)
+    : py_(std::move(obj)) {
 }
 
 MI_VARIANT inet::physicalenvironment::Ohmm artery::sionna::RadioMaterial<Float, Spectrum>::getResistivity() const {
@@ -94,4 +106,14 @@ MI_VARIANT inet::physicalenvironment::mps artery::sionna::RadioMaterial<Float, S
     } else {
         return inet::units::constants::c / n;
     }
+}
+
+MI_VARIANT
+artery::sionna::py::RadioMaterial<Float, Spectrum>& artery::sionna::RadioMaterial<Float, Spectrum>::object() {
+    return py_;
+}
+
+MI_VARIANT
+const artery::sionna::py::RadioMaterial<Float, Spectrum>& artery::sionna::RadioMaterial<Float, Spectrum>::object() const {
+    return py_;
 }

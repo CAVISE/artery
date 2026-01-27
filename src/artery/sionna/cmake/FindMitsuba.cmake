@@ -16,6 +16,8 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+message(STATUS "Discovered site packages directory for current python vertual env: ${_python_site_packages_path}")
+
 # For mitsuba to work, we also need DrJit
 find_package(drjit CONFIG HINTS ${_python_site_packages_path}/drjit/cmake REQUIRED)
 # Nanobind is required to access Mitsuba objects later

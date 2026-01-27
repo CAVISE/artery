@@ -16,7 +16,7 @@ else()
 endif()
 
 if(NOT DEFINED ENV{VIRTUAL_ENV})
-    message(SEND_ERROR 
+    message(SEND_ERROR
         "It looks like you are not use virtual environment - which normally means something went wrong. "
         "If you really want to continue, set VIRTUAL_ENV environment variable to system python home."
     )
@@ -74,7 +74,7 @@ target_sources(sionna-bridge-inet
 target_sources(sionna-bridge-core
     INTERFACE
         bridge/Defaulted.h
-        bridge/Bindings.h
+        bridge/Capabilities.h
         bridge/Meshes.h
         bridge/bindings/Constants.h
         bridge/bindings/Material.h

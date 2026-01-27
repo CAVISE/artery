@@ -50,7 +50,8 @@ class RadioMaterial
     : public SionnaRtModuleBase
     , public CachedFetchCapability
     , public DefaultedClassProviderCapability
-    , public WrapPythonClassCapability {
+    , public WrapPythonClassCapability
+    , public RadioMaterialBase<Float, Spectrum> {
 public:
     SIONNA_IMPORT_CORE_TYPES(Float64)
 
@@ -59,6 +60,8 @@ public:
     const char* className() const override {
         return "RadioMaterial";
     }
+
+    RadioMaterial() = default;
 
     RadioMaterial(nb::object obj) {
         WrapPythonClassCapability::init(std::move(obj));
@@ -106,3 +109,13 @@ NAMESPACE_END(py)
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)
+
+NAMESPACE_BEGIN(nanobind)
+NAMESPACE_BEGIN(detail)
+
+MI_VARIANT
+struct sionna_wrap_caster_enabled<artery::sionna::py::RadioMaterial<Float, Spectrum>>
+    : std::true_type {};
+
+NAMESPACE_END(detail)
+NAMESPACE_END(nanobind)
