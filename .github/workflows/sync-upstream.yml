@@ -65,7 +65,8 @@ jobs:
             echo -e "$CONFLICT_NOTE"
             echo "Top 5 Upstream Changes"
             echo ""
-            git log origin/main..upstream/master --pretty=format:"%h|%s" | while read -r line; do
+            git log --since="15 days ago" origin/main..upstream/master --pretty=format:"%h|%s" | while read -r line; do
+              [ -z "$line" ] && continue
               hash=$(echo "$line" | cut -d'|' -f1)
               stats=$(git show --shortstat "$hash" | tail -n1)
               added=$(echo "$stats" | grep -oP '\d+(?= insertion)' || echo 0)
