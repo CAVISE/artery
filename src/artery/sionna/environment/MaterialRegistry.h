@@ -25,7 +25,6 @@ MI_VARIANT
 class SionnaSceneMaterialRegistry : public inet::physicalenvironment::IMaterialRegistry
 {
 public:
-    using Scene = py::SionnaScene<Float, Spectrum>;
     using RadioMaterial = RadioMaterial<Float, Spectrum>;
 
     SionnaSceneMaterialRegistry() = default;

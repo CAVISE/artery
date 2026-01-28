@@ -63,9 +63,25 @@ add_library(Artery::sionna::helpers ALIAS sionna-bridge-helpers)
 
 target_sources(sionna-bridge-inet
     PRIVATE
+        bridge/Compat.cc
+        bridge/bindings/Constants.cc
+        bridge/bindings/Material.cc
+        bridge/bindings/SceneObject.cc
+        environment/Ground.cc
+        environment/MitsubaShape.cc
+        environment/PhysicalObject.cc
+        environment/Material.cc
         environment/PathLoss.cc
         environment/PhysicalEnvironment.cc
     PUBLIC
+        bridge/Compat.h
+        bridge/bindings/Constants.h
+        bridge/bindings/Material.h
+        bridge/bindings/SceneObject.h
+        environment/Ground.h
+        environment/MitsubaShape.h
+        environment/PhysicalObject.h
+        environment/Material.h
         environment/Ground.h
         environment/PathLoss.h
         environment/PhysicalEnvironment.h
@@ -78,6 +94,7 @@ target_sources(sionna-bridge-core
         bridge/Meshes.h
         bridge/bindings/Constants.h
         bridge/bindings/Material.h
+        bridge/bindings/SceneObject.h
 )
 
 target_sources(sionna-bridge-helpers

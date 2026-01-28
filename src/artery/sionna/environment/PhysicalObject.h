@@ -63,76 +63,10 @@ private:
 
     mutable cFigure::Color color_;
     mutable RadioMaterial material_;
+    std::shared_ptr<inet::ShapeBase> shape_;
 };
+
+MI_EXTERN_CLASS(PhysicalObject)
 
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)
-
-MI_VARIANT
-cFigure::Color artery::sionna::PhysicalObject<Float, Spectrum>::tupleToColor(const std::tuple<float, float, float>& t) {
-    auto toChannel = [](float v) -> unsigned char {
-        float clamped = std::clamp(v, 0.0f, 1.0f);
-        return static_cast<unsigned char>(std::lround(clamped * 255.0f));
-    };
-
-    return cFigure::Color(
-        toChannel(std::get<0>(t)),
-        toChannel(std::get<1>(t)),
-        toChannel(std::get<2>(t)));
-}
-
-MI_VARIANT
-const inet::Coord& artery::sionna::PhysicalObject<Float, Spectrum>::getPosition() const {
-    const Point3f p = py_.position();
-    position_ = inet::Coord(static_cast<double>(p.x()), static_cast<double>(p.y()), static_cast<double>(p.z()));
-    return position_;
-}
-
-MI_VARIANT
-const inet::EulerAngles& artery::sionna::PhysicalObject<Float, Spectrum>::getOrientation() const {
-    const Vector3f o = py_.orientation();
-    orientation_ = inet::EulerAngles(static_cast<double>(o.x()), static_cast<double>(o.y()), static_cast<double>(o.z()));
-    return orientation_;
-}
-
-MI_VARIANT
-const inet::ShapeBase* artery::sionna::PhysicalObject<Float, Spectrum>::getShape() const {
-    return nullptr;
-}
-
-MI_VARIANT
-const inet::physicalenvironment::IMaterial* artery::sionna::PhysicalObject<Float, Spectrum>::getMaterial() const {
-    material_ = RadioMaterial(py_.material());
-    return &material_;
-}
-
-MI_VARIANT
-double artery::sionna::PhysicalObject<Float, Spectrum>::getLineWidth() const {
-    return 1.0;
-}
-
-MI_VARIANT
-const cFigure::Color& artery::sionna::PhysicalObject<Float, Spectrum>::getLineColor() const {
-    return getFillColor();
-}
-
-MI_VARIANT
-const cFigure::Color& artery::sionna::PhysicalObject<Float, Spectrum>::getFillColor() const {
-    color_ = tupleToColor(py_.material().color());
-    return color_;
-}
-
-MI_VARIANT
-double artery::sionna::PhysicalObject<Float, Spectrum>::getOpacity() const {
-    return 1.0;
-}
-
-MI_VARIANT
-const char* artery::sionna::PhysicalObject<Float, Spectrum>::getTexture() const {
-    return "";
-}
-
-MI_VARIANT
-const char* artery::sionna::PhysicalObject<Float, Spectrum>::getTags() const {
-    return "";
-}

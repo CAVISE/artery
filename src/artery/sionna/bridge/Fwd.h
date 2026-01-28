@@ -14,6 +14,35 @@
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
 
+/**
+ * The following template helpers make MI_INSTANTIATE_CLASS and MI_INSTANTIATE_STRUCT
+ * portable by using namespace inclusion - not the best option, but the one that works.
+ */
+
+// Instance class template for all mitsuba variants configured for current
+// distribution.
+#define SIONNA_INSTANTIATE_CLASS(x)                         \
+    using namespace mitsuba;                                \
+    MI_INSTANTIATE_CLASS(x)
+
+// Instance struct template for all mitsuba variants configured for current
+// distribution.
+#define SIONNA_INSTANTIATE_STRUCT(x)                        \
+    using namespace mitsuba;                                \
+    MI_INSTANTIATE_STRUCT(x)
+
+// Defines external instances of this class template for all mitsuba variants configured for current
+// distribution.
+#define SIONNA_EXTERN_CLASS(x)                        \
+    using namespace mitsuba;                          \
+    MI_EXTERN_CLASS(x)
+
+// Defines external instances of this struct template for all mitsuba variants configured for current
+// distribution.
+#define SIONNA_EXTERN_STRUCT(x)                        \
+    using namespace mitsuba;                           \
+    MI_EXTERN_STRUCT(x)
+
 #define SIONNA_IMPORT_TYPE(alias, x) using x = typename alias::x;
 
 #define SIONNA_IMPORT_CORE_TYPES_MACRO(x) SIONNA_IMPORT_TYPE(CoreAliases, x)

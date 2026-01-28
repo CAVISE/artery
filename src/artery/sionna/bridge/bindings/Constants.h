@@ -3,6 +3,7 @@
 #include <artery/sionna/bridge/Defaulted.h>
 #include <artery/sionna/bridge/Capabilities.h>
 #include <artery/sionna/bridge/bindings/Modules.h>
+
 #include <mitsuba/core/fwd.h>
 
 NAMESPACE_BEGIN(artery)
@@ -10,65 +11,41 @@ NAMESPACE_BEGIN(sionna)
 
 NAMESPACE_BEGIN(py)
 
-MI_VARIANT class ConstantsModule
+MI_VARIANT
+class ConstantsModule
     : public DefaultedModuleProviderCapability
     , public SionnaRtModule {
 public:
     SIONNA_IMPORT_CORE_TYPES(Float64)
 
-    ConstantsModule()
-        : defaultThickness_(defaulted<Float64>("DEFAULT_THICKNESS"))
-    {}
+    ConstantsModule();
 
-    virtual const char* moduleName() const override {
-        return SionnaRtModule::moduleName() + ".constants";
-    }
+    // IPythonModuleIdentityCapability implementation.
+    const char* moduleName() const override;
 
-    const Defaulted<Float64>& defaultThickness() const {
-        return defaultThickness_;
-    }
+    const Defaulted<Float64>& defaultThickness() const;
 
 private:
     Defaulted<Float64> defaultThickness_;
 };
 
-MI_VARIANT class IntersectionTypes
+MI_VARIANT
+class IntersectionTypes
     : public DefaultedClassProviderCapability
     , public ConstantsModule<Float, Spectrum> {
 public:
     SIONNA_IMPORT_CORE_TYPES(Int32)
 
-    IntersectionTypes()
-        : intersectionNone_(defaulted<Int32>("NONE"))
-        , intersectionSpecular_(defaulted<Int32>("SPECULAR"))
-        , intersectionDiffuse_(defaulted<Int32>("DIFFUSE"))
-        , intersectionRefraction_(defaulted<Int32>("REFRACTION"))
-        , intersectionDiffraction_(defaulted<Int32>("DIFFRACTION")) {
-    }
+    IntersectionTypes();
 
-    virtual const char* className() const override {
-        return "IntersectionTypes";
-    }
+    // IPythonClassIdentityCapability implementation.
+    const char* className() const override;
 
-    const Defaulted<Int32>& none() const {
-        return intersectionNone_;
-    }
-
-    const Defaulted<Int32>& specular() const {
-        return intersectionSpecular_;
-    }
-
-    const Defaulted<Int32>& diffuse() const {
-        return intersectionDiffuse_;
-    }
-
-    const Defaulted<Int32>& refraction() const {
-        return intersectionRefraction_;
-    }
-
-    const Defaulted<Int32>& diffraction() const {
-        return intersectionDiffraction_;
-    }
+    const Defaulted<Int32>& none() const;
+    const Defaulted<Int32>& specular() const;
+    const Defaulted<Int32>& diffuse() const;
+    const Defaulted<Int32>& refraction() const;
+    const Defaulted<Int32>& diffraction() const;
 
 private:
     Defaulted<Int32> intersectionNone_;
@@ -80,16 +57,14 @@ private:
 
 MI_VARIANT
 class Constants {
-    static const ConstantsModule<Float, Spectrum>& constants() {
-        static ConstantsModule<Float, Spectrum> instance;
-        return instance;
-    }
-    
-    static const IntersectionTypes<Float, Spectrum>& intersectionTypes() {
-        static IntersectionTypes<Float, Spectrum> instance;
-        return instance;
-    }
+public:
+    static const ConstantsModule<Float, Spectrum>& constants();
+    static const IntersectionTypes<Float, Spectrum>& intersectionTypes();
 };
+
+SIONNA_EXTERN_CLASS(ConstantsModule)
+SIONNA_EXTERN_CLASS(IntersectionTypes)
+SIONNA_EXTERN_CLASS(Constants)
 
 NAMESPACE_END(py)
 

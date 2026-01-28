@@ -211,6 +211,10 @@ protected:
     }
 };
 
+MI_VARIANT class SceneObject;
+MI_VARIANT class RadioMaterialBase;
+MI_VARIANT class RadioMaterial;
+
 NAMESPACE_END(py)
 
 NAMESPACE_END(sionna)
@@ -221,6 +225,14 @@ NAMESPACE_BEGIN(detail)
 
 template <typename T>
 struct sionna_wrap_caster_enabled : std::false_type {};
+
+template <typename Float, typename Spectrum>
+struct sionna_wrap_caster_enabled<artery::sionna::py::SceneObject<Float, Spectrum>>
+    : std::true_type {};
+
+template <typename Float, typename Spectrum>
+struct sionna_wrap_caster_enabled<artery::sionna::py::RadioMaterial<Float, Spectrum>>
+    : std::true_type {};
 
 template <typename T>
 using enable_if_wrap_caster = std::enable_if_t<sionna_wrap_caster_enabled<T>::value &&
