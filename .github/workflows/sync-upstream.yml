@@ -50,15 +50,16 @@ jobs:
           BRANCH="sync-upstream-$(date +'%Y-%m-%d')"
           git checkout -b "$BRANCH"
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          
           CONFLICT_NOTE=""
 
-          if ! git merge upstream/master --no-ff -m "Merge upstream changes $(date +'%Y-%m-%d')"; then
+          if ! git merge upstream/master --no-ff --allow-unrelated-histories -m "Merge upstream changes $(date +'%Y-%m-%d')"; then
             CONFLICT_NOTE="> [!CAUTION]\n> **Manual resolution required**: This merge produced conflicts that the custom driver could not resolve automatically. Please check the files before merging.\n"
             git add .
-            git commit -m "Merge upstream with manual conflicts"
+            git commit -m "Merge upstream with manual conflicts" || true
           fi
-          
-          git push origin "$BRANCH"
+
+          git push origin "$BRANCH" --force
 
           {
             echo "body<<EOF"
