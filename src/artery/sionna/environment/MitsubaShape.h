@@ -1,12 +1,14 @@
 #pragma once
 
 #include <inet/common/geometry/base/ShapeBase.h>
-#include <inet/common/geometry/shape/Cuboid.h>
-#include <artery/sionna/bridge/Compat.h>
+
 #include <artery/sionna/bridge/Fwd.h>
+#include <artery/sionna/bridge/Compat.h>
+
+#include <mitsuba/core/ray.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/core/ray.h>
+
 #include <drjit/array.h>
 
 NAMESPACE_BEGIN(artery)
@@ -25,6 +27,7 @@ class MitsubaShape
 public:
     SIONNA_IMPORT_CORE_TYPES(BoundingBox3f, Point3f, Vector3f)
     SIONNA_IMPORT_RENDER_TYPES(Scene, Ray3f)
+    SIONNA_IMPORT_BRIDGE_TYPES(Compat)
 
     MitsubaShape(const BoundingBox3f& bbox, mitsuba::ref<Scene> scene);
 

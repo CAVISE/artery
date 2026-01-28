@@ -66,8 +66,10 @@ target_sources(sionna-bridge-inet
         bridge/Compat.cc
         bridge/bindings/Constants.cc
         bridge/bindings/Material.cc
+        bridge/bindings/Scene.cc
         bridge/bindings/SceneObject.cc
         environment/Ground.cc
+        environment/MaterialRegistry.cc
         environment/MitsubaShape.cc
         environment/PhysicalObject.cc
         environment/Material.cc
@@ -77,8 +79,10 @@ target_sources(sionna-bridge-inet
         bridge/Compat.h
         bridge/bindings/Constants.h
         bridge/bindings/Material.h
+        bridge/bindings/Scene.h
         bridge/bindings/SceneObject.h
         environment/Ground.h
+        environment/MaterialRegistry.h
         environment/MitsubaShape.h
         environment/PhysicalObject.h
         environment/Material.h

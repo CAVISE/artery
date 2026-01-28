@@ -5,6 +5,7 @@
 #include <mitsuba/core/ray.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/interaction.h>
+
 #include <inet/environment/contract/IGround.h>
 
 #include <artery/sionna/bridge/Fwd.h>
@@ -19,7 +20,7 @@ MI_VARIANT class UnevenTerrain
 public:
     SIONNA_IMPORT_CORE_TYPES(Point3f, Vector3f)
     SIONNA_IMPORT_RENDER_TYPES(SurfaceInteraction3f, Scene)
-    SIONNA_IMPORT_BRIDGE_TYPES(SionnaScene)
+    SIONNA_IMPORT_BRIDGE_TYPES(SionnaScene, Compat)
 
     UnevenTerrain(std::shared_ptr<SionnaScene> scene);
 

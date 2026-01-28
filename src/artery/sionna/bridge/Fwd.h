@@ -72,6 +72,7 @@ MI_VARIANT class RadioMaterial;
 MI_VARIANT class ConstantsBase;
 MI_VARIANT class Constants;
 MI_VARIANT class SceneObject;
+MI_VARIANT class Compat;
 
 MI_VARIANT struct SionnaBridgeAliases {
     using SionnaBridge = SionnaScene<Float, Spectrum>;
@@ -80,6 +81,7 @@ MI_VARIANT struct SionnaBridgeAliases {
     using Constants = Constants<Float, Spectrum>;
     using ConstantsBase = ConstantsBase<Float, Spectrum>;
     using SceneObject = SceneObject<Float, Spectrum>;
+    using Compat = Compat<Float, Spectrum>;
     // using UnevenTerrain = UnevenTerrain<Float, Spectrum>;
 };
 

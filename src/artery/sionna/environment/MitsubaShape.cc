@@ -9,7 +9,7 @@ SIONNA_INSTANTIATE_CLASS(MitsubaShape)
 
 MI_VARIANT
 MitsubaShape<Float, Spectrum>::MitsubaShape(const BoundingBox3f& bbox, mitsuba::ref<Scene> scene)
-    : size_(compat::Compat<Float, Spectrum>::bboxExtentsToCoord(bbox))
+    : size_(Compat::convert(bbox))
     , scene_(std::move(scene)) {}
 
 MI_VARIANT
@@ -33,7 +33,7 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
     ray.d = Vector3f(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
 
     const auto len = drjit::norm(ray.d);
-    const double lenScalar = compat::toScalar(len);
+    const double lenScalar = Compat::toScalar(len);
     if (lenScalar <= 0.0) {
         intersection1 = intersection2 = normal1 = normal2 = inet::Coord::NIL;
         return false;
@@ -50,14 +50,8 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
         }
 
         const auto si = pi.compute_surface_interaction(ray);
-        intersection1 = inet::Coord(
-            compat::toScalar(si.p.x()),
-            compat::toScalar(si.p.y()),
-            compat::toScalar(si.p.z()));
-        normal1 = inet::Coord(
-            compat::toScalar(si.n.x()),
-            compat::toScalar(si.n.y()),
-            compat::toScalar(si.n.z()));
+        intersection1 = Compat::convert(si.p);
+        normal1 = Compat::convert(si.n);
 
         // Advance slightly beyond first hit to find an exit (if any)
         constexpr float eps = 1e-4f;
@@ -65,19 +59,13 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
         ray2.o = si.p + ray.d * eps;
 
         // remaining distance along the original segment after first hit
-        ray2.maxt = static_cast<Float>(lenScalar - compat::toScalar(si.t) - eps);
+        ray2.maxt = static_cast<Float>(lenScalar - Compat::toScalar(si.t) - eps);
         auto pi2 = scene_->ray_intersect_preliminary(ray2);
 
         if (drjit::all_nested(pi2.is_valid())) {
             const auto si2 = pi2.compute_surface_interaction(ray2);
-            intersection2 = inet::Coord(
-                compat::toScalar(si2.p.x()),
-                compat::toScalar(si2.p.y()),
-                compat::toScalar(si2.p.z()));
-            normal2 = inet::Coord(
-                compat::toScalar(si2.n.x()),
-                compat::toScalar(si2.n.y()),
-                compat::toScalar(si2.n.z()));
+            intersection2 = Compat::convert(si2.p);
+            normal2 = Compat::convert(si2.n);
         } else {
             intersection2 = intersection1;
             normal2 = normal1;
@@ -85,7 +73,6 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
         return true;
     }
 
-    // No scene available: no intersection information
     intersection1 = intersection2 = normal1 = normal2 = inet::Coord::NIL;
     return false;
 }

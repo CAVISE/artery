@@ -10,16 +10,19 @@ RadioMaterial<Float, Spectrum>::RadioMaterial(
     const std::string& name,
     Float64 conductivity,
     Float64 relativePermittivity,
-    typename Defaulted<Float64>::Argument thickness)
-    : py_(name, conductivity, relativePermittivity, thickness) {}
+    typename Defaulted<Float64>::Argument thickness
+)
+    : py_(name, conductivity, relativePermittivity, thickness)
+{}
 
 MI_VARIANT
 RadioMaterial<Float, Spectrum>::RadioMaterial(nanobind::object obj)
-    : py_(std::move(obj)) {}
+    : py_(std::move(obj))
+{}
 
 MI_VARIANT
 inet::physicalenvironment::Ohmm RadioMaterial<Float, Spectrum>::getResistivity() const {
-    const double sigma = compat::toScalar(py_->conductivity());
+    const double sigma = Compat::toScalar(py_.conductivity());
     if (sigma <= 0.0) {
         return inet::physicalenvironment::Ohmm(std::numeric_limits<double>::infinity());
     }
@@ -28,7 +31,7 @@ inet::physicalenvironment::Ohmm RadioMaterial<Float, Spectrum>::getResistivity()
 
 MI_VARIANT
 double RadioMaterial<Float, Spectrum>::getRelativePermittivity() const {
-    return compat::toScalar(py_->relativePermittivity());
+    return Compat::toScalar(py_.relativePermittivity());
 }
 
 MI_VARIANT
@@ -40,8 +43,8 @@ MI_VARIANT
 double RadioMaterial<Float, Spectrum>::getDielectricLossTangent(inet::physicalenvironment::Hz frequency) const {
     const double f = frequency.get();
 
-    const double sigma = compat::toScalar(py_->conductivity());
-    const double epsR = compat::toScalar(py_->relativePermittivity());
+    const double sigma = Compat::toScalar(py_.conductivity());
+    const double epsR = Compat::toScalar(py_.relativePermittivity());
 
     const double omega = 2.0 * M_PI * f;
     const double e0 = inet::units::constants::e0.get();
@@ -55,13 +58,13 @@ double RadioMaterial<Float, Spectrum>::getDielectricLossTangent(inet::physicalen
 
 MI_VARIANT
 double RadioMaterial<Float, Spectrum>::getRefractiveIndex() const {
-    const double epsR = compat::toScalar(py_->relativePermittivity());
+    const double epsR = Compat::toScalar(py_.relativePermittivity());
     return std::sqrt(std::max(0.0, epsR));
 }
 
 MI_VARIANT
 inet::physicalenvironment::mps RadioMaterial<Float, Spectrum>::getPropagationSpeed() const {
-    if (const double epsR = compat::toScalar(py_->relativePermittivity()); epsR <= 0.0) {
+    if (const double epsR = Compat::toScalar(py_.relativePermittivity()); epsR <= 0.0) {
         return inet::units::constants::c;
     } else if (const double n = std::sqrt(epsR); n <= 0.0) {
         return inet::units::constants::c;

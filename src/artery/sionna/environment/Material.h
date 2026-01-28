@@ -1,12 +1,14 @@
 #pragma once
 
-#include <artery/sionna/bridge/Defaulted.h>
+#include <nanobind/nanobind.h>
+
 #include <artery/sionna/bridge/Fwd.h>
+#include <artery/sionna/bridge/Defaulted.h>
 #include <artery/sionna/bridge/bindings/Constants.h>
 #include <artery/sionna/bridge/bindings/Material.h>
+
 #include <inet/common/INETDefs.h>
 #include <inet/environment/contract/IMaterial.h>
-#include <nanobind/nanobind.h>
 
 #include <string>
 
@@ -17,16 +19,18 @@ MI_VARIANT class RadioMaterial
     : public inet::physicalenvironment::IMaterial {
 public:
     SIONNA_IMPORT_CORE_TYPES(Float64)
-
-    using Constants = py::Constants<Float, Spectrum>;
+    SIONNA_IMPORT_BRIDGE_TYPES(Constants, Compat)
 
     /**
      * @brief Sionna radio material constructor. Current implementation assumes non-magnetic materials, so relative permeability that
      * is different to 1 will raise error.
      */
     RadioMaterial(
-        const std::string& name, Float64 conductivity = 0.0, Float64 relativePermittivity = 1.0,
-        typename Defaulted<Float64>::Argument thickness = Constants::DEFAULT_THICKNESS);
+        const std::string& name,
+        Float64 conductivity = 0.0,
+        Float64 relativePermittivity = 1.0,
+        typename Defaulted<Float64>::Argument thickness = Constants::constants().defaultThickness()
+    );
 
     explicit RadioMaterial(nanobind::object obj);
 

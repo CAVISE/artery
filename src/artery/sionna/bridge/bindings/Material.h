@@ -17,12 +17,10 @@ NAMESPACE_BEGIN(sionna)
 
 NAMESPACE_BEGIN(py)
 
-using literals::operator""_a;
-
 MI_VARIANT
 class RadioMaterialBase
     : public SionnaRtModuleBase
-    , public WrapPythonClassCapability {
+    , public ExportBoundObjectCapability {
 public:
     using ColorType = std::tuple<Float, Float, Float>;
 
@@ -30,6 +28,7 @@ public:
     const char* className() const override;
 
     std::string materialName() const;
+
     ColorType color() const;
     void setColor(ColorType newColor);
 };

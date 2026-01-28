@@ -8,6 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <unordered_map>
 
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
@@ -187,10 +188,21 @@ public:
 };
 
 /**
+ * @brief Capability to expose the underlying bound Python object.
+ */
+class ExportBoundObjectCapability
+    : public WrapPythonClassCapability {
+public:
+    nb::object object() const {
+        return nb::borrow<nb::object>(*this->bound_);
+    }
+};
+
+/**
  * @brief Constructs defaulted attributes for a class.
  */
 class DefaultedClassProviderCapability
-    : public IPythonClassIdentityCapability {
+    : public virtual IPythonClassIdentityCapability {
 protected:
     template <typename T>
     Defaulted<T> defaulted(const char* name) const {
@@ -203,7 +215,7 @@ protected:
  * @see DefaultedClassProviderCapability
  */
 class DefaultedModuleProviderCapability
-    : public IPythonModuleIdentityCapability {
+    : public virtual IPythonModuleIdentityCapability {
 protected:
     template <typename T>
     Defaulted<T> defaulted(const char* name) const {
@@ -260,5 +272,42 @@ struct type_caster<T, enable_if_wrap_caster<T>> {
     }
 };
 
+template <typename T>
+struct type_caster<std::unordered_map<std::string, T>, enable_if_wrap_caster<T>> {
+    using ObjectsDict = std::unordered_map<std::string, T>;
+    NB_TYPE_CASTER(ObjectsDict, const_name<ObjectsDict>())
+
+    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+        make_caster<dict> dict_caster;
+        if (!dict_caster.from_python(src, flags_for_local_caster<dict>(flags), cleanup)) {
+            return false;
+        }
+
+        dict d = cast_t<dict>(dict_caster);
+        for (auto item : d) {
+            make_caster<std::string> key_caster;
+            if (!key_caster.from_python(item.first, flags_for_local_caster<std::string>(flags), cleanup)) {
+                return false;
+            }
+
+            make_caster<T> value_caster;
+            if (!value_caster.from_python(item.second, flags_for_local_caster<T>(flags), cleanup)) {
+                return false;
+            }
+            value.emplace(cast_t<std::string>(key_caster), cast_t<T>(value_caster));
+        }
+
+        return true;
+    }
+
+    static handle from_cpp(const Value& src, rv_policy policy, cleanup_list *cleanup) noexcept {
+        dict d;
+        for (const auto& [k, v] : src) {
+            d[k.c_str()] = make_caster<T>::from_cpp(v, policy, cleanup);
+        }
+        return d.release();
+    }
+};
+
 NAMESPACE_END(detail)
-NAMESPACE_END(NB_NAMESPACE)
+NAMESPACE_END(nanobind)
