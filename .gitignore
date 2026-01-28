@@ -1,3 +1,4 @@
+<<<<<<< current
 # Clangd server cache
 .cache
 
@@ -9,6 +10,8 @@ compile_commands.json
 simdata/
 !simdata/artery/logs/.gitkeep
 
+=======
+>>>>>>> incoming
 ansible/*.retry
 scenarios/**/*.pyc
 scenarios/*/results/*

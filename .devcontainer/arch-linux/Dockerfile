@@ -28,7 +28,11 @@ RUN pacman -Syu --noconfirm     \
 FROM setup AS build
 
 # SUMO version (github tag)
+<<<<<<< current
 ARG SUMO_TAG=v1_23_0
+=======
+ARG SUMO_TAG=v1_21_0
+>>>>>>> incoming
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 # GeographicLib version (github tag)
@@ -77,6 +81,7 @@ USER ${USER}
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
+<<<<<<< current
 
 FROM final AS cached-build
 
@@ -103,3 +108,5 @@ RUN for cfg in ${BUILD_CONFIGS}; do                 \
         --generator Ninja                           \
         --config "$cfg";                            \
     done
+=======
+>>>>>>> incoming

@@ -4,6 +4,7 @@
 #include "artery/traci/MobilityBase.h"
 #include "artery/traci/PersonMobility.h"
 #include "artery/traci/VehicleMobility.h"
+<<<<<<< current
 
 #include <inet/mobility/contract/IMobility.h>
 #include <omnetpp/csimplemodule.h>
@@ -12,6 +13,12 @@ namespace inet
 {
 class CanvasProjection;
 }
+=======
+#include <inet/mobility/contract/IMobility.h>
+#include <omnetpp/csimplemodule.h>
+
+namespace inet { class CanvasProjection; }
+>>>>>>> incoming
 
 namespace artery
 {
@@ -51,7 +58,11 @@ class InetVehicleMobility : public InetMobility, public VehicleMobility
 {
 public:
     void initialize(int stage) override;
+<<<<<<< current
     const std::string& getId() override { return mVehicleId; };
+=======
+    const std::string& getId() override  { return mVehicleId; };
+>>>>>>> incoming
 };
 
 class InetPersonMobility : public InetMobility, public PersonMobility
@@ -61,6 +72,10 @@ public:
     const std::string& getId() override { return mPersonId; };
 };
 
+<<<<<<< current
 }  // namespace artery
+=======
+} // namespace artery
+>>>>>>> incoming
 
 #endif /* ARTERY_INETMOBILITY_H_SKZPGILS */

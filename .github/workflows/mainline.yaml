@@ -1,6 +1,11 @@
 name: CI on main branch
 
 on:
+<<<<<<< current
+=======
+  push:
+    branches: [master]
+>>>>>>> incoming
   pull_request:
     branches: [master]
 

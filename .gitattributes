@@ -1,3 +1,6 @@
 docs/assets/* filter=lfs diff=lfs merge=lfs -text
+<<<<<<< current
 * merge=custom-driver
 
+=======
+>>>>>>> incoming

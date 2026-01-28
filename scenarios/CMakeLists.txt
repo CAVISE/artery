@@ -2,6 +2,7 @@ add_subdirectory(artery)
 
 add_subdirectory(gemv2)
 add_subdirectory(highway-police)
+<<<<<<< current
 add_subdirectory(single_town06_cosim)
 add_subdirectory(transfusion)
 
@@ -15,6 +16,8 @@ add_opp_run(cooperative_intersection WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DI
 add_opp_run(4cars_coperception WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/4cars_coperception NED_FOLDERS ${CMAKE_SOURCE_DIR}/src/cavise)
 add_opp_run(v2xp_datadump_town06_carla WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/v2xp_datadump_town06_carla NED_FOLDERS ${CMAKE_SOURCE_DIR}/src/cavise)
 
+=======
+>>>>>>> incoming
 if(WITH_ENVMOD)
     add_subdirectory(envmod)
     add_subdirectory(rsu_grid)
@@ -25,7 +28,13 @@ endif()
 if(WITH_TESTBED)
     add_subdirectory(testbed)
 endif()
+<<<<<<< current
 
+=======
+if(WITH_TRANSFUSION)
+    add_subdirectory(transfusion)
+endif()
+>>>>>>> incoming
 if(WITH_OTS)
     add_opp_run(ots_demo WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ots-demo)
 endif()

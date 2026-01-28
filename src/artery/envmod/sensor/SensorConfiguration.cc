@@ -57,4 +57,8 @@ std::vector<Position> createSensorArc(const SensorConfigFov& config, const Envir
     return createSensorArc(config, sensorPos, egoObj.getHeading());
 }
 
+<<<<<<< current
 } // namespace artery
+=======
+} // namespace artery
+>>>>>>> incoming
