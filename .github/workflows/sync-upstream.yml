@@ -79,7 +79,7 @@ jobs:
       - name: Create Pull Request
         if: steps.sync-cache.outputs.cache-hit != 'true'
         env:
-          GH_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
         run: |
           gh pr create \
             --title "Merge upstream changes ($(date +'%Y-%m-%d'))" \
