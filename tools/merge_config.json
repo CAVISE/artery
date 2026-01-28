@@ -1,9 +1,15 @@
 {
   "prefer_theirs": [
-    "src/artery"
+    "src/artery",
+    ".devcontainer",
+    ".dockerignore"
   ],
   "prefer_ours": [
-    "src/cavise"
+    "src/cavise",
+    ".gitattributes",
+    ".github",
+    ".github/workflows",
+    ".gitmodules"
   ],
   "default_behavior": "manual_resolution",
   "upstream_remote": "upstream",
