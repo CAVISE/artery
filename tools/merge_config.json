@@ -3,9 +3,12 @@
     "src/artery"
   ],
   "prefer_ours": [
-    "src/cavise"
+    "src/cavise",
+    ".gitattributes",
+    ".github",
+    ".gitmodules"
   ],
-  "default_behavior": "manual_resolution",
+  "default_behavior": "prefer_theirs",
   "upstream_remote": "upstream",
   "upstream_branch": "master"
 }
