@@ -3,11 +3,18 @@
     "build": {
         "context": "${localWorkspaceFolder}",
         "dockerfile": "${localWorkspaceFolder}/.devcontainer/debian/Dockerfile",
+<<<<<<< current
         "target": "final",
         "args": {
             "USER": "devcontainer",
             "OMNETPP_TAG": "omnetpp-5.6.2",
             "SUMO_TAG": "v1_23_0",
+=======
+        "args": {
+            "USER": "devcontainer",
+            "OMNETPP_TAG": "omnetpp-5.6.2",
+            "SUMO_TAG": "v1_21_0",
+>>>>>>> incoming
             "GEOGRAPHICLIB_TAG": "v2.5"
         }
     },

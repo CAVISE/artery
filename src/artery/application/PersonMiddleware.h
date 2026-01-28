@@ -16,6 +16,7 @@ namespace artery
 
 class PersonMiddleware : public Middleware
 {
+<<<<<<< current
 public:
     PersonMiddleware();
     void initialize(int stage) override;
@@ -34,3 +35,24 @@ private:
 }  // namespace artery
 
 #endif /* ARTERY_PERSONMIDDLEWARE_H_IH5GPCMP */
+=======
+    public:
+        PersonMiddleware();
+        void initialize(int stage) override;
+        void finish() override;
+
+    protected:
+        void initializeStationType();
+        void initializePersonController(omnetpp::cPar&);
+        void receiveSignal(omnetpp::cComponent*, omnetpp::simsignal_t, omnetpp::cObject*, omnetpp::cObject*) override;
+
+    private:
+        traci::PersonController* mPersonController = nullptr;
+        VehicleDataProvider mVehicleDataProvider;
+};
+
+} // namespace artery
+
+#endif /* ARTERY_PERSONMIDDLEWARE_H_IH5GPCMP */
+
+>>>>>>> incoming

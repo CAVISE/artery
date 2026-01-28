@@ -3,7 +3,10 @@
     "build": {
         "context": "${localWorkspaceFolder}",
         "dockerfile": "${localWorkspaceFolder}/.devcontainer/arch-linux/Dockerfile",
+<<<<<<< current
         "target": "final",
+=======
+>>>>>>> incoming
         "args": {
             "USER": "devcontainer",
             "OMNETPP_TAG": "omnetpp-5.6.2",

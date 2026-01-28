@@ -219,4 +219,8 @@ function(generate_run_config)
     # substitute variables first, then generator expressions
     configure_file(${PROJECT_SOURCE_DIR}/cmake/run-artery-config.ini.in ${args_FILE} @ONLY)
     file(GENERATE OUTPUT ${args_FILE} INPUT ${args_FILE} CONDITION $<CONFIG:${args_CONFIG}>)
+<<<<<<< current
 endfunction()
+=======
+endfunction()
+>>>>>>> incoming

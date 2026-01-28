@@ -1,4 +1,7 @@
 .cmdenv-log
 .qtenvrc
 sumo-*.log
+<<<<<<< current
 *.log
+=======
+>>>>>>> incoming

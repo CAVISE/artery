@@ -5,15 +5,26 @@
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
+<<<<<<< current
 //
+=======
+// 
+>>>>>>> incoming
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
+<<<<<<< current
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
+=======
+// 
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program.  If not, see http://www.gnu.org/licenses/.
+// 
+>>>>>>> incoming
 
 #include "artery/transfusion/TransfusionService.h"
 #include "artery/utility/AsioScheduler.h"
@@ -25,9 +36,12 @@
 #include <vanetza/common/byte_view.hpp>
 #include <sstream>
 
+<<<<<<< current
 // CAVISE
 #include <zmq.hpp>
 
+=======
+>>>>>>> incoming
 using namespace omnetpp;
 
 namespace artery
@@ -43,6 +57,7 @@ void TransfusionService::initialize()
     AsioScheduler* scheduler = check_and_cast<AsioScheduler*>(getSimulation()->getScheduler());
     m_asio_task = scheduler->createTask(*this);
 
+<<<<<<< current
     // CAVISE
     // Открыть файл для записи
     std::ofstream outputFile("output.txt");
@@ -58,6 +73,8 @@ void TransfusionService::initialize()
     // CAVISE
 
     
+=======
+>>>>>>> incoming
     boost::asio::ip::tcp::endpoint endpoint;
     boost::system::error_code ec;
     auto remote_ip = boost::asio::ip::make_address(par("remote_ip").stringValue(), ec);
@@ -75,12 +92,18 @@ void TransfusionService::initialize()
     }
 }
 
+<<<<<<< current
 
+=======
+>>>>>>> incoming
 void TransfusionService::handleMessage(cMessage* msg)
 {
     if (msg == m_asio_task->getDataMessage())
     {
+<<<<<<< current
 
+=======
+>>>>>>> incoming
         // receiving a message from external software
         auto buffer = m_asio_task->getDataMessage()->getBuffer();
         std::size_t len = m_asio_task->getDataMessage()->getLength();
@@ -109,9 +132,12 @@ void TransfusionService::handleMessage(cMessage* msg)
 
 void TransfusionService::processMessage(const Transfusion::TransfusionMsg& msg)
 {
+<<<<<<< current
     // Вывод содержания сообщения
     std::cout << "Received message: " << msg.DebugString() << std::endl;
 
+=======
+>>>>>>> incoming
     using namespace vanetza;
     btp::DataRequestB request;
     request.destination_port = host_cast<uint16_t>(msg.destination_port());

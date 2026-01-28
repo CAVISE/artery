@@ -1,3 +1,4 @@
+<<<<<<< current
 name: Prepare GitHub containers
 
 on:
@@ -7,6 +8,17 @@ on:
 
 jobs:
   build-base:
+=======
+name: Prepare GitHub container
+
+on:
+  push:
+    branches: [master]
+  workflow_call:
+
+jobs:
+  build-docker-image:
+>>>>>>> incoming
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,6 +33,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/checkout@v6
+<<<<<<< current
       - uses: docker/setup-buildx-action@v3
 
       - name: Build and push
@@ -59,14 +72,24 @@ jobs:
           fetch-depth: 0
 
       - uses: docker/setup-buildx-action@v3
+=======
+
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+>>>>>>> incoming
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
+<<<<<<< current
           file: .devcontainer/${{ matrix.distribution }}/Dockerfile
           push: true
           target: cached-build
           tags: ghcr.io/cavise/artery-cached:${{ matrix.distribution }}-latest
+=======
+          push: true
+          tags: ghcr.io/riebl/artery-gh-runner:latest
+>>>>>>> incoming
           cache-from: type=gha
           cache-to: type=gha,mode=max
