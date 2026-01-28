@@ -4,9 +4,14 @@
  * Licensed under GPLv2, see COPYING file for detailed license and warranty terms.
  */
 
+<<<<<<< current
 #include "artery/application/PersonMiddleware.h"
 
 #include "artery/application/StationType.h"
+=======
+#include "artery/application/StationType.h"
+#include "artery/application/PersonMiddleware.h"
+>>>>>>> incoming
 #include "artery/traci/ControllablePerson.h"
 #include "artery/traci/MobilityBase.h"
 #include "artery/utility/InitStages.h"
@@ -19,7 +24,12 @@ namespace artery
 
 Define_Module(PersonMiddleware)
 
+<<<<<<< current
 PersonMiddleware::PersonMiddleware() : mVehicleDataProvider(0)  // OMNeT++ assigns RNG after construction: set final station ID later
+=======
+PersonMiddleware::PersonMiddleware() :
+    mVehicleDataProvider(0) // OMNeT++ assigns RNG after construction: set final station ID later
+>>>>>>> incoming
 {
 }
 
@@ -58,17 +68,34 @@ void PersonMiddleware::initializeStationType()
 
 void PersonMiddleware::initializePersonController(cPar& mobilityPar)
 {
+<<<<<<< current
     auto mobility = inet::getModuleFromPar<ControllablePerson>(mobilityPar, findHost());
     mPersonController = mobility->getPersonController();
     ASSERT(mPersonController);
     getFacilities().register_mutable(mPersonController);
+=======
+	auto mobility = inet::getModuleFromPar<ControllablePerson>(mobilityPar, findHost());
+	mPersonController = mobility->getPersonController();
+	ASSERT(mPersonController);
+	getFacilities().register_mutable(mPersonController);
+>>>>>>> incoming
 }
 
 void PersonMiddleware::receiveSignal(cComponent* component, simsignal_t signal, cObject* obj, cObject* details)
 {
+<<<<<<< current
     if (signal == MobilityBase::stateChangedSignal && mPersonController) {
         mVehicleDataProvider.update(getKinematics(*mPersonController));
     }
 }
 
 }  // namespace artery
+=======
+	if (signal == MobilityBase::stateChangedSignal && mPersonController) {
+		mVehicleDataProvider.update(getKinematics(*mPersonController));
+	}
+}
+
+} // namespace artery
+
+>>>>>>> incoming

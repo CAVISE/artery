@@ -7,7 +7,11 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     container:
+<<<<<<< current
       image: ghcr.io/cavise/artery-gh-runner:latest
+=======
+      image: ghcr.io/riebl/artery-gh-runner:latest
+>>>>>>> incoming
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

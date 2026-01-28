@@ -1,17 +1,27 @@
+<<<<<<< current
 #include "artery/networking/Router.h"
 
+=======
+>>>>>>> incoming
 #include "artery/application/Middleware.h"
 #include "artery/networking/GeoNetIndication.h"
 #include "artery/networking/GeoNetPacket.h"
 #include "artery/networking/IDccEntity.h"
 #include "artery/networking/PositionFixObject.h"
+<<<<<<< current
+=======
+#include "artery/networking/Router.h"
+>>>>>>> incoming
 #include "artery/networking/Runtime.h"
 #include "artery/networking/SecurityEntity.h"
 #include "artery/nic/RadioDriverBase.h"
 #include "artery/nic/RadioDriverProperties.h"
 #include "artery/utility/InitStages.h"
 #include "artery/utility/PointerCheck.h"
+<<<<<<< current
 
+=======
+>>>>>>> incoming
 #include <boost/units/cmath.hpp>
 #include <boost/units/io.hpp>
 #include <inet/common/ModuleAccess.h>
@@ -19,15 +29,21 @@
 #include <vanetza/btp/header_conversion.hpp>
 #include <vanetza/geonet/data_confirm.hpp>
 
+<<<<<<< current
 namespace vanetza
 {
 namespace geonet
 {
+=======
+namespace vanetza {
+namespace geonet {
+>>>>>>> incoming
 
 static inline std::ostream& operator<<(std::ostream& os, const vanetza::geonet::LongPositionVector& epv)
 {
     using namespace boost::units;
     os << "\n"
+<<<<<<< current
        << "latitude: \t" << abs(epv.position().latitude) << (epv.latitude.value() < 0 ? " S" : " N") << "\n"
        << "longitude: \t" << abs(epv.position().longitude) << (epv.longitude.value() < 0 ? " W" : " E") << "\n"
        << "heading: \t" << vanetza::units::GeoAngle{epv.heading};
@@ -36,6 +52,16 @@ static inline std::ostream& operator<<(std::ostream& os, const vanetza::geonet::
 
 }  // namespace geonet
 }  // namespace vanetza
+=======
+        << "latitude: \t" << abs(epv.position().latitude) << (epv.latitude.value() < 0 ? " S" : " N") << "\n"
+        << "longitude: \t" << abs(epv.position().longitude) << (epv.longitude.value() < 0 ? " W" : " E") << "\n"
+        << "heading: \t" << vanetza::units::GeoAngle { epv.heading };
+    return os;
+}
+
+} // namespace geonet
+} // namespace vanetza
+>>>>>>> incoming
 
 
 namespace artery
@@ -78,7 +104,11 @@ void Router::initialize(int stage)
         // bind router to DCC entity
         auto dccEntity = inet::findModuleFromPar<IDccEntity>(par("dccModule"), this);
         mRouter->set_access_interface(notNullPtr(dccEntity->getRequestInterface()));
+<<<<<<< current
         mRouter->set_dcc_field_generator(dccEntity->getGeonetFieldGenerator());  // nullptr is okay
+=======
+        mRouter->set_dcc_field_generator(dccEntity->getGeonetFieldGenerator()); // nullptr is okay
+>>>>>>> incoming
 
         // pass BTP-B messages to transport layer dispatcher in network interface
         using vanetza::geonet::UpperProtocol;
@@ -133,7 +163,11 @@ void Router::initializeManagementInformationBase(vanetza::geonet::ManagementInfo
 {
     using namespace std::chrono;
 
+<<<<<<< current
     mib.itsGnDefaultTrafficClass.tc_id(3);  // send BEACONs with DP3
+=======
+    mib.itsGnDefaultTrafficClass.tc_id(3); // send BEACONs with DP3
+>>>>>>> incoming
     mib.itsGnIsMobile = par("isMobile");
     mib.itsGnSecurity = (mSecurityEntity != nullptr);
     mib.vanetzaDeferInitialBeacon = duration_cast<vanetza::Clock::duration>(duration<double>(par("deferInitialBeacon")));
@@ -204,4 +238,8 @@ vanetza::geonet::Address Router::generateAddress(const vanetza::MacAddress& mac)
     return gnAddr;
 }
 
+<<<<<<< current
 }  // namespace artery
+=======
+} // namespace artery
+>>>>>>> incoming
