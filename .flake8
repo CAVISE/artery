@@ -10,6 +10,7 @@ exclude =
 ignore =
     E124
 
+
 ### File patterns ###
 exclude =
     .git,
