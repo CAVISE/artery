@@ -73,6 +73,7 @@ class Config:
     # CMake-specific
     build_configs: Iterable[str] = field(default_factory=lambda: ['Debug'])
     generator: Optional[str] = None
+    sanitizer: Optional[str] = None
     defines: List[Tuple[str, str, str]] = field(default_factory=lambda: [])
     # Conan-specific
     # whether to place conan home in build directory
@@ -191,6 +192,16 @@ class Routines:
 
             if self.__params.generator is not None:
                 command.extend(['-G', self.__params.generator])
+
+            if self.__params.sanitizer:
+                if self.__params.sanitizer == 'asan':
+                    self._decorate_cmake_variable('CMAKE_CXX_FLAGS', '-fsanitize=address -fno-omit-frame-pointer')
+                    self._decorate_cmake_variable('CMAKE_C_FLAGS', '-fsanitize=address -fno-omit-frame-pointer')
+                    self._decorate_cmake_variable('CMAKE_LINKER_FLAGS', '-fsanitize=address')
+                if self.__params.sanitizer == 'msan':
+                    self._decorate_cmake_variable('CMAKE_CXX_FLAGS', '-fsanitize=memory -fno-omit-frame-pointer -O2')
+                    self._decorate_cmake_variable('CMAKE_C_FLAGS', '-fsanitize=memory -fno-omit-frame-pointer -O2')
+                    self._decorate_cmake_variable('CMAKE_LINKER_FLAGS', '-fsanitize=memory')
 
             if len(self.__params.defines) > 0:
                 for key, var_type, value in self.__params.defines:
@@ -340,6 +351,8 @@ def parse_cli_args() -> argparse.Namespace:
     # Environment
     parser.add_argument('--build-dir', action='store', dest='build_directory')
     parser.add_argument('--local-cache', action='store_true', dest='local_cache', default=False)
+    # Sanitizers
+    parser.add_argument('--sanitizer', action='store', dest='sanitizer', choices=['asan', 'msan'])
     # TODO: allow more configs
     parser.add_argument('--config', action='append', dest='configs', choices=['Debug', 'Release'])
     parser.add_argument('--parallel', action='store', dest='cores')
@@ -387,6 +400,9 @@ def main():
     if getattr(args, 'generator') is not None:
         params.generator = args.generator
         logger.info(f'config: user-provided generator: "{params.generator}"')
+    if getattr(args, 'sanitizer') is not None:
+        params.sanitizer = args.sanitizer
+        logger.info(f'config: user-provided sanitizer: "{params.sanitizer}"')
     params.local_cache = args.local_cache
 
     resolve_profiles(params, args)
