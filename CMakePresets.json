@@ -2,17 +2,8 @@
   "version": 6,
   "configurePresets": [
     {
-      "name": "base",
-      "hidden": true,
-      "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
-    },
-    {
       "name": "asan",
       "displayName": "AddressSanitizer Build",
-      "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -g",
@@ -26,7 +17,6 @@
     {
       "name": "msan",
       "displayName": "MemorySanitizer Build",
-      "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_FLAGS": "-fsanitize=memory -fno-omit-frame-pointer -g -O2",
