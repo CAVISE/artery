@@ -25,12 +25,21 @@ jobs:
             -D WITH_SIMULTE:BOOL=ON       \
             -D WITH_OTS:BOOL=ON           \
             -D WITH_TESTBED:BOOL=ON       \
-            -D WITH_TRANSFUSION:BOOL=ON
+            -D WITH_TRANSFUSION:BOOL=ON   \
+            -D CMAKE_EXPORT_COMPILE_COMMANDS=ON
+
 
       - name: Build Artery codegen target
         run: cmake --build build/Debug --target artery-codegen
 
-      - name: Run clang-tidy
-        run: |
-          git config --global --add safe.directory $PWD
-          git diff -U0 origin/master | clang-tidy-diff.py -p1 -path .
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - name: Clang-Tidy Review
+        uses: ZedThree/clang-tidy-review@v0.22.0
+        id: review
+        with:
+
+          token: ${{ secrets.GITHUB_TOKEN }}
+          build_dir: build/Debug
+          split_workflow: false
