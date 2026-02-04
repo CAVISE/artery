@@ -1,3 +1,4 @@
+ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 Vagrant.configure("2") do |config|
     config.vm.box = "generic/debian12"
     config.vm.synced_folder ".", "/vagrant"

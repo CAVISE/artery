@@ -1,0 +1,98 @@
+name: Scheduled Upstream Sync
+
+on:
+  schedule:
+    - cron: '0 0 */14 * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth:
+          token: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
+
+      - name: Set up Git User
+        uses: fregante/setup-git-user@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Fetch Upstream
+        id: upstream
+        run: |
+          git remote add upstream https://github.com/riebl/artery.git
+          git fetch upstream master
+          echo "hash=$(git rev-parse upstream/master)" >> $GITHUB_OUTPUT
+
+      - name: Check Cache
+        id: sync-cache
+        uses: actions/cache@v5
+        with:
+          path: .sync-done
+          key: sync-${{ steps.upstream.outputs.hash }}
+
+      - name: Prepare and Merge
+        if: steps.sync-cache.outputs.cache-hit != 'true'
+        id: sync_logic
+        run: |
+          git config merge.custom-driver.name "Custom merge driver for Artery/Cavise"
+          git config merge.custom-driver.driver "python3 tools/custom_merge.py %O %A %B %P"
+          
+          BRANCH="sync-upstream-$(date +'%Y-%m-%d')"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+          if ! git merge upstream/master --no-ff --allow-unrelated-histories -X theirs -m "Merge upstream changes $(date +'%Y-%m-%d')"; then
+            echo "Structural conflicts detected (like add/add). Running custom resolver..."
+            
+            python3 tools/custom_merge.py --fix-structural
+            
+            git add .
+            git commit -m "Merge upstream with resolved structural conflicts" || echo "Nothing to commit"
+          fi
+          
+          git push origin "$BRANCH" --force
+
+          DELIMITER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64 | tr -dc 'a-zA-Z')
+          {
+            echo "body<<$DELIMITER"
+            echo "Top 5 Recent Changes from Upstream"
+            echo ""
+            git log --since="14 days ago" upstream/master --pretty=format:"%h|%s" | while read -r line; do
+              [ -z "$line" ] && continue
+              hash=$(echo "$line" | cut -d'|' -f1)
+              stats=$(git show --shortstat "$hash" | tail -n1 || echo "")
+              added=$(echo "$stats" | awk '{for(i=1;i<=NF;i++) if($i ~ /insertion/) print $(i-1)}' | grep . || echo 0)
+              deleted=$(echo "$stats" | awk '{for(i=1;i<=NF;i++) if($i ~ /deletion/) print $(i-1)}' | grep . || echo 0)
+              echo "$((added + deleted)) $line"
+            done | sort -rn | head -n 5 | awk '{$1=""; print "* " $0}'
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "${{ steps.upstream.outputs.hash }}" > .sync-done
+
+      - name: Create Pull Request
+        if: steps.sync-cache.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_SYNC_TOKEN }}
+        run: |
+          if gh pr list --head "${{ steps.sync_logic.outputs.branch }}" | grep -q "${{ steps.sync_logic.outputs.branch }}"; then
+            echo "PR already exists, updating..."
+          else
+            gh pr create \
+              --repo ${{ github.repository }} \
+              --title "Merge upstream changes ($(date +'%Y-%m-%d'))" \
+              --body "${{ steps.sync_logic.outputs.body }}" \
+              --base main \
+              --head ${{ steps.sync_logic.outputs.branch }}
+          fi

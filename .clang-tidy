@@ -1,0 +1,34 @@
+---
+Checks:          'clang-diagnostic-*,clang-analyzer-*,performance-*,readability-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,mpi-*,misc-*,-readability-magic-numbers,-cppcoreguidelines-avoid-magic-numbers,-misc-non-private-member-variables-in-classes,-clang-analyzer-optin.mpi*,-bugprone-exception-escape,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-function-cognitive-complexity,-misc-no-recursion,-bugprone-easily-swappable-parameters,-readability-identifier-length'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     file
+CheckOptions:
+
+  # Don't expand macros when simplifying boolean expressions,
+  # otherwise this breaks `ASSERT` macros!
+  - key:             readability-simplify-boolean-expr.IgnoreMacros
+    value:           'true'
+---
+
+Disabled checks and reasons:
+
+These are all basically unavoidable in HPC numeric code:
+-readability-magic-numbers
+-cppcoreguidelines-avoid-magic-numbers
+-cppcoreguidelines-pro-bounds-pointer-arithmetic
+-readability-function-cognitive-complexity
+-bugprone-easily-swappable-parameters
+-readability-identifier-length
+
+This doesn't work very well:
+-clang-analyzer-optin.mpi*
+
+This is a suggestion, and is perfectly fine:
+-misc-no-recursion
+
+Expensive (and noisy, because we let exceptions escape from `main`):
+-bugprone-exception-escape
+
+TODO: This would be good to fix and re-enable:
+-misc-non-private-member-variables-in-classes

@@ -7,13 +7,13 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/riebl/artery-gh-runner:latest
+      image: ghcr.io/cavise/artery-gh-runner:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
@@ -29,7 +29,9 @@ jobs:
           tools/build.py -cb --config Release \
             --generator Ninja                 \
             -D WITH_SIMULTE:BOOL=ON           \
-            -D WITH_OTS:BOOL=ON
+            -D WITH_OTS:BOOL=ON               \
+            -D WITH_TESTBED:BOOL=ON           \
+            -D WITH_TRANSFUSION:BOOL=ON
 
       - name: Run tests
         run: . .venv/bin/activate && PYTHONPATH=$PWD python3 tools/ci/run.py -l build/Release/run-artery.ini -s scenarios
