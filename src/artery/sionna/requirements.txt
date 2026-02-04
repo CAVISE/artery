@@ -1,0 +1,3 @@
+setuptools
+sionna-rt
+nanobind

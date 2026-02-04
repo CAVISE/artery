@@ -14,5 +14,8 @@
   path = extern/veins
   url = https://github.com/sommer/veins
 [submodule "extern/sim0mqpp"]
-  path = extern/sim0mqpp
-  url = https://github.com/riebl/sim0mqpp
+	path = extern/sim0mqpp
+	url = https://github.com/riebl/sim0mqpp.git
+[submodule "extern/robin-map"]
+	path = extern/robin-map
+	url = https://github.com/Tessil/robin-map
