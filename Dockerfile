@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y        \
     libgeographiclib-dev libxerces-c-dev        \
     ninja-build curl python3-venv clang-tidy    \
     pkg-config libzmq5-dev libprotobuf-dev      \
-    protobuf-compiler                           \
+    protobuf-compiler python3-pip               \
     && rm -rf /var/lib/apt/lists/*
 
 FROM setup AS build
@@ -59,7 +59,10 @@ COPY --from=build /sumo-prefix/ /usr/local
 
 RUN cd /usr/local/bin && \
     curl -sSL -O https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/clang-tidy-diff.py && \
-    chmod +x clang-tidy-diff.py
+    chmod +x clang-tidy-diff.py \
+    git clone --depth 1 --branch v0.23.0 https://github.com/ZedThree/clang-tidy-review.git /tmp/clang-tidy-review && \
+    python3 -m pip install --no-cache-dir --break-system-packages /tmp/clang-tidy-review/post/clang_tidy_review && \
+    rm -rf /tmp/clang-tidy-review
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
