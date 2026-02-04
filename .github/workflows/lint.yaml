@@ -2,12 +2,17 @@ name: Lint Check
 
 on:
   workflow_call:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   clang-tidy:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/cavise/artery-gh-runner:latest
+      image: ghcr.io/cavise/artery:base
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -18,19 +23,25 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Configure CMake
+      - name: Generate Compile Commands
         run: |
-          tools/build.py -cl              \
-            --generator Ninja             \
-            -D WITH_SIMULTE:BOOL=ON       \
-            -D WITH_OTS:BOOL=ON           \
-            -D WITH_TESTBED:BOOL=ON       \
-            -D WITH_TRANSFUSION:BOOL=ON
+          python3 tools/build.py -cl \
+            --generator Ninja \
+            -D WITH_SIMULTE:BOOL=ON \
+            -D WITH_OTS:BOOL=ON \
+            -D WITH_TESTBED:BOOL=ON \
+            -D WITH_TRANSFUSION:BOOL=ON \
+            -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON && \
+          cmake --build build/Debug --target artery-codegen
 
-      - name: Build Artery codegen target
-        run: cmake --build build/Debug --target artery-codegen
-
-      - name: Run clang-tidy
+      - name: Run Clang-Tidy Review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global --add safe.directory $PWD
-          git diff -U0 origin/master | clang-tidy-diff.py -p1 -path .
+          review \
+            --repo ${{ github.repository }} \
+            --pr ${{ github.event.pull_request.number }} \
+            --token ${{ secrets.GITHUB_TOKEN }} \
+            --build_dir build/Debug \
+            --clang_tidy_binary clang-tidy \
+            --config_file ".clang-tidy"
