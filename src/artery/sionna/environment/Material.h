@@ -4,11 +4,11 @@
 
 #include <artery/sionna/bridge/Fwd.h>
 #include <artery/sionna/bridge/Defaulted.h>
-#include <artery/sionna/bridge/bindings/Constants.h>
-#include <artery/sionna/bridge/bindings/Material.h>
+#include <artery/sionna/bridge/SionnaBridge.h>
+#include <artery/sionna/bridge/Compat.h>
 
 #include <inet/common/INETDefs.h>
-#include <inet/environment/contract/IMaterial.h>
+#include <inet/environment/common/Material.h>
 
 #include <string>
 
@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
 
 MI_VARIANT class RadioMaterial
-    : public inet::physicalenvironment::IMaterial {
+    : public inet::physicalenvironment::Material {
 public:
     SIONNA_IMPORT_CORE_TYPES(Float64)
     SIONNA_IMPORT_BRIDGE_TYPES(Constants, Compat)
@@ -33,6 +33,7 @@ public:
     );
 
     explicit RadioMaterial(nanobind::object obj);
+    explicit RadioMaterial(py::RadioMaterial<Float, Spectrum> material);
 
     // inet::physicalenvironment::IMaterial implementation.
     inet::physicalenvironment::Ohmm getResistivity() const override;

@@ -11,17 +11,22 @@ NAMESPACE_BEGIN(sionna)
 
 NAMESPACE_BEGIN(py)
 
-MI_VARIANT
-class ConstantsModule
+class SIONNA_BRIDGE_API Const_
     : public DefaultedModuleProviderCapability
     , public SionnaRtModule {
 public:
-    SIONNA_IMPORT_CORE_TYPES(Float64)
-
-    ConstantsModule();
 
     // IPythonModuleIdentityCapability implementation.
     const char* moduleName() const override;
+};
+
+MI_VARIANT
+class SIONNA_BRIDGE_API ConstModule_
+    : public Const_ {
+public:
+    SIONNA_IMPORT_CORE_TYPES(Float64)
+
+    ConstModule_();
 
     const Defaulted<Float64>& defaultThickness() const;
 
@@ -30,13 +35,13 @@ private:
 };
 
 MI_VARIANT
-class IntersectionTypes
+class SIONNA_BRIDGE_API ConstIntersectionTypes_
     : public DefaultedClassProviderCapability
-    , public ConstantsModule<Float, Spectrum> {
+    , public Const_ {
 public:
     SIONNA_IMPORT_CORE_TYPES(Int32)
 
-    IntersectionTypes();
+    ConstIntersectionTypes_();
 
     // IPythonClassIdentityCapability implementation.
     const char* className() const override;
@@ -56,15 +61,29 @@ private:
 };
 
 MI_VARIANT
-class Constants {
+class SIONNA_BRIDGE_API Const {
 public:
-    static const ConstantsModule<Float, Spectrum>& constants();
-    static const IntersectionTypes<Float, Spectrum>& intersectionTypes();
+    SIONNA_IMPORT_CORE_TYPES(Int32, Float64)
+
+    static const Defaulted<Float64>& defaultThickness();
+
+    class IntersectionTypes {
+    public:
+        static const Defaulted<Int32>& none();
+        static const Defaulted<Int32>& specular();
+        static const Defaulted<Int32>& diffuse();
+        static const Defaulted<Int32>& refraction();
+        static const Defaulted<Int32>& diffraction();
+    };
+
+private:
+    static const ConstModule_<Float, Spectrum>& constModule();
+    static const ConstIntersectionTypes_<Float, Spectrum>& constIntersectionTypes();
 };
 
-SIONNA_EXTERN_CLASS(ConstantsModule)
-SIONNA_EXTERN_CLASS(IntersectionTypes)
-SIONNA_EXTERN_CLASS(Constants)
+SIONNA_EXTERN_CLASS(ConstModule_)
+SIONNA_EXTERN_CLASS(ConstIntersectionTypes_)
+SIONNA_EXTERN_CLASS(Const)
 
 NAMESPACE_END(py)
 

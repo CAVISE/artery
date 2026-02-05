@@ -171,7 +171,10 @@ template <typename ReturnT = nanobind::object, typename... Args>
 ReturnT call(nanobind::object obj, const std::string& method, Args&&... args) {
     nanobind::gil_scoped_acquire gil;
 
-    return callObject<ReturnT>(sionna::access<nanobind::object>(obj, method));
+    return callObject<ReturnT>(
+        sionna::access<nanobind::object>(obj, method),
+        std::forward<Args>(args)...
+    );
 }
 
 NAMESPACE_END(sionna)

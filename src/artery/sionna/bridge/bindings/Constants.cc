@@ -4,78 +4,108 @@ NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
 NAMESPACE_BEGIN(py)
 
-SIONNA_INSTANTIATE_CLASS(ConstantsModule)
-SIONNA_INSTANTIATE_CLASS(IntersectionTypes)
-SIONNA_INSTANTIATE_CLASS(Constants)
+SIONNA_INSTANTIATE_CLASS(ConstModule_)
+SIONNA_INSTANTIATE_CLASS(ConstIntersectionTypes_)
+SIONNA_INSTANTIATE_CLASS(Const)
 
 MI_VARIANT
-ConstantsModule<Float, Spectrum>::ConstantsModule()
-    : defaultThickness_(defaulted<Float64>("DEFAULT_THICKNESS")) {}
+ConstModule_<Float, Spectrum>::ConstModule_()
+    : defaultThickness_(defaulted<Float64>("DEFAULT_THICKNESS"))
+{}
 
-MI_VARIANT
-const char* ConstantsModule<Float, Spectrum>::moduleName() const {
+const char* Const_::moduleName() const {
     return "sionna.rt.constants";
 }
 
 MI_VARIANT
-const Defaulted<typename ConstantsModule<Float, Spectrum>::Float64>&
-ConstantsModule<Float, Spectrum>::defaultThickness() const {
+const Defaulted<typename ConstModule_<Float, Spectrum>::Float64>&
+ConstModule_<Float, Spectrum>::defaultThickness() const {
     return defaultThickness_;
 }
 
 MI_VARIANT
-IntersectionTypes<Float, Spectrum>::IntersectionTypes()
-    : intersectionNone_(defaulted<Int32>("NONE"))
-    , intersectionSpecular_(defaulted<Int32>("SPECULAR"))
-    , intersectionDiffuse_(defaulted<Int32>("DIFFUSE"))
-    , intersectionRefraction_(defaulted<Int32>("REFRACTION"))
-    , intersectionDiffraction_(defaulted<Int32>("DIFFRACTION")) {}
+ConstIntersectionTypes_<Float, Spectrum>::ConstIntersectionTypes_()
+    : intersectionNone_(DefaultedClassProviderCapability::defaulted<Int32>("NONE"))
+    , intersectionSpecular_(DefaultedClassProviderCapability::defaulted<Int32>("SPECULAR"))
+    , intersectionDiffuse_(DefaultedClassProviderCapability::defaulted<Int32>("DIFFUSE"))
+    , intersectionRefraction_(DefaultedClassProviderCapability::defaulted<Int32>("REFRACTION"))
+    , intersectionDiffraction_(DefaultedClassProviderCapability::defaulted<Int32>("DIFFRACTION")) {}
 
 MI_VARIANT
-const char* IntersectionTypes<Float, Spectrum>::className() const {
-    return "IntersectionTypes";
+const char* ConstIntersectionTypes_<Float, Spectrum>::className() const {
+    return "ConstIntersectionTypes";
 }
 
 MI_VARIANT
-const Defaulted<typename IntersectionTypes<Float, Spectrum>::Int32>&
-IntersectionTypes<Float, Spectrum>::none() const {
+const Defaulted<typename ConstIntersectionTypes_<Float, Spectrum>::Int32>&
+ConstIntersectionTypes_<Float, Spectrum>::none() const {
     return intersectionNone_;
 }
 
 MI_VARIANT
-const Defaulted<typename IntersectionTypes<Float, Spectrum>::Int32>&
-IntersectionTypes<Float, Spectrum>::specular() const {
+const Defaulted<typename ConstIntersectionTypes_<Float, Spectrum>::Int32>&
+ConstIntersectionTypes_<Float, Spectrum>::specular() const {
     return intersectionSpecular_;
 }
 
 MI_VARIANT
-const Defaulted<typename IntersectionTypes<Float, Spectrum>::Int32>&
-IntersectionTypes<Float, Spectrum>::diffuse() const {
+const Defaulted<typename ConstIntersectionTypes_<Float, Spectrum>::Int32>&
+ConstIntersectionTypes_<Float, Spectrum>::diffuse() const {
     return intersectionDiffuse_;
 }
 
 MI_VARIANT
-const Defaulted<typename IntersectionTypes<Float, Spectrum>::Int32>&
-IntersectionTypes<Float, Spectrum>::refraction() const {
+const Defaulted<typename ConstIntersectionTypes_<Float, Spectrum>::Int32>&
+ConstIntersectionTypes_<Float, Spectrum>::refraction() const {
     return intersectionRefraction_;
 }
 
 MI_VARIANT
-const Defaulted<typename IntersectionTypes<Float, Spectrum>::Int32>&
-IntersectionTypes<Float, Spectrum>::diffraction() const {
+const Defaulted<typename ConstIntersectionTypes_<Float, Spectrum>::Int32>&
+ConstIntersectionTypes_<Float, Spectrum>::diffraction() const {
     return intersectionDiffraction_;
 }
 
 MI_VARIANT
-const ConstantsModule<Float, Spectrum>& Constants<Float, Spectrum>::constants() {
-    static ConstantsModule<Float, Spectrum> instance;
+const ConstModule_<Float, Spectrum>& Const<Float, Spectrum>::constModule() {
+    static ConstModule_<Float, Spectrum> instance;
     return instance;
 }
 
 MI_VARIANT
-const IntersectionTypes<Float, Spectrum>& Constants<Float, Spectrum>::intersectionTypes() {
-    static IntersectionTypes<Float, Spectrum> instance;
+const ConstIntersectionTypes_<Float, Spectrum>& Const<Float, Spectrum>::constIntersectionTypes() {
+    static ConstIntersectionTypes_<Float, Spectrum> instance;
     return instance;
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Float64>& Const<Float, Spectrum>::defaultThickness() {
+    return constModule().defaultThickness();
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Int32>& Const<Float, Spectrum>::IntersectionTypes::none() {
+    return Const::constIntersectionTypes().none();
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Int32>& Const<Float, Spectrum>::IntersectionTypes::specular() {
+    return Const::constIntersectionTypes().specular();
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Int32>& Const<Float, Spectrum>::IntersectionTypes::diffuse() {
+    return Const::constIntersectionTypes().diffuse();
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Int32>& Const<Float, Spectrum>::IntersectionTypes::refraction() {
+    return Const::constIntersectionTypes().refraction();
+}
+
+MI_VARIANT
+const Defaulted<typename Const<Float, Spectrum>::Int32>& Const<Float, Spectrum>::IntersectionTypes::diffraction() {
+    return Const::constIntersectionTypes().diffraction();
 }
 
 NAMESPACE_END(py)

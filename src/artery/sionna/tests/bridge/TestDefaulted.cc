@@ -16,8 +16,7 @@ namespace
 class DefaultedTest : public testing::Test
 {
 public:
-    void SetUp() override
-    {
+    void SetUp() override {
         // For some reason WORKING_DIRECTORY is not enough, we have to append to system path
         // manually.
         auto sys = nb::module_::import_("sys");
@@ -47,6 +46,7 @@ public:
 TEST_F(DefaultedTest, PassingRegularArgsWorks)
 {
     using namespace artery::sionna::literals;
+    using artery::sionna::kwargs;
 
     auto kw = kwargs("integer"_a = 1, "double"_a = 2.5, "string"_a = nb::str("hello"));
     nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
@@ -80,6 +80,7 @@ TEST_F(DefaultedTest, ResolveWorks)
 TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
 {
     using namespace artery::sionna::literals;
+    using artery::sionna::kwargs;
     using D = artery::sionna::Defaulted<int>;
 
     D defaulted{"mod", "GLOBAL_CONST"};

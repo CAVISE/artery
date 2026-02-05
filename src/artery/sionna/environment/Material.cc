@@ -2,8 +2,21 @@
 
 #include <artery/sionna/bridge/Compat.h>
 
+#include <limits>
+
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
+
+namespace {
+
+inet::physicalenvironment::Ohmm computeResistivityFromConductivity(double conductivity) {
+    if (conductivity <= 0.0) {
+        return inet::physicalenvironment::Ohmm(std::numeric_limits<double>::infinity());
+    }
+    return inet::physicalenvironment::Ohmm(1.0 / conductivity);
+}
+
+} // namespace
 
 MI_VARIANT
 RadioMaterial<Float, Spectrum>::RadioMaterial(
@@ -12,21 +25,33 @@ RadioMaterial<Float, Spectrum>::RadioMaterial(
     Float64 relativePermittivity,
     typename Defaulted<Float64>::Argument thickness
 )
-    : py_(name, conductivity, relativePermittivity, thickness)
+    : inet::physicalenvironment::Material(
+          name.c_str(),
+          computeResistivityFromConductivity(Compat::toScalar(conductivity)),
+          Compat::toScalar(relativePermittivity),
+          1.0),
+      py_(name, conductivity, relativePermittivity, thickness)
+{}
+
+MI_VARIANT
+RadioMaterial<Float, Spectrum>::RadioMaterial(py::RadioMaterial<Float, Spectrum> material)
+    : inet::physicalenvironment::Material(
+          material.materialName().c_str(),
+          computeResistivityFromConductivity(Compat::toScalar(material.conductivity())),
+          Compat::toScalar(material.relativePermittivity()),
+          1.0),
+      py_(std::move(material))
 {}
 
 MI_VARIANT
 RadioMaterial<Float, Spectrum>::RadioMaterial(nanobind::object obj)
-    : py_(std::move(obj))
+    : RadioMaterial(py::RadioMaterial<Float, Spectrum>(std::move(obj)))
 {}
 
 MI_VARIANT
 inet::physicalenvironment::Ohmm RadioMaterial<Float, Spectrum>::getResistivity() const {
     const double sigma = Compat::toScalar(py_.conductivity());
-    if (sigma <= 0.0) {
-        return inet::physicalenvironment::Ohmm(std::numeric_limits<double>::infinity());
-    }
-    return inet::physicalenvironment::Ohmm(1.0 / sigma);
+    return computeResistivityFromConductivity(sigma);
 }
 
 MI_VARIANT

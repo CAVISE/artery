@@ -8,15 +8,13 @@ SIONNA_INSTANTIATE_CLASS(SionnaSceneMaterialRegistry)
 MI_VARIANT
 const inet::physicalenvironment::Material *
 SionnaSceneMaterialRegistry<Float, Spectrum>::getMaterial(const char *name) const {
-    if (!scene_) {
-        return nullptr;
+    auto mats = scene_.radioMaterials();
+    if (auto it = mats.find(name); it != mats.end()) {
+        auto inserted = materials_.try_emplace(
+            it->first, it->second.object());
+        return &inserted.first->second;
     }
-    auto mats = scene_->radioMaterials();
-    auto it = mats.find(name);
-    if (it == mats.end()) {
-        return nullptr;
-    }
-    return &it->second;
+    return nullptr;
 }
 
 NAMESPACE_END(sionna)

@@ -4,8 +4,9 @@
 #include <artery/sionna/bridge/Fwd.h>
 #include <artery/sionna/bridge/Helpers.h>
 #include <nanobind/nanobind.h>
+// Needed by nanobind::detail::type_caster specializations below (std::string keys).
+#include <nanobind/stl/string.h>
 
-#include <memory>
 #include <type_traits>
 #include <utility>
 #include <unordered_map>
@@ -57,17 +58,6 @@ public:
  **********************
  */
 
-template <typename T>
-struct PyDeleter {
-    void operator()(T* p) const noexcept {
-        nb::gil_scoped_acquire gil;
-        delete p;
-    }
-};
-
-template <typename T>
-using OwnedPy = std::unique_ptr<T, PyDeleter<T>>;
-
 /**
  * @brief Capability to call arbitrary methods in python.
  */
@@ -76,7 +66,11 @@ class CallAnyCapability
 public:
     template <typename ReturnType = nb::object, typename... Args>
     ReturnType callAny(nb::handle target, const char* name, Args&&... args) const {
-        return sionna::call<ReturnType>(target, name, std::forward<Args>(args)...);
+        return sionna::call<ReturnType>(
+            nb::borrow<nb::object>(target),
+            name,
+            std::forward<Args>(args)...
+        );
     }
 };
 
@@ -99,22 +93,22 @@ public:
  * @brief Cached access to a module. Stores module upon first import, which
  * allows effective multiple access to it.
  */
-class CachedImportCapability
+class SIONNA_BRIDGE_API CachedImportCapability
     : public BasePythonImportCapability {
 public:
     /**
      * @brief Stateful (cached) module import.
      */
     nb::module_ module() const override {
-        if (!module_) {
+        if (!module_.is_valid()) {
             nb::gil_scoped_acquire gil;
-            module_ = OwnedPy<nb::module_>(new nb::module_(BasePythonImportCapability::module()));
+            module_ = BasePythonImportCapability::module();
         }
-        return nb::borrow<nb::module_>(*module_);
+        return nb::borrow<nb::module_>(module_.ptr());
     }
 
 protected:
-    mutable OwnedPy<nb::module_> module_;
+    mutable nb::object module_;
 };
 
 /**
@@ -136,28 +130,28 @@ public:
 /**
  * @brief Class (type) stateful object access.
  */
-class CachedFetchCapability
+class SIONNA_BRIDGE_API CachedFetchCapability
     : public BasePythonFetchCapability {
 public:
     /**
      * @brief Get type object from module (stateful).
      */
     nb::object type() const override {
-        if (!type_) {
+        if (!type_.is_valid()) {
             nb::gil_scoped_acquire gil;
-            type_ = OwnedPy<nb::object>(new nb::object(BasePythonFetchCapability::type()));
+            type_ = BasePythonFetchCapability::type();
         }
-        return nb::borrow<nb::object>(*type_);
+        return type_;
     }
 
 protected:
-    mutable OwnedPy<nb::object> type_;
+    mutable nb::object type_;
 };
 
 /**
  * @brief Capability to initialize an object.
  */
-class InitPythonClassCapability
+class SIONNA_BRIDGE_API InitPythonClassCapability
     : public BasePythonFetchCapability
     , public CallAnyCapability {
 public:
@@ -166,11 +160,11 @@ public:
      */
     template <typename... Args>
     void init(Args&&... args) {
-        bound_ = OwnedPy<nb::object>(new nb::object(callObject(type(), std::forward<Args>(args)...)));
+        bound_ = callObject(type(), std::forward<Args>(args)...);
     }
 
 protected:
-    OwnedPy<nb::object> bound_;
+    nb::object bound_;
 
     template <typename T, typename>
     friend struct nanobind::detail::type_caster;
@@ -183,7 +177,7 @@ class WrapPythonClassCapability
     : public InitPythonClassCapability  {
 public:
     void init(nb::object obj) {
-        bound_ = OwnedPy<nb::object>(new nb::object(std::move(obj)));
+        bound_ = std::move(obj);
     }
 };
 
@@ -194,7 +188,7 @@ class ExportBoundObjectCapability
     : public WrapPythonClassCapability {
 public:
     nb::object object() const {
-        return nb::borrow<nb::object>(*this->bound_);
+        return this->bound_;
     }
 };
 
@@ -264,11 +258,13 @@ struct type_caster<T, enable_if_wrap_caster<T>> {
     }
 
     static handle from_cpp(const Value& src, rv_policy, cleanup_list *) noexcept {
-        return src.bound_->release();
+        // Keep wrapper alive: return a new reference to the underlying Python object.
+        return src.bound_.inc_ref();
     }
 
-    static handle from_cpp(Value&& src, rv_policy policy, cleanup_list *cleanup) noexcept {
-        return from_cpp(static_cast<const Value&>(src), policy, cleanup);
+    static handle from_cpp(Value&& src, rv_policy, cleanup_list *) noexcept {
+        // Move case: transfer ownership of the Python handle to nanobind.
+        return src.bound_.release();
     }
 };
 

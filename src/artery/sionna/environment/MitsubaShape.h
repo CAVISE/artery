@@ -1,13 +1,14 @@
 #pragma once
 
-#include <inet/common/geometry/base/ShapeBase.h>
-
 #include <artery/sionna/bridge/Fwd.h>
 #include <artery/sionna/bridge/Compat.h>
 
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/bbox.h>
+#include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
+
+#include <inet/common/geometry/base/ShapeBase.h>
 
 #include <drjit/array.h>
 
@@ -26,10 +27,10 @@ class MitsubaShape
     : public inet::ShapeBase {
 public:
     SIONNA_IMPORT_CORE_TYPES(BoundingBox3f, Point3f, Vector3f)
-    SIONNA_IMPORT_RENDER_TYPES(Scene, Ray3f)
+    SIONNA_IMPORT_RENDER_TYPES(Scene, Ray3f, Mesh, PreliminaryIntersection3f)
     SIONNA_IMPORT_BRIDGE_TYPES(Compat)
 
-    MitsubaShape(const BoundingBox3f& bbox, mitsuba::ref<Scene> scene);
+    MitsubaShape(mitsuba::ref<Mesh> mesh);
 
     // inet::ShapeBase
     inet::Coord computeBoundingBoxSize() const override;
@@ -44,7 +45,7 @@ public:
 
 private:
     inet::Coord size_;
-    mitsuba::ref<Scene> scene_;
+    mitsuba::ref<Mesh> mesh_;
 };
 
 SIONNA_EXTERN_CLASS(MitsubaShape)

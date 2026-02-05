@@ -48,6 +48,42 @@ inet::Coord Compat<Float, Spectrum>::converter::impl<
 
 template <typename Float, typename Spectrum>
 template <typename STUBBER>
+inet::Coord Compat<Float, Spectrum>::converter::impl<
+    inet::Coord,
+    typename mitsuba::CoreAliases<Float>::Vector3f,
+    STUBBER
+>::convert(Vector3f value) {
+    if (!drjit::all_nested(drjit::isfinite(value))) {
+        return inet::Coord::NIL;
+    }
+
+    return inet::Coord(
+        toScalar(value.x()),
+        toScalar(value.y()),
+        toScalar(value.z())
+    );
+}
+
+template <typename Float, typename Spectrum>
+template <typename STUBBER>
+inet::Coord Compat<Float, Spectrum>::converter::impl<
+    inet::Coord,
+    typename mitsuba::CoreAliases<Float>::Normal3f,
+    STUBBER
+>::convert(Normal3f value) {
+    if (!drjit::all_nested(drjit::isfinite(value))) {
+        return inet::Coord::NIL;
+    }
+
+    return inet::Coord(
+        toScalar(value.x()),
+        toScalar(value.y()),
+        toScalar(value.z())
+    );
+}
+
+template <typename Float, typename Spectrum>
+template <typename STUBBER>
 inet::EulerAngles Compat<Float, Spectrum>::converter::impl<
     inet::EulerAngles,
     typename mitsuba::CoreAliases<Float>::Vector3f,
@@ -68,7 +104,7 @@ omnetpp::cFigure::Color Compat<Float, Spectrum>::converter::impl<
     STUBBER
 >::convert(Color value) {
     auto toChannel = [](float v) -> unsigned char {
-        Float clamped = std::clamp(v, 0.0f, 1.0f);
+        double clamped = std::clamp(static_cast<double>(v), 0.0, 1.0);
         return static_cast<unsigned char>(std::lround(clamped * 255.0));
     };
 

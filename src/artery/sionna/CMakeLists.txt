@@ -24,6 +24,9 @@ elseif(NOT IS_DIRECTORY $ENV{VIRTUAL_ENV})
     message(SEND_ERROR "Cannot find virtual environment directory, aborting.")
 endif()
 
+# Compilation with non-optimized backends (scalar*) is sort of unsupported
+add_definitions(-DMI_ENABLE_LLVM=1)
+
 # Compile target detached from OmnetPP runtime dependencies.
 
 macro(sionna_target_compile_detached target)
@@ -95,7 +98,6 @@ target_sources(sionna-bridge-core
     INTERFACE
         bridge/Defaulted.h
         bridge/Capabilities.h
-        bridge/Meshes.h
         bridge/bindings/Constants.h
         bridge/bindings/Material.h
         bridge/bindings/SceneObject.h

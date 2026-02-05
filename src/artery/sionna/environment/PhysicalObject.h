@@ -4,14 +4,15 @@
 
 #include <artery/sionna/bridge/Fwd.h>
 #include <artery/sionna/bridge/Helpers.h>
-#include <artery/sionna/bridge/bindings/SceneObject.h>
-#include <artery/sionna/bridge/bindings/Material.h>
+#include <artery/sionna/bridge/SionnaBridge.h>
+#include <artery/sionna/environment/Material.h>
 
 #include <inet/common/geometry/base/ShapeBase.h>
 #include <inet/environment/contract/IPhysicalObject.h>
 
 #include <mitsuba/core/object.h>
 
+#include <optional>
 #include <string>
 
 NAMESPACE_BEGIN(artery)
@@ -31,7 +32,7 @@ public:
     SIONNA_IMPORT_BRIDGE_TYPES(RadioMaterial, Compat)
 
     explicit PhysicalObject(nanobind::object obj);
-    explicit PhysicalObject(const Mesh& mesh);
+    explicit PhysicalObject(mitsuba::ref<Mesh> mesh);
 
     PhysicalObject(const std::string& fname, const std::string& name, mitsuba::ref<RadioMaterial> material);
 
@@ -57,8 +58,8 @@ private:
     mutable inet::EulerAngles orientation_;
 
     mutable cFigure::Color color_;
-    mutable RadioMaterial material_;
-    std::shared_ptr<inet::ShapeBase> shape_;
+    mutable std::optional<artery::sionna::RadioMaterial<Float, Spectrum>> material_;
+    mutable std::shared_ptr<inet::ShapeBase> shape_;
 };
 
 SIONNA_EXTERN_CLASS(PhysicalObject)

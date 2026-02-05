@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(sionna)
 NAMESPACE_BEGIN(py)
 
 MI_VARIANT
-class SceneObject
+class SIONNA_BRIDGE_API SceneObject
     : public SionnaRtModuleBase
     , public ExportBoundObjectCapability {
 public:
@@ -28,11 +28,12 @@ public:
 
     SceneObject();
     explicit SceneObject(nb::object obj);
-    explicit SceneObject(const Mesh& mesh);
+    explicit SceneObject(mitsuba::ref<Mesh> mesh);
     SceneObject(const std::string& fname, const std::string& name, mitsuba::ref<RadioMaterial> material);
 
     Point3f position() const;
     Vector3f orientation() const;
+    mitsuba::ref<Mesh> mesh() const;
     RadioMaterial material() const;
 };
 

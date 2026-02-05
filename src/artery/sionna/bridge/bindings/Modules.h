@@ -6,7 +6,7 @@ NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
 NAMESPACE_BEGIN(py)
 
-class SionnaRtModule
+class SIONNA_BRIDGE_API SionnaRtModule
     : public virtual IPythonModuleIdentityCapability {
 public:
     const char* moduleName() const override {
@@ -14,7 +14,7 @@ public:
     }
 };
 
-class SionnaRtConstantsModule
+class SIONNA_BRIDGE_API SionnaRtConstantsModule
     : public virtual IPythonModuleIdentityCapability {
 public:
     const char* moduleName() const override {
@@ -22,12 +22,12 @@ public:
     }
 };
 
-class SionnaRtModuleBase
+class SIONNA_BRIDGE_API SionnaRtModuleBase
     : public SionnaRtModule
     , public CachedImportCapability
     , public DefaultedModuleProviderCapability {};
 
-class SionnaRtConstantsModuleBase
+class SIONNA_BRIDGE_API SionnaRtConstantsModuleBase
     : public SionnaRtConstantsModule
     , public CachedImportCapability
     , public DefaultedModuleProviderCapability {};

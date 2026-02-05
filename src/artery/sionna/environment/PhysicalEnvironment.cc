@@ -25,3 +25,34 @@ void sionna::PhysicalEnvironment::initialize(int stage) {
             initializeSceneWithConfig();
     }
 }
+
+void sionna::PhysicalEnvironment::visitObjects(
+    const inet::IVisitor* visitor,
+    const inet::LineSegment& lineSegment
+) const {
+    if (!visitor) {
+        return;
+    }
+
+    const int count = getNumObjects();
+    for (int i = 0; i < count; ++i) {
+        const auto *object = getObject(i);
+        if (!object) {
+            continue;
+        }
+
+        const auto *shape = object->getShape();
+        if (!shape) {
+            continue;
+        }
+
+        inet::Coord intersection1;
+        inet::Coord intersection2;
+        inet::Coord normal1;
+        inet::Coord normal2;
+
+        if (shape->computeIntersection(lineSegment, intersection1, intersection2, normal1, normal2)) {
+            visitor->visit(dynamic_cast<const omnetpp::cObject *>(object));
+        }
+    }
+}

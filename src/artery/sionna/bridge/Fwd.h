@@ -5,6 +5,12 @@
 #include <mitsuba/core/platform.h>
 #include <nanobind/nanobind.h>
 
+#if defined(__GNUC__) && !defined(_WIN32)
+#  define SIONNA_BRIDGE_API __attribute__((visibility("hidden")))
+#else
+#  define SIONNA_BRIDGE_API
+#endif
+
 /**
  * @file Forward declarations for Sionna bridge classes.
  * We follow Mitsuba library style, which forward declares all classes
@@ -47,7 +53,7 @@ NAMESPACE_BEGIN(sionna)
 
 #define SIONNA_IMPORT_CORE_TYPES_MACRO(x) SIONNA_IMPORT_TYPE(CoreAliases, x)
 #define SIONNA_IMPORT_RENDER_TYPES_MACRO(x) SIONNA_IMPORT_TYPE(RenderAliases, x)
-#define SIONNA_IMPORT_BRIDGE_TYPES_MACRO(x) SIONNA_IMPORT_TYPE(SionnaBridgeAliases, x)
+#define SIONNA_IMPORT_BRIDGE_TYPES_MACRO(x) using x = typename SionnaBridgeAliases::x##_;
 
 #define SIONNA_IMPORT_RENDER_TYPES(...)                                 \
     using RenderAliases = mitsuba::RenderAliases<Float, Spectrum>;      \
@@ -74,15 +80,26 @@ MI_VARIANT class Constants;
 MI_VARIANT class SceneObject;
 MI_VARIANT class Compat;
 
+NAMESPACE_BEGIN(py)
+
+MI_VARIANT class SionnaScene;
+MI_VARIANT class RadioMaterialBase;
+MI_VARIANT class RadioMaterial;
+MI_VARIANT class ConstantsBase;
+MI_VARIANT class Constants;
+MI_VARIANT class SceneObject;
+
+NAMESPACE_END(py)
+
 MI_VARIANT struct SionnaBridgeAliases {
-    using SionnaBridge = SionnaScene<Float, Spectrum>;
-    using RadioMaterial = RadioMaterial<Float, Spectrum>;
-    using RadioMaterialBase = RadioMaterialBase<Float, Spectrum>;
-    using Constants = Constants<Float, Spectrum>;
-    using ConstantsBase = ConstantsBase<Float, Spectrum>;
-    using SceneObject = SceneObject<Float, Spectrum>;
-    using Compat = Compat<Float, Spectrum>;
-    // using UnevenTerrain = UnevenTerrain<Float, Spectrum>;
+    using SionnaScene_ = py::SionnaScene<Float, Spectrum>;
+    using RadioMaterial_ = py::RadioMaterial<Float, Spectrum>;
+    using RadioMaterialBase_ = py::RadioMaterialBase<Float, Spectrum>;
+    using Constants_ = py::Constants<Float, Spectrum>;
+    using ConstantsBase_ = py::ConstantsBase<Float, Spectrum>;
+    using SceneObject_ = py::SceneObject<Float, Spectrum>;
+    using Compat_ = Compat<Float, Spectrum>;
+    // using UnevenTerrain_ = py::UnevenTerrain<Float, Spectrum>;
 };
 
 template <typename T>

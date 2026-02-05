@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(sionna)
 NAMESPACE_BEGIN(py)
 
 MI_VARIANT
-class SionnaScene
+class SIONNA_BRIDGE_API SionnaScene
     : public SionnaRtModuleBase
     , public WrapPythonClassCapability {
 public:

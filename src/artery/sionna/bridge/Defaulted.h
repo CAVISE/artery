@@ -54,8 +54,6 @@ private:
     std::string module_;
 };
 
-NAMESPACE_BEGIN(literals)
-
 template <typename T>
 using Item = std::pair<const char*, T>;
 
@@ -68,11 +66,6 @@ struct Key {
         return std::make_pair(name, std::forward<T>(v));
     }
 };
-
-constexpr Key operator""_a(const char* s, std::size_t /* size */)
-{
-    return Key{s};
-}
 
 template<typename>
 struct IsDefaulted : std::false_type {
@@ -129,6 +122,13 @@ inline nanobind::dict kwargs(Items&&... items)
     nanobind::dict d;
     (emplace(d, items.first, std::forward<decltype(items.second)>(items.second)), ...);
     return d;
+}
+
+NAMESPACE_BEGIN(literals)
+
+constexpr Key operator""_a(const char* s, std::size_t /* size */)
+{
+    return Key{s};
 }
 
 NAMESPACE_END(literals)

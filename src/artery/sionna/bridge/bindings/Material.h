@@ -14,11 +14,10 @@
 
 NAMESPACE_BEGIN(artery)
 NAMESPACE_BEGIN(sionna)
-
 NAMESPACE_BEGIN(py)
 
 MI_VARIANT
-class RadioMaterialBase
+class SIONNA_BRIDGE_API RadioMaterialBase
     : public SionnaRtModuleBase
     , public ExportBoundObjectCapability {
 public:
@@ -34,13 +33,13 @@ public:
 };
 
 MI_VARIANT
-class RadioMaterial
+class SIONNA_BRIDGE_API RadioMaterial
     : public DefaultedClassProviderCapability
     , public RadioMaterialBase<Float, Spectrum> {
 public:
     SIONNA_IMPORT_CORE_TYPES(Float64)
 
-    using Constants = Constants<Float, Spectrum>;
+    using Const = Const<Float, Spectrum>;
 
     // IPythonClassIdentityCapability implementation.
     const char* className() const override;
@@ -52,8 +51,7 @@ public:
         const std::string& name,
         Float64 conductivity = 0.0,
         Float64 relativePermittivity = 1.0,
-        typename Defaulted<Float64>::Argument thickness =
-            Constants::constants().defaultThickness()
+        typename Defaulted<Float64>::Argument thickness = Const::defaultThickness()
     );
 
     Float64 relativePermittivity() const;
@@ -70,6 +68,5 @@ SIONNA_EXTERN_CLASS(RadioMaterialBase)
 SIONNA_EXTERN_CLASS(RadioMaterial)
 
 NAMESPACE_END(py)
-
 NAMESPACE_END(sionna)
 NAMESPACE_END(artery)

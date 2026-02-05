@@ -15,17 +15,17 @@ const char* RadioMaterialBase<Float, Spectrum>::className() const {
 
 MI_VARIANT
 std::string RadioMaterialBase<Float, Spectrum>::materialName() const {
-    return sionna::access<std::string>(*this->bound_, "name");
+    return sionna::access<std::string>(this->bound_, "name");
 }
 
 MI_VARIANT
 auto RadioMaterialBase<Float, Spectrum>::color() const -> ColorType {
-    return sionna::access<ColorType>(*this->bound_, "color");
+    return sionna::access<ColorType>(this->bound_, "color");
 }
 
 MI_VARIANT
 void RadioMaterialBase<Float, Spectrum>::setColor(ColorType newColor) {
-    sionna::set<ColorType>(*this->bound_, "color", std::move(newColor));
+    sionna::set<ColorType>(this->bound_, "color", std::move(newColor));
 }
 
 MI_VARIANT
@@ -48,7 +48,7 @@ RadioMaterial<Float, Spectrum>::RadioMaterial(
     Float64 relativePermittivity,
     typename Defaulted<Float64>::Argument thickness
 ) {
-    WrapPythonClassCapability::init(
+    this->InitPythonClassCapability::init(
         "name"_a = name,
         "thickness"_a = thickness,
         "relative_permittivity"_a = relativePermittivity,
@@ -58,32 +58,32 @@ RadioMaterial<Float, Spectrum>::RadioMaterial(
 
 MI_VARIANT
 auto RadioMaterial<Float, Spectrum>::relativePermittivity() const -> Float64 {
-    return sionna::access<Float64>(*this->bound_, "relative_permittivity");
+    return sionna::access<Float64>(this->bound_, "relative_permittivity");
 }
 
 MI_VARIANT
 void RadioMaterial<Float, Spectrum>::setRelativePermittivity(Float64 relativePermittivity) {
-    sionna::set(*this->bound_, "relative_permittivity", relativePermittivity);
+    sionna::set(this->bound_, "relative_permittivity", relativePermittivity);
 }
 
 MI_VARIANT
 auto RadioMaterial<Float, Spectrum>::conductivity() const -> Float64 {
-    return sionna::access<Float64>(*this->bound_, "conductivity");
+    return sionna::access<Float64>(this->bound_, "conductivity");
 }
 
 MI_VARIANT
 void RadioMaterial<Float, Spectrum>::setConductivity(Float64 conductivity) {
-    sionna::set(*this->bound_, "conductivity", conductivity);
+    sionna::set(this->bound_, "conductivity", conductivity);
 }
 
 MI_VARIANT
 auto RadioMaterial<Float, Spectrum>::thickness() const -> Float64 {
-    return sionna::access<Float64>(*this->bound_, "thickness");
+    return sionna::access<Float64>(this->bound_, "thickness");
 }
 
 MI_VARIANT
 void RadioMaterial<Float, Spectrum>::setThickness(Float64 thickness) {
-    sionna::set(*this->bound_, "thickness", thickness);
+    sionna::set(this->bound_, "thickness", thickness);
 }
 
 NAMESPACE_END(py)
