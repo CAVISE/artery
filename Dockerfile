@@ -10,7 +10,7 @@ FROM debian:${TAG} AS setup
 SHELL [ "/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y        \
     bison build-essential flex git python3-dev  \
-    libxml2-dev wget zlib1g-dev cmake            \
+    libxml2-dev wget zlib1g-dev cmake           \
     libboost-all-dev libcrypto++-dev            \
     libfox-1.6-dev libgdal-dev libproj-dev      \
     libgeographiclib-dev libxerces-c-dev        \
@@ -26,14 +26,13 @@ ARG SUMO_TAG=v1_21_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 
-RUN cd /usr/local/bin && \
-    git clone --depth 1 --branch v0.23.0 https://github.com/ZedThree/clang-tidy-review.git /tmp/clang-tidy-review && \
+RUN git clone --depth 1 --branch v0.23.0 https://github.com/ZedThree/clang-tidy-review.git /tmp/clang-tidy-review && \
     python3 -m pip install --no-cache-dir --break-system-packages /tmp/clang-tidy-review/post/clang_tidy_review
 
 RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
 WORKDIR /omnetpp
 RUN mv configure.user.dist configure.user
-RUN source setenv -f                                                                \
+RUN source setenv -f \
     && ./configure WITH_QTENV=no WITH_TKENV=no WITH_OSG=no WITH_OSGEARTH=no WITH_MPI=no \
     && make -j$(nproc --all) base MODE=release
 
