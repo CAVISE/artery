@@ -1,0 +1,72 @@
+#pragma once
+
+#include <artery/sionna/bridge/Defaulted.h>
+#include <artery/sionna/bridge/Fwd.h>
+#include <artery/sionna/bridge/Helpers.h>
+#include <artery/sionna/bridge/Capabilities.h>
+#include <artery/sionna/bridge/bindings/Constants.h>
+#include <artery/sionna/bridge/bindings/Modules.h>
+
+#include <nanobind/nanobind.h>
+
+#include <string>
+#include <tuple>
+
+NAMESPACE_BEGIN(artery)
+NAMESPACE_BEGIN(sionna)
+NAMESPACE_BEGIN(py)
+
+MI_VARIANT
+class SIONNA_BRIDGE_API RadioMaterialBase
+    : public SionnaRtModuleBase
+    , public ExportBoundObjectCapability {
+public:
+    using ColorType = std::tuple<Float, Float, Float>;
+
+    // IPythonClassIdentityCapability implementation.
+    const char* className() const override;
+
+    std::string materialName() const;
+
+    ColorType color() const;
+    void setColor(ColorType newColor);
+};
+
+MI_VARIANT
+class SIONNA_BRIDGE_API RadioMaterial
+    : public DefaultedClassProviderCapability
+    , public RadioMaterialBase<Float, Spectrum> {
+public:
+    SIONNA_IMPORT_CORE_TYPES(Float64)
+
+    using Const = Const<Float, Spectrum>;
+
+    // IPythonClassIdentityCapability implementation.
+    const char* className() const override;
+
+    RadioMaterial();
+    explicit RadioMaterial(nb::object obj);
+
+    RadioMaterial(
+        const std::string& name,
+        Float64 conductivity = 0.0,
+        Float64 relativePermittivity = 1.0,
+        typename Defaulted<Float64>::Argument thickness = Const::defaultThickness()
+    );
+
+    Float64 relativePermittivity() const;
+    void setRelativePermittivity(Float64 relativePermittivity);
+
+    Float64 conductivity() const;
+    void setConductivity(Float64 conductivity);
+
+    Float64 thickness() const;
+    void setThickness(Float64 thickness);
+};
+
+SIONNA_EXTERN_CLASS(RadioMaterialBase)
+SIONNA_EXTERN_CLASS(RadioMaterial)
+
+NAMESPACE_END(py)
+NAMESPACE_END(sionna)
+NAMESPACE_END(artery)
