@@ -1,14 +1,3 @@
-# Clangd server cache
-.cache
-
-# CMake compile commands & build presets
-CMakeUserPresets.json
-compile_commands.json
-
-# Simulation data
-simdata/
-!simdata/artery/logs/.gitkeep
-
 ansible/*.retry
 scenarios/**/*.pyc
 scenarios/*/results/*
