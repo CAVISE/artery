@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-all-dev libcrypto++-dev libfox-1.6-dev libgdal-dev libgeographiclib-dev \
     libopenscenegraph-dev libproj-dev libqt5opengl5-dev libxerces-c-dev \
     ninja-build qtbase5-dev sudo pkg-config libzmq5-dev libprotobuf-dev \
-    protobuf-compiler \
+    protobuf-compiler cppzmq-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN pip install --break-system-packages conan 
 
@@ -69,10 +69,12 @@ COPY --from=final /omnetpp /omnetpp
 COPY --from=final /usr/local /usr/local
 
 USER root
-RUN mkdir workspace && chown ${USER} workspace 
+WORKDIR /
+RUN mkdir workspaces && chown ${USER} workspaces
+RUN mkdir cached-build  && chown ${USER} cached-build 
 
 USER ${USER}
-WORKDIR /workspace/artery
+WORKDIR /workspaces/artery
 
 # Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
 ARG BUILD_CONFIGS="Debug"
@@ -82,7 +84,7 @@ COPY --chown=${USER} . .
 RUN for cfg in ${BUILD_CONFIGS}; do                 \
       echo "building config: $cfg";                 \
       ./tools/build.py -cb                          \
-        --build-dir /workspace/cached-build         \
+        --build-dir /cached-build                   \
         --generator Ninja                           \
         --config "$cfg";                            \
     done
