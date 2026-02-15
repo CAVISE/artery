@@ -28,7 +28,7 @@ RUN pacman -Syu --noconfirm     \
 FROM setup AS build
 
 # SUMO version (github tag)
-ARG SUMO_TAG=v1_23_0
+ARG SUMO_TAG=v1_21_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 # GeographicLib version (github tag)
@@ -77,29 +77,3 @@ USER ${USER}
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
-
-FROM final AS cached-build
-
-ARG USER=devcontainer
-
-COPY --from=final /omnetpp /omnetpp
-COPY --from=final /usr/local /usr/local
-
-USER root
-RUN mkdir workspace && chown ${USER} workspace 
-
-USER ${USER}
-WORKDIR /workspace/artery
-
-# Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
-ARG BUILD_CONFIGS="Debug"
-
-COPY --chown=${USER} . .
-
-RUN for cfg in ${BUILD_CONFIGS}; do                 \
-      echo "building config: $cfg";                 \
-      ./tools/build.py -cb                          \
-        --build-dir /workspace/cached-build         \
-        --generator Ninja                           \
-        --config "$cfg";                            \
-    done
