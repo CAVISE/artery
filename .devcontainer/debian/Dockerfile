@@ -33,7 +33,7 @@ RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omn
 
 RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo \
     && cd sumo \
-    && cmake -B build . && cmake --build build \
+    && cmake -B build . && cmake --build build --parallel $(nproc --all) \
     && cmake --install build --prefix /opt/sumo \
     && cd .. && rm -rf sumo
 
