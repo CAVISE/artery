@@ -96,3 +96,7 @@ if(WITH_OTS)
     set(SIM0MQPP_SHARED_LIB ON)
     add_subdirectory(sim0mqpp ${PROJECT_BINARY_DIR}/sim0mqpp)
 endif()
+
+if(WITH_SIONNA)
+    add_subdirectory(robin-map)
+endif()
