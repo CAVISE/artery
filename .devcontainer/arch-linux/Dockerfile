@@ -28,7 +28,7 @@ RUN pacman -Syu --noconfirm     \
 FROM setup AS build
 
 # SUMO version (github tag)
-ARG SUMO_TAG=v1_24_0
+ARG SUMO_TAG=v1_26_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 # GeographicLib version (github tag)
@@ -42,7 +42,7 @@ RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omn
 
 RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo \
     && cd sumo \
-    && cmake -B build . -DCMAKE_CXX_FLAGS="-fpermissive" && cmake --build build --parallel 4 \
+    && cmake -B build . && cmake --build build \
     && cmake --install build --prefix /opt/inst \
     && cd .. && rm -rf sumo
 
