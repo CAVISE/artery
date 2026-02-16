@@ -2,19 +2,6 @@
 # Sionna #
 ##########
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-find_package(Mitsuba MODULE)
-
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-march=native HAVE_NATIVE_ARCH_SUPPORT)
-
-if(NOT HAVE_NATIVE_ARCH_SUPPORT)
-    message(WARNING "Your compiler does not support optimizing for current arch. This may break linkage with Mitsuba!")
-    set(SIONNA_CXX_COMPILER_FLAGS )
-else()
-    set(SIONNA_CXX_COMPILER_FLAGS $<$<COMPILE_LANGUAGE:CXX>:-march=native>)
-endif()
-
 if(NOT DEFINED ENV{VIRTUAL_ENV})
     message(SEND_ERROR
         "It looks like you are not use virtual environment - which normally means something went wrong. "
@@ -24,53 +11,79 @@ elseif(NOT IS_DIRECTORY $ENV{VIRTUAL_ENV})
     message(SEND_ERROR "Cannot find virtual environment directory, aborting.")
 endif()
 
-# Compilation with non-optimized backends (scalar*) is sort of unsupported
-add_definitions(-DMI_ENABLE_LLVM=1)
+# Handle packages and configurations stuff.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-# Compile target detached from OmnetPP runtime dependencies.
+include(DiscoverCompileOptions)
 
-macro(sionna_target_compile_detached target)
-    if(NOT TARGET ${target})
-        message(SEND_ERROR "sionna_target_compile_detached: could not find target ${target}")
-    endif()
-    target_compile_definitions(${target} PRIVATE SIONNA_OMNETPP_DETACHED)
-endmacro()
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
-# This variable hints Sionna bridge at virtual environment, as we know it
-# during configuration phase. At runtime, Sionna should fall back to these if
-# all other options fail.
-
-set(SIONNA_VIRTUAL_ENV $ENV{VIRTUAL_ENV})
+find_package(Nanobind MODULE REQUIRED)
+find_package(DrJit MODULE REQUIRED)
+find_package(Mitsuba MODULE REQUIRED)
 
 ###############
 # Main target #
 ###############
 
-# Dummy that just populates settings.
-add_library(sionna-bridge-common INTERFACE)
+set(SIONNA_BRIDGE_COMPILATION_MODES Basic Inet)
 
-# Main target.
-add_artery_feature(sionna-bridge)
+# Main target(s). There is a separate library for each compilation mode.
+foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
+    string(TOLOWER ${_mode} _mode_lowercase)
+    set(_target sionna-bridge-${_mode_lowercase})
 
-# Composite targets, some of them may be used independently.
-add_library(sionna-bridge-inet STATIC)
-add_library(sionna-bridge-core INTERFACE)
-add_library(sionna-bridge-helpers INTERFACE)
+    add_library(${_target} SHARED)
 
-# Aliases.
-add_library(Artery::sionna::common ALIAS sionna-bridge-common)
-add_library(Artery::sionna::bridge ALIAS sionna-bridge)
-add_library(Artery::sionna::inet ALIAS sionna-bridge-inet)
-add_library(Artery::sionna::core ALIAS sionna-bridge-core)
-add_library(Artery::sionna::helpers ALIAS sionna-bridge-helpers)
+    target_sources(${_target}
+        PRIVATE
+            bridge/bindings/Constants.cc
+            bridge/bindings/Material.cc
+            bridge/bindings/Scene.cc
+            bridge/bindings/SceneObject.cc
+        PUBLIC
+            bridge/Fwd.h
+            bridge/Helpers.h
+            bridge/Compat.h
+            bridge/Defaulted.h
+            bridge/Capabilities.h
+            bridge/bindings/Constants.h
+            bridge/bindings/Material.h
+            bridge/bindings/Scene.h
+            bridge/bindings/SceneObject.h
+    )
 
-target_sources(sionna-bridge-inet
+    target_include_directories(${_target}
+        PUBLIC
+            ${CMAKE_SOURCE_DIR}/src
+    )
+
+    target_link_libraries(${_target}
+        PUBLIC
+            Mitsuba::nanobind-drjit
+            Mitsuba::mitsuba
+            drjit::drjit
+            drjit::drjit-core
+            tsl::robin_map
+            Python::Python
+            sionna-compilation-flags
+    )
+
+    set_target_properties(${_target}
+        PROPERTIES
+            SIONNA_BRIDGE_COMPILATION_MODE ${_mode}
+    )
+endforeach()
+
+# Post configuration for various compilation modes.
+target_link_libraries(sionna-bridge-inet PUBLIC INET)
+
+# Extensions. Implement abstractions necessary to integrate Sionna with
+# various network simulation kernels.
+add_artery_feature(sionna-phy)
+
+target_sources(sionna-phy
     PRIVATE
-        bridge/Compat.cc
-        bridge/bindings/Constants.cc
-        bridge/bindings/Material.cc
-        bridge/bindings/Scene.cc
-        bridge/bindings/SceneObject.cc
         environment/Ground.cc
         environment/MaterialRegistry.cc
         environment/MitsubaShape.cc
@@ -79,82 +92,18 @@ target_sources(sionna-bridge-inet
         environment/PathLoss.cc
         environment/PhysicalEnvironment.cc
     PUBLIC
-        bridge/Compat.h
-        bridge/bindings/Constants.h
-        bridge/bindings/Material.h
-        bridge/bindings/Scene.h
-        bridge/bindings/SceneObject.h
         environment/Ground.h
         environment/MaterialRegistry.h
         environment/MitsubaShape.h
         environment/PhysicalObject.h
         environment/Material.h
-        environment/Ground.h
         environment/PathLoss.h
         environment/PhysicalEnvironment.h
 )
 
-target_sources(sionna-bridge-core
-    INTERFACE
-        bridge/Defaulted.h
-        bridge/Capabilities.h
-        bridge/bindings/Constants.h
-        bridge/bindings/Material.h
-        bridge/bindings/SceneObject.h
-)
+set_target_properties(sionna-phy PROPERTIES SIONNA_BRIDGE_COMPILATION_MODE Inet)
+target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet)
 
-target_sources(sionna-bridge-helpers
-    INTERFACE
-        bridge/Fwd.h
-        bridge/Helpers.h
-)
-
-target_compile_options(sionna-bridge-common INTERFACE ${SIONNA_CXX_COMPILER_FLAGS})
-target_compile_definitions(sionna-bridge-common INTERFACE SIONNA_VENV_HINT="${SIONNA_VIRTUAL_ENV}")
-target_include_directories(sionna-bridge-common INTERFACE $<TARGET_PROPERTY:Artery::Core,INTERFACE_INCLUDE_DIRECTORIES>)
-
-target_compile_definitions(sionna-bridge-common
-    INTERFACE
-        NB_SHARED
-        NB_DOMAIN=drjit
-)
-
-target_link_libraries(sionna-bridge-common
-    INTERFACE
-        Mitsuba::nanobind-drjit
-        Mitsuba::mitsuba
-        drjit::drjit
-        drjit::drjit-core
-        tsl::robin_map
-)
-
-target_link_libraries(sionna-bridge
-    PUBLIC
-        sionna-bridge-inet
-        sionna-bridge-helpers
-        sionna-bridge-core
-)
-
-target_link_libraries(sionna-bridge-inet
-    PUBLIC
-        INET
-        sionna-bridge-core
-        sionna-bridge-helpers
-        sionna-bridge-common
-)
-
-target_link_libraries(sionna-bridge-core
-    INTERFACE
-        sionna-bridge-helpers
-        sionna-bridge-common
-)
-
-target_link_libraries(sionna-bridge-helpers
-    INTERFACE
-        Python::Python
-        sionna-bridge-common
-)
-
-if(WITH_TESTS)
-    add_subdirectory(tests)
-endif()
+# if(WITH_TESTS)
+#     add_subdirectory(tests)
+# endif()

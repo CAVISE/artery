@@ -12,61 +12,62 @@
 #include <string>
 #include <tuple>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
-NAMESPACE_BEGIN(py)
+namespace artery {
+    namespace sionna {
+        namespace py {
 
-MI_VARIANT
-class SIONNA_BRIDGE_API RadioMaterialBase
-    : public SionnaRtModuleBase
-    , public ExportBoundObjectCapability {
-public:
-    using ColorType = std::tuple<Float, Float, Float>;
+            MI_VARIANT
+            class SIONNA_BRIDGE_API RadioMaterialBase
+                : public SionnaRtModuleBase
+                , public ExportBoundObjectCapability {
+            public:
+                using ColorType = std::tuple<Float, Float, Float>;
 
-    // IPythonClassIdentityCapability implementation.
-    const char* className() const override;
+                // IPythonClassIdentityCapability implementation.
+                const char* className() const override;
 
-    std::string materialName() const;
+                std::string materialName() const;
 
-    ColorType color() const;
-    void setColor(ColorType newColor);
-};
+                ColorType color() const;
+                void setColor(ColorType newColor);
+            };
 
-MI_VARIANT
-class SIONNA_BRIDGE_API RadioMaterial
-    : public DefaultedClassProviderCapability
-    , public RadioMaterialBase<Float, Spectrum> {
-public:
-    SIONNA_IMPORT_CORE_TYPES(Float64)
+            MI_VARIANT
+            class SIONNA_BRIDGE_API RadioMaterial
+                : public DefaultedClassProviderCapability
+                , public RadioMaterialBase<Float, Spectrum> {
+            public:
+                SIONNA_BRIDGE_IMPORT_CORE_TYPES();
 
-    using Const = Const<Float, Spectrum>;
+                using ThicknessDefault = decltype(Constants<Float, Spectrum>::defaultThickness);
 
-    // IPythonClassIdentityCapability implementation.
-    const char* className() const override;
+                // IPythonClassIdentityCapability implementation.
+                const char* className() const override;
 
-    RadioMaterial();
-    explicit RadioMaterial(nb::object obj);
+                RadioMaterial();
+                explicit RadioMaterial(nb::object obj);
 
-    RadioMaterial(
-        const std::string& name,
-        Float64 conductivity = 0.0,
-        Float64 relativePermittivity = 1.0,
-        typename Defaulted<Float64>::Argument thickness = Const::defaultThickness()
-    );
+                RadioMaterial(
+                    const std::string& name,
+                    Float64 conductivity = 0.0,
+                    Float64 relativePermittivity = 1.0,
+                    typename ThicknessDefault::Argument thickness = Constants<Float, Spectrum>::defaultThickness
+                );
 
-    Float64 relativePermittivity() const;
-    void setRelativePermittivity(Float64 relativePermittivity);
+                Float64 relativePermittivity() const;
+                void setRelativePermittivity(Float64 relativePermittivity);
 
-    Float64 conductivity() const;
-    void setConductivity(Float64 conductivity);
+                Float64 conductivity() const;
+                void setConductivity(Float64 conductivity);
 
-    Float64 thickness() const;
-    void setThickness(Float64 thickness);
-};
+                Float64 thickness() const;
+                void setThickness(Float64 thickness);
+            };
 
-SIONNA_EXTERN_CLASS(RadioMaterialBase)
-SIONNA_EXTERN_CLASS(RadioMaterial)
 
-NAMESPACE_END(py)
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)
+        }
+    }
+}
+
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::py::RadioMaterialBase)
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::py::RadioMaterial)

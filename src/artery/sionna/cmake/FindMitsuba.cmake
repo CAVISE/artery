@@ -1,41 +1,14 @@
 # Mitsuba3 exports shared libraries and even headers when installed from python
 # package registry.
 
+include(DiscoverSitePackagesPath)
+include(FindPackageHandleStandardArgs)
+
 #####################
 # Package Discovery #
 #####################
 
-# Required by nanobind and script later.
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-
-set(_collect_dist_path_script "collect-dist-path.py")
-# This finds out current site directory for python packages.
-execute_process(
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${_collect_dist_path_script}
-    OUTPUT_VARIABLE _python_site_packages_path
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-message(STATUS "Discovered site packages directory for current python vertual env: ${_python_site_packages_path}")
-
-# For mitsuba to work, we also need DrJit
-find_package(drjit CONFIG HINTS ${_python_site_packages_path}/drjit/cmake REQUIRED)
-# Nanobind is required to access Mitsuba objects later
-find_package(nanobind CONFIG HINTS ${_python_site_packages_path}/nanobind/cmake REQUIRED)
-
-#########
-# DrJit #
-#########
-
-# DrJit does not provide aliases for imported targets.
-add_library(drjit::drjit ALIAS drjit)
-add_library(drjit::drjit-core ALIAS drjit-core)
-
-###############################
-# Include directory discovery #
-###############################
-
-set(_mi_root ${_python_site_packages_path}/mitsuba)
+set(_mi_root ${PYTHON_SITE_PACKAGES_PATH}/mitsuba)
 
 find_path(MITSUBA_INCLUDE_DIRS
     NAMES mitsuba/mitsuba.h
@@ -45,40 +18,38 @@ find_path(MITSUBA_INCLUDE_DIRS
     NO_DEFAULT_PATH
 )
 
+# Extract version macros from mitsuba.h, if requested.
+
 set(_mitsuba_header "${MITSUBA_INCLUDE_DIRS}/mitsuba/mitsuba.h")
 
-if (EXISTS "${_mitsuba_header}")
-    # Extract version macros from mitsuba.h
-    file(STRINGS "${_mitsuba_header}" _mi_major_line REGEX "^#define[ \t]+MI_VERSION_MAJOR[ \t]+[0-9]+")
-    file(STRINGS "${_mitsuba_header}" _mi_minor_line REGEX "^#define[ \t]+MI_VERSION_MINOR[ \t]+[0-9]+")
-    file(STRINGS "${_mitsuba_header}" _mi_patch_line REGEX "^#define[ \t]+MI_VERSION_PATCH[ \t]+[0-9]+")
-
-    string(REGEX MATCH "[0-9]+" MI_VERSION_MAJOR "${_mi_major_line}")
-    string(REGEX MATCH "[0-9]+" MI_VERSION_MINOR "${_mi_minor_line}")
-    string(REGEX MATCH "[0-9]+" MI_VERSION_PATCH "${_mi_patch_line}")
-
-    set(MI_VERSION "${MI_VERSION_MAJOR}.${MI_VERSION_MINOR}.${MI_VERSION_PATCH}")
-    message(STATUS "Detected Mitsuba version: ${MI_VERSION}")
-else()
-    set(MI_VERSION "")
-    message(WARNING "Cannot find mitsuba.h at ${_mitsuba_header} - version not detected")
+if(PACKAGE_FIND_VERSION_COUNT GREATER 0)
+    if(NOT EXISTS "${_mitsuba_header}")
+        message(FATAL_ERROR "Cannot find mitsuba.h at ${_mitsuba_header} - version not detected")
+    endif()
 endif()
 
-list(APPEND MITSUBA_INCLUDE_DIRS ${NB_DIR}/include)
+if(PACKAGE_FIND_VERSION_MAJOR)
+    file(STRINGS "${_mitsuba_header}" _mi_major_line REGEX "^#define[\\s]+MI_VERSION_MAJOR[\\s]+[0-9]+")
+    string(REGEX MATCH "[0-9]+" Mitsuba_VERSION_MAJOR "${_mi_major_line}")
+endif()
 
-######################################
-# Mitsuba shared libraries discovery #
-######################################
+if(PACKAGE_FIND_VERSION_MINOR)
+    file(STRINGS "${_mitsuba_header}" _mi_minor_line REGEX "^#define[ \t]+MI_VERSION_MINOR[ \t]+[0-9]+")
+    string(REGEX MATCH "[0-9]+" Mitsuba_VERSION_MINOR "${_mi_minor_line}")
+endif()
 
-# To use with nanobind.
-set(_domain drjit)
+if(PACKAGE_FIND_VERSION_PATCH)
+    file(STRINGS "${_mitsuba_header}" _mi_patch_line REGEX "^#define[ \t]+MI_VERSION_PATCH[ \t]+[0-9]+")
+    string(REGEX MATCH "[0-9]+" Mitsuba_VERSION_PATCH "${_mi_patch_line}")
+endif()
 
-# Mitsuba compiles python bindings by MI_VARIANTS, which are types
-# that are used in Mitsuba core library. All those variants are compiled into
-# Mitsuba core library, and get chosen at runtime per user needs.
+if(PACKAGE_FIND_VERSION)
+    set(Mitsuba_VERSION "${Mitsuba_VERSION_MAJOR}.${Mitsuba_VERSION_MINOR}.${Mitsuba_VERSION_PATCH}")
+    message(STATUS "Detected Mitsuba version: ${Mitsuba_VERSION}")
+endif()
 
 set(MITSUBA_LIBRARIES )
-set(_libraries mitsuba nanobind-${_domain})
+set(_libraries mitsuba nanobind-drjit)
 
 foreach(_library IN ITEMS ${_libraries})
     unset(_library_path CACHE)
@@ -91,16 +62,28 @@ foreach(_library IN ITEMS ${_libraries})
     add_library(${_library_alias} ALIAS ${_library_name})
 
     target_include_directories(${_library_name} INTERFACE ${MITSUBA_INCLUDE_DIRS})
-    list(APPEND MITSUBA_LIBRARIES ${_library_name})
+    target_link_libraries(${_library_name}
+        INTERFACE
+            nanobind::nanobind-embed
+            drjit::drjit
+    )
 
     set_target_properties(${_library_name}
         PROPERTIES
             IMPORTED_NO_SONAME ON
             IMPORTED_LOCATION ${_library_path}
     )
+
+    list(APPEND MITSUBA_LIBRARIES ${_library_name})
 endforeach()
 
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Mitsuba
-    REQUIRED_VARS MITSUBA_INCLUDE_DIRS MITSUBA_LIBRARIES
-)
+if(DEFINED Mitsuba_VERSION)
+    find_package_handle_standard_args(Mitsuba
+        REQUIRED_VARS MITSUBA_INCLUDE_DIRS MITSUBA_LIBRARIES
+        VERSION_VAR Mitsuba_VERSION
+    )
+else()
+    find_package_handle_standard_args(Mitsuba
+        REQUIRED_VARS MITSUBA_INCLUDE_DIRS MITSUBA_LIBRARIES
+    )
+endif()

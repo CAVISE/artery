@@ -37,13 +37,13 @@ WORKDIR /
 RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo
 WORKDIR /sumo
 RUN cmake -B build .                                    \
-        -G Ninja                                        \
-        -DCMAKE_BUILD_CONFIG=Release                    \
-        -DCMAKE_INSTALL_PREFIX=/sumo-prefix             \
-        -DENABLE_CS_BINDINGS=OFF                        \
-        -DENABLE_JAVA_BINDINGS=OFF                      \
-        -DENABLE_PYTHON_BINDINGS=OFF                    \
-        -DNETEDIT=OFF                                   \
+    -G Ninja                                        \
+    -DCMAKE_BUILD_CONFIG=Release                    \
+    -DCMAKE_INSTALL_PREFIX=/sumo-prefix             \
+    -DENABLE_CS_BINDINGS=OFF                        \
+    -DENABLE_JAVA_BINDINGS=OFF                      \
+    -DENABLE_PYTHON_BINDINGS=OFF                    \
+    -DNETEDIT=OFF                                   \
     && cmake --build build --parallel $(nproc --all)    \
     && cmake --install build
 

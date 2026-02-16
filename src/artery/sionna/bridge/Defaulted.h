@@ -3,143 +3,189 @@
 #include <artery/sionna/bridge/Fwd.h>
 #include <nanobind/nanobind.h>
 
+#include <cstring>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
+namespace artery {
 
-template <typename T>
-class Defaulted
-{
-public:
-    /**
-     * @brief Alias for convenient usage within arguments.
-     */
-    using Argument = std::variant<T, Defaulted<T>>;
+    namespace sionna {
 
-    Defaulted(const std::string& module, const std::string& name, const std::string& cls = "") : module_(module), name_(name), cls_(cls) {}
+        template <typename T>
+        class Defaulted {
+        public:
 
-    // Accessors.
-    const std::string& name() const { return name_; }
-    const std::string& module() const { return module_; }
+            using ValueType = T;
+            using Argument = std::variant<T, Defaulted<T>>;
 
-    /**
-     * @brief Request constant value from python module.
-     */
-    T value() const
-    {
-        namespace nb = nanobind;
+            constexpr Defaulted(const char* module, const char* name, const char* cls = "")
+                : module_(module)
+                , name_(name)
+                , cls_(cls)
+            {}
 
-        auto module = nb::module_::import_(module_.c_str());
-        return sionna::access<T>(((cls_ != "") ? nb::getattr(module, cls_.c_str()) : module), name_);
-    }
+            virtual ~Defaulted() = default;
 
-    /**
-     * @brief Resolve value: if user provided their own - use it, otherwise pull from Sionna presets.
-     */
-    static T resolve(Argument variadic)
-    {
-        struct Visitor {
-            T operator()(T value) const { return value; }
-            T operator()(const Defaulted<T>& constant) const { return constant.value(); }
+            // Accessors.
+            constexpr const char* name() const { return name_; }
+            constexpr const char* module() const { return module_; }
+            constexpr const char* cls() const { return cls_; }
+
+            constexpr void setName(const char* name) { name_ = name; }
+            constexpr void setModule(const char* module) const { module_ = module; }
+            constexpr void setCls(const char* cls) const { cls_ = cls; }
+
+            /**
+            * @brief Request constant value from python module.
+            */
+            virtual T value() const {
+                nanobind::gil_scoped_acquire gil;
+                auto module = nanobind::module_::import_(module_);
+
+                if (std::strlen(cls_) > 0) {
+                    return sionna::access<T>(nanobind::getattr(module, cls_), name_);
+                }
+                return sionna::access<T>(module, name_);
+            }
+
+            /**
+            * @brief Resolve value: if user provided their own - use it, otherwise pull from Sionna presets.
+            */
+            static T resolve(Argument variadic) {
+                return std::visit([](auto&& v) -> T {
+                    using V = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<V, Defaulted<T>>) {
+                        return v.value();
+                    } else {
+                        return v;
+                    }
+                }, variadic);
+            }
+
+        private:
+            const char* name_;
+            mutable const char* cls_;
+            mutable const char* module_;
         };
 
-        return std::visit(Visitor(), variadic);
-    }
+        template <typename T, typename Resolver>
+        class DefaultedWithDeferredResolution
+            : public Defaulted<T> {
+        public:
 
-private:
-    std::string cls_;
-    std::string name_;
-    std::string module_;
-};
+            constexpr DefaultedWithDeferredResolution(const char* name, Resolver resolver)
+                : Defaulted<T>("", name, "")
+                , resolver_(std::move(resolver))
+            {}
 
-template <typename T>
-using Item = std::pair<const char*, T>;
+            T value() const override {
+                using Ret = std::invoke_result_t<Resolver&>;
 
-struct Key {
-    const char* name;
+                if constexpr (std::is_same_v<Ret, const char*>) {
+                    this->setModule(resolver_());
+                } else if constexpr (std::is_same_v<Ret, std::pair<const char*, const char*>>) {
+                    auto [mod, cls] = resolver_();
+                    this->setModule(mod);
+                    this->setCls(cls);
+                } else {
+                    static_assert(std::is_same_v<Ret, void>,
+                        "Resolver must return const char* or std::pair<const char*, const char*>");
+                }
 
-    template <typename T>
-    constexpr Item<std::decay_t<T>> operator=(T v)
-    {
-        return std::make_pair(name, std::forward<T>(v));
-    }
-};
+                return Defaulted<T>::value();
+            }
 
-template<typename>
-struct IsDefaulted : std::false_type {
-};
+        private:
+            Resolver resolver_;
+        };
 
-template<typename T>
-struct IsDefaulted<Defaulted<T>> : std::true_type {
-};
+        template<typename>
+        struct IsDefaulted : std::false_type {};
+        template<typename>
+        struct IsDefaultedArgument : std::false_type {};
 
-template<typename V>
-inline constexpr bool IsDefaultedV = IsDefaulted<std::decay_t<V>>::value;
+        template<typename T>
+        struct IsDefaulted<Defaulted<T>> : std::true_type {};
+        template<typename T, typename R>
+        struct IsDefaulted<DefaultedWithDeferredResolution<T, R>> : std::true_type {};
 
-template<typename>
-struct IsDefaultedArgument : std::false_type {
-};
+        template<typename T>
+        struct IsDefaultedArgument<std::variant<T, Defaulted<T>>> : std::true_type {};
+        template<typename T, typename R>
+        struct IsDefaultedArgument<std::variant<T, DefaultedWithDeferredResolution<T, R>>> : std::true_type {};
 
-template<typename T>
-struct IsDefaultedArgument<std::variant<T, Defaulted<T>>> : std::true_type {
-};
+        template<typename V>
+        inline constexpr bool IsDefaultedV = IsDefaulted<std::decay_t<V>>::value;
+        template<typename V>
+        inline constexpr bool IsDefaultedArgumentV = IsDefaultedArgument<std::decay_t<V>>::value;
 
-template<typename V>
-inline constexpr bool IsDefaultedArgumentV = IsDefaultedArgument<std::decay_t<V>>::value;
+        template<typename>
+        struct DefaultedArgumentValueType;
 
-template<typename>
-struct DefaultedArgumentValueType;
+        template<typename T>
+        struct DefaultedArgumentValueType<std::variant<T, Defaulted<T>>> {
+            using type = T;
+        };
 
-template<typename T>
-struct DefaultedArgumentValueType<std::variant<T, Defaulted<T>>> {
-    using type = T;
-};
+        template<typename T, typename R>
+        struct DefaultedArgumentValueType<std::variant<T, DefaultedWithDeferredResolution<T, R>>> {
+            using type = T;
+        };
 
-template<typename T>
-inline void emplace(nanobind::dict& d, const char* key, T&& v)
-{
-    using D = std::decay_t<T>;
+        class Kwargs {
+        public:
 
-    if constexpr (IsDefaultedV<D>) {
-        // Let python handle defaults.
-    } else if constexpr (IsDefaultedArgumentV<D>) {
-        using ValueType = typename DefaultedArgumentValueType<D>::type;
+            template <typename T>
+            using Item = std::pair<const char*, T>;
 
-        const D& view = v;
-        if (const ValueType* value = std::get_if<ValueType>(&view)) {
-            d[key] = *value;
+            struct Key {
+                const char* key;
+
+                template <typename T>
+                constexpr Item<T> operator=(T v) {
+                    return std::make_pair(key, std::move(v));
+                }
+            };
+
+            template <typename... Args>
+            static nanobind::dict toDict(Item<Args>&&... items) {
+                nanobind::dict d;
+                (emplace(d, items.first, std::forward<decltype(items.second)>(items.second)), ...);
+                return d;
+            }
+
+        private:
+
+            template<typename T>
+            static void emplace(nanobind::dict& d, const char* key, T&& v) {
+                using D = std::decay_t<T>;
+
+                if constexpr (IsDefaultedV<D>) {
+                    // Let python handle defaults.
+                } else if constexpr (IsDefaultedArgumentV<D>) {
+                    using ValueType = typename DefaultedArgumentValueType<D>::type;
+
+                    const D& view = v;
+                    if (const ValueType* value = std::get_if<ValueType>(&view)) {
+                        d[key] = *value;
+                    }
+                } else {
+                    d[key] = std::forward<T>(v);
+                }
+            }
+
+        };
+
+        namespace literals {
+
+            constexpr Kwargs::Key operator""_a(const char* key, std::size_t /* size */) {
+                return Kwargs::Key { .key = key };
+            }
+
         }
-    } else {
-        d[key] = std::forward<T>(v);
+
+
     }
+
 }
-
-template<typename... Items>
-inline nanobind::dict kwargs(Items&&... items)
-{
-    nanobind::dict d;
-    (emplace(d, items.first, std::forward<decltype(items.second)>(items.second)), ...);
-    return d;
-}
-
-NAMESPACE_BEGIN(literals)
-
-constexpr Key operator""_a(const char* s, std::size_t /* size */)
-{
-    return Key{s};
-}
-
-NAMESPACE_END(literals)
-
-template<typename T>
-inline Defaulted<T> makeDefaulted(const std::string& mod, const std::string& constant, const std::string& cls = "") {
-    if (cls.size() > 0) {
-        return Defaulted<T>(mod, constant, cls);
-    }
-    return Defaulted<T>(mod, constant);
-}
-
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)

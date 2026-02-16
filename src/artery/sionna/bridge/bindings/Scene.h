@@ -11,46 +11,44 @@
 #include <unordered_map>
 #include <string>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
-NAMESPACE_BEGIN(py)
+namespace artery {
+    namespace sionna {
+        namespace py {
 
-MI_VARIANT
-class SIONNA_BRIDGE_API SionnaScene
-    : public SionnaRtModuleBase
-    , public WrapPythonClassCapability {
-public:
-    SIONNA_IMPORT_CORE_TYPES(Point3f, Vector3f)
-    SIONNA_IMPORT_RENDER_TYPES(Scene)
-    SIONNA_IMPORT_BRIDGE_TYPES(SceneObject, RadioMaterial)
+            MI_VARIANT
+            class SIONNA_BRIDGE_API SionnaScene
+                : public SionnaRtModuleBase
+                , public WrapPythonClassCapability {
+            public:
+                SIONNA_BRIDGE_IMPORT_RENDER_TYPES()
 
-    // IPythonClassIdentityCapability implementation.
-    const char* className() const override;
+                // IPythonClassIdentityCapability implementation.
+                const char* className() const override;
 
-    SionnaScene();
-    explicit SionnaScene(nb::object obj);
+                SionnaScene();
+                explicit SionnaScene(nb::object obj);
 
-    void add(const SceneObject& obj);
-    void add(const RadioMaterial& mat);
-    void remove(const std::string& name);
+                void add(const SceneObject<Float, Spectrum>& obj);
+                void add(const RadioMaterial<Float, Spectrum>& mat);
+                void remove(const std::string& name);
 
-    std::unordered_map<std::string, RadioMaterial> radioMaterials() const;
-    std::unordered_map<std::string, SceneObject> sceneObjects() const;
+                std::unordered_map<std::string, RadioMaterial<Float, Spectrum>> radioMaterials() const;
+                std::unordered_map<std::string, SceneObject<Float, Spectrum>> sceneObjects() const;
 
-    double frequency() const;
-    void setFrequency(double f);
+                double frequency() const;
+                void setFrequency(double f);
 
-    double bandwidth() const;
-    void setBandwidth(double bw);
+                double bandwidth() const;
+                void setBandwidth(double bw);
 
-    double temperature() const;
-    void setTemperature(double t);
+                double temperature() const;
+                void setTemperature(double t);
 
-    mitsuba::ref<Scene> miScene() const;
-};
+                mitsuba::ref<Scene> miScene() const;
+            };
 
-SIONNA_EXTERN_CLASS(SionnaScene)
+        }
+    }
+}
 
-NAMESPACE_END(py)
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::py::SionnaScene)
