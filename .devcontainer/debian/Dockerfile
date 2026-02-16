@@ -21,19 +21,21 @@ RUN pip install --break-system-packages conan
 FROM setup AS build
 
 # SUMO version (github tag)
-ARG SUMO_TAG=v1_23_0
+ARG SUMO_TAG=v1_24_0
 # OMNeT version (github tag)
 ARG OMNETPP_TAG=omnetpp-5.6.2
 
-RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
-WORKDIR /omnetpp
-RUN mv configure.user.dist configure.user
-RUN source setenv -f && ./configure WITH_OSGEARTH=no && make -j$(nproc --all)
+RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp \
+    && cd omnetpp \
+    && mv configure.user.dist configure.user \
+    && source setenv -f && ./configure WITH_OSGEARTH=no && make -j$(nproc --all) \
+    && rm -rf .git
 
-WORKDIR /
-RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo
-WORKDIR /sumo
-RUN cmake -B build . && cmake --build build --parallel $(nproc --all)
+RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo \
+    && cd sumo \
+    && cmake -B build . && cmake --build build --parallel $(nproc --all) \
+    && cmake --install build --prefix /opt/sumo \
+    && cd .. && rm -rf sumo
 
 ######################
 # Installation stage #
@@ -50,8 +52,7 @@ COPY --from=build /omnetpp/lib /omnetpp/lib
 COPY --from=build /omnetpp/images /omnetpp/images
 COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
-COPY --from=build /sumo /sumo
-RUN cmake --install /sumo/build
+COPY --from=build /opt/sumo/ /usr/local/
 
 RUN useradd -m -G sudo ${USER}
 RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
@@ -75,7 +76,7 @@ USER ${USER}
 WORKDIR /workspace/artery
 
 # Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
-ARG BUILD_CONFIGS="Debug"
+ARG BUILD_CONFIGS="RelWithDebInfo"
 
 COPY --chown=${USER} . .
 
