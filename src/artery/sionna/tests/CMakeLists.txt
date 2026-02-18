@@ -29,10 +29,14 @@ function(add_sionna_test target)
     target_link_libraries(${target}
         PRIVATE
             GTest::gtest
-            Artery::sionna::helpers
+            sionna-bridge-basic
     )
 
-    target_compile_definitions(${target} PRIVATE SIONNA_OMNETPP_DETACHED)
+    set_target_properties(${target}
+        PROPERTIES
+            SIONNA_BRIDGE_COMPILATION_MODE Basic
+    )
+
     add_test(NAME ${args_TEST_NAME} COMMAND $<TARGET_FILE:${target}>)
 endfunction()
 
@@ -41,7 +45,7 @@ endfunction()
 add_sionna_test(test_mitsuba_linkage
     TEST_NAME
         test_cmake_configuration
-    FILES 
+    FILES
         TestTwoWayCast.cc
         TestStructAlignments.cc
 )

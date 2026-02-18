@@ -1,12 +1,11 @@
+#include "artery/sionna/bridge/Fwd.h"
+#include "artery/sionna/environment/MitsubaShape.h"
+
 #include "PhysicalObject.h"
 
-#include "MitsubaShape.h"
-#include "Material.h"
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::PhysicalObject)
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
-
-SIONNA_INSTANTIATE_CLASS(PhysicalObject)
+using namespace artery::sionna;
 
 MI_VARIANT
 PhysicalObject<Float, Spectrum>::PhysicalObject(nanobind::object obj)
@@ -81,6 +80,3 @@ MI_VARIANT
 const char* PhysicalObject<Float, Spectrum>::getTags() const {
     return "";
 }
-
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)

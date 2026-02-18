@@ -12,43 +12,42 @@
 
 #include <drjit/array.h>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
+namespace artery {
 
-/**
- * @brief ShapeBase adapter that uses a Mitsuba scene to intersect a mesh; bbox
- * size is reported for metadata only.
- *
- * Intersection is performed via Mitsuba's acceleration structure
- * (ray_intersect_preliminary); if no scene is available, intersection fails.
- */
-MI_VARIANT
-class MitsubaShape
-    : public inet::ShapeBase {
-public:
-    SIONNA_IMPORT_CORE_TYPES(BoundingBox3f, Point3f, Vector3f)
-    SIONNA_IMPORT_RENDER_TYPES(Scene, Ray3f, Mesh, PreliminaryIntersection3f)
-    SIONNA_IMPORT_BRIDGE_TYPES(Compat)
+    namespace sionna {
 
-    MitsubaShape(mitsuba::ref<Mesh> mesh);
+        /**
+        * @brief ShapeBase adapter that uses a Mitsuba scene to intersect a mesh; bbox
+        * size is reported for metadata only.
+        *
+        * Intersection is performed via Mitsuba's acceleration structure
+        * (ray_intersect_preliminary); if no scene is available, intersection fails.
+        */
+        MI_VARIANT
+        class MitsubaShape
+            : public inet::ShapeBase {
+        public:
+            SIONNA_BRIDGE_IMPORT_BRIDGE_TYPES()
 
-    // inet::ShapeBase
-    inet::Coord computeBoundingBoxSize() const override;
+            MitsubaShape(mitsuba::ref<Mesh> mesh);
 
-    bool computeIntersection(
-        const inet::LineSegment& lineSegment,
-        inet::Coord& intersection1,
-        inet::Coord& intersection2,
-        inet::Coord& normal1,
-        inet::Coord& normal2
-    ) const override;
+            // inet::ShapeBase
+            inet::Coord computeBoundingBoxSize() const override;
 
-private:
-    inet::Coord size_;
-    mitsuba::ref<Mesh> mesh_;
-};
+            bool computeIntersection(
+                const inet::LineSegment& lineSegment,
+                inet::Coord& intersection1,
+                inet::Coord& intersection2,
+                inet::Coord& normal1,
+                inet::Coord& normal2
+            ) const override;
 
-SIONNA_EXTERN_CLASS(MitsubaShape)
+        private:
+            inet::Coord size_;
+            mitsuba::ref<Mesh> mesh_;
+        };
 
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)
+    }
+}
+
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::MitsubaShape)

@@ -1,12 +1,18 @@
-#include "MitsubaShape.h"
-
 #include <drjit/array.h>
+
+#include "artery/sionna/bridge/Fwd.h"
+#include "inet/common/geometry/common/Coord.h"
+
+#include "Compat.h"
+#include "MitsubaShape.h"
 
 using namespace artery::sionna;
 
+SIONNA_BRIDGE_INSTANTIATE_CLASS(artery::sionna::MitsubaShape)
+
 namespace {
 
-    constexpr float advancementEpsilon = 1e-4f;
+    constexpr float advancementEpsilon = 1e-4F;
 
     void nullIntersection(inet::Coord& intersection, inet::Coord& normal) {
         intersection = normal = inet::Coord::NIL;
@@ -19,11 +25,9 @@ namespace {
 
 }
 
-SIONNA_INSTANTIATE_CLASS(::MitsubaShape)
-
 MI_VARIANT
 MitsubaShape<Float, Spectrum>::MitsubaShape(mitsuba::ref<Mesh> mesh)
-    : size_(Compat::toCoord(mesh->bbox()))
+    : size_(Compat::template convert<inet::Coord>(mesh->bbox()))
     , mesh_(mesh)
 {}
 
@@ -51,22 +55,21 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
     const double lenScalar = Compat::toScalar(len);
 
     nullPassthrough(intersection1, intersection2, normal1, normal2);
-
     if (lenScalar <= 0.0) {
         return false;
     }
 
     ray.d /= len;
-    ray.maxt = static_cast<Float>(lenScalar);
+    ray.maxt = Compat::fromScalar(lenScalar);
 
-    PreliminaryIntersection3f pi = mesh_->ray_intersect_preliminary(ray);
+    typename RenderAliases::PreliminaryIntersection3f pi = mesh_->ray_intersect_preliminary(ray);
     if (!drjit::all_nested(pi.is_valid())) {
         return false;
     }
 
     const auto si = pi.compute_surface_interaction(ray);
-    intersection1 = Compat::toCoord(si.p);
-    normal1 = Compat::toCoord(si.n);
+    intersection1 = Compat::template convert<inet::Coord>(si.p);
+    normal1 = Compat::template convert<inet::Coord>(si.n);
 
     Ray3f ray2 = ray;
     ray2.o = si.p + ray.d * advancementEpsilon;
@@ -76,8 +79,8 @@ bool MitsubaShape<Float, Spectrum>::computeIntersection(
 
     if (drjit::all_nested(pi2.is_valid())) {
         const auto si2 = pi2.compute_surface_interaction(ray2);
-        intersection2 = Compat::toCoord(si2.p);
-        normal2 = Compat::toCoord(si2.n);
+        intersection2 = Compat::template convert<inet::Coord>(si2.p);
+        normal2 = Compat::template convert<inet::Coord>(si2.n);
     } else {
         intersection2 = intersection1;
         normal2 = normal1;

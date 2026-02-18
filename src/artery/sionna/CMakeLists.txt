@@ -37,6 +37,7 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
 
     target_sources(${_target}
         PRIVATE
+            bridge/Compat.cc
             bridge/bindings/Constants.cc
             bridge/bindings/Material.cc
             bridge/bindings/Scene.cc
@@ -64,6 +65,7 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
             Mitsuba::mitsuba
             drjit::drjit
             drjit::drjit-core
+            drjit::drjit-extra
             tsl::robin_map
             Python::Python
             sionna-compilation-flags
@@ -92,6 +94,7 @@ target_sources(sionna-phy
         environment/PathLoss.cc
         environment/PhysicalEnvironment.cc
     PUBLIC
+        environment/Compat.h
         environment/Ground.h
         environment/MaterialRegistry.h
         environment/MitsubaShape.h
@@ -104,6 +107,6 @@ target_sources(sionna-phy
 set_target_properties(sionna-phy PROPERTIES SIONNA_BRIDGE_COMPILATION_MODE Inet)
 target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet)
 
-# if(WITH_TESTS)
-#     add_subdirectory(tests)
-# endif()
+if(WITH_TESTS)
+    add_subdirectory(tests)
+endif()

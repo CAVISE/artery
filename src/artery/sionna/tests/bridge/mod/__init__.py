@@ -1,7 +1,8 @@
-from .dummy import echo_kwargs, Constants, GLOBAL_CONST
+from .dummy import GLOBAL_CONST, Constants, Echo, echo_kwargs
 
 __all__ = [
-    'Constants',
-    'echo_kwargs',
-    'GLOBAL_CONST',
+    "Constants",
+    "Echo",
+    "echo_kwargs",
+    "GLOBAL_CONST",
 ]

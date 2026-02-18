@@ -15,54 +15,55 @@
 #include <optional>
 #include <string>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
+namespace artery {
 
-/**
- * @brief Adapter that exposes a Sionna SceneObject as an INET IPhysicalObject.
- *
- * Geometry access is limited in the current bridge, so we provide a lightweight
- * dummy shape by default. Consumers that need a richer shape can pass one at
- * construction time.
- */
-MI_VARIANT class PhysicalObject : public inet::physicalenvironment::IPhysicalObject {
-public:
-    SIONNA_IMPORT_CORE_TYPES(Point3f, Vector3f)
-    SIONNA_IMPORT_RENDER_TYPES(Mesh)
-    SIONNA_IMPORT_BRIDGE_TYPES(RadioMaterial, Compat)
+    namespace sionna {
 
-    explicit PhysicalObject(nanobind::object obj);
-    explicit PhysicalObject(mitsuba::ref<Mesh> mesh);
+        /**
+        * @brief Adapter that exposes a Sionna SceneObject as an INET IPhysicalObject.
+        *
+        * Geometry access is limited in the current bridge, so we provide a lightweight
+        * dummy shape by default. Consumers that need a richer shape can pass one at
+        * construction time.
+        */
+        MI_VARIANT class PhysicalObject : public inet::physicalenvironment::IPhysicalObject {
+        public:
+            SIONNA_BRIDGE_IMPORT_BRIDGE_TYPES()
 
-    PhysicalObject(const std::string& fname, const std::string& name, mitsuba::ref<RadioMaterial> material);
+            explicit PhysicalObject(nanobind::object obj);
+            explicit PhysicalObject(mitsuba::ref<Mesh> mesh);
 
-    // inet::physicalenvironment::IPhysicalObject implementation.
-    virtual const inet::Coord& getPosition() const override;
-    virtual const inet::EulerAngles& getOrientation() const override;
+            PhysicalObject(const std::string& fname, const std::string& name, mitsuba::ref<RadioMaterial> material);
 
-    virtual const inet::ShapeBase *getShape() const override;
-    virtual const inet::physicalenvironment::IMaterial *getMaterial() const override;
+            // inet::physicalenvironment::IPhysicalObject implementation.
+            const inet::Coord& getPosition() const override;
+            const inet::EulerAngles& getOrientation() const override;
 
-    virtual double getLineWidth() const override;
-    virtual const cFigure::Color& getLineColor() const override;
-    virtual const cFigure::Color& getFillColor() const override;
-    virtual double getOpacity() const override;
+            const inet::ShapeBase *getShape() const override;
+            const inet::physicalenvironment::IMaterial *getMaterial() const override;
 
-    virtual const char *getTexture() const override;
-    virtual const char *getTags() const override;
+            double getLineWidth() const override;
+            const cFigure::Color& getLineColor() const override;
+            const cFigure::Color& getFillColor() const override;
+            double getOpacity() const override;
 
-private:
-    py::SceneObject<Float, Spectrum> py_;
+            const char *getTexture() const override;
+            const char *getTags() const override;
 
-    mutable inet::Coord position_;
-    mutable inet::EulerAngles orientation_;
+            virtual ~PhysicalObject();
 
-    mutable cFigure::Color color_;
-    mutable std::optional<artery::sionna::RadioMaterial<Float, Spectrum>> material_;
-    mutable std::shared_ptr<inet::ShapeBase> shape_;
-};
+        private:
+            py::SceneObject<Float, Spectrum> py_;
 
-SIONNA_EXTERN_CLASS(PhysicalObject)
+            mutable inet::Coord position_;
+            mutable inet::EulerAngles orientation_;
 
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)
+            mutable cFigure::Color color_;
+            mutable std::optional<artery::sionna::InetRadioMaterial<Float, Spectrum>> material_;
+            mutable std::shared_ptr<inet::ShapeBase> shape_;
+        };
+
+    }
+}
+
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::PhysicalObject)

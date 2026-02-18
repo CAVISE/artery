@@ -8,26 +8,33 @@
 
 #include <unordered_map>
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
+namespace artery {
 
-MI_VARIANT
-class SionnaSceneMaterialRegistry : public inet::physicalenvironment::IMaterialRegistry {
-public:
-    SIONNA_IMPORT_BRIDGE_TYPES(SionnaScene)
+    namespace sionna {
 
-    explicit SionnaSceneMaterialRegistry(py::SionnaScene<Float, Spectrum> scene)
-        : scene_(std::move(scene))
-    {}
+        MI_VARIANT
+        class InetMaterialRegistry
+            : public inet::physicalenvironment::IMaterialRegistry {
+        public:
+            SIONNA_BRIDGE_IMPORT_BRIDGE_TYPES()
 
-    // inet::physicalenvironment::IMaterialRegistry implementation.
-    const inet::physicalenvironment::Material *getMaterial(const char *name) const override;
+            explicit InetMaterialRegistry(SionnaScene scene)
+                : scene_(std::move(scene))
+            {}
 
-private:
-    // this class owns pointers to the materials, so they must persist.
-    mutable std::unordered_map<std::string, RadioMaterial<Float, Spectrum>> materials_;
-    py::SionnaScene<Float, Spectrum> scene_;
-};
+            // inet::physicalenvironment::IMaterialRegistry implementation.
+            const inet::physicalenvironment::Material *getMaterial(const char *name) const override;
 
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)
+            virtual ~InetMaterialRegistry() = default;
+
+        private:
+            SionnaScene scene_;
+            // this class owns pointers to the materials, so they must persist.
+            mutable std::unordered_map<std::string, InetRadioMaterial<Float, Spectrum>> materials_;
+        };
+
+    }
+
+}
+
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::InetMaterialRegistry)

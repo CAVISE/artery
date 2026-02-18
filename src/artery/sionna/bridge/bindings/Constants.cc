@@ -14,7 +14,7 @@ const char* py::Constants<Float, Spectrum>::moduleName() const {
 
 MI_VARIANT
 const char* py::IntersectionTypes<Float, Spectrum>::className() const {
-    return "ConstIntersectionTypes";
+    return "InteractionType";
 }
 
 MI_VARIANT

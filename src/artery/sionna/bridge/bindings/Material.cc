@@ -45,7 +45,7 @@ py::RadioMaterial<Float, Spectrum>::RadioMaterial(
     const std::string& name,
     Float64 conductivity,
     Float64 relativePermittivity,
-    typename ThicknessDefault::Argument thickness
+    typename DefaultedThicknessType::Argument thickness
 ) {
     this->InitPythonClassCapability::init(
         "name"_a = name,

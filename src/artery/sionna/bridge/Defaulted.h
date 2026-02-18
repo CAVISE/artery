@@ -3,6 +3,8 @@
 #include <artery/sionna/bridge/Fwd.h>
 #include <nanobind/nanobind.h>
 
+#include <drjit/array_traits.h>
+
 #include <cstring>
 #include <type_traits>
 #include <utility>
@@ -43,10 +45,25 @@ namespace artery {
                 nanobind::gil_scoped_acquire gil;
                 auto module = nanobind::module_::import_(module_);
 
-                if (std::strlen(cls_) > 0) {
-                    return sionna::access<T>(nanobind::getattr(module, cls_), name_);
+                nanobind::object obj = (std::strlen(cls_) > 0)
+                    ? sionna::access<nanobind::object>(nanobind::getattr(module, cls_), name_)
+                    : sionna::access<nanobind::object>(module, name_);
+
+                // This exists if fetched constant is not Jit array (hello, sionna!)
+                if constexpr (drjit::is_array_v<T>) {
+                    using Scalar = drjit::scalar_t<T>;
+                    if (nanobind::isinstance<nanobind::bool_>(obj)) {
+                        return T(static_cast<Scalar>(nanobind::cast<bool>(obj)));
+                    }
+                    if (nanobind::isinstance<nanobind::int_>(obj)) {
+                        return T(static_cast<Scalar>(nanobind::cast<long long>(obj)));
+                    }
+                    if (nanobind::isinstance<nanobind::float_>(obj)) {
+                        return T(static_cast<Scalar>(nanobind::cast<double>(obj)));
+                    }
                 }
-                return sionna::access<T>(module, name_);
+
+                return nanobind::cast<T>(obj);
             }
 
             /**

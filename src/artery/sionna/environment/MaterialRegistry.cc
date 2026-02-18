@@ -1,21 +1,19 @@
+#include "artery/sionna/bridge/Fwd.h"
+#include "artery/sionna/environment/Material.h"
+
 #include "MaterialRegistry.h"
 
-NAMESPACE_BEGIN(artery)
-NAMESPACE_BEGIN(sionna)
+using namespace artery::sionna;
 
-SIONNA_INSTANTIATE_CLASS(SionnaSceneMaterialRegistry)
+SIONNA_BRIDGE_INSTANTIATE_CLASS(artery::sionna::InetMaterialRegistry)
 
 MI_VARIANT
 const inet::physicalenvironment::Material *
-SionnaSceneMaterialRegistry<Float, Spectrum>::getMaterial(const char *name) const {
+InetMaterialRegistry<Float, Spectrum>::getMaterial(const char *name) const {
     auto mats = scene_.radioMaterials();
     if (auto it = mats.find(name); it != mats.end()) {
-        auto inserted = materials_.try_emplace(
-            it->first, it->second.object());
+        auto inserted = materials_.try_emplace(it->first, InetRadioMaterial<Float, Spectrum>(it->second));
         return &inserted.first->second;
     }
     return nullptr;
 }
-
-NAMESPACE_END(sionna)
-NAMESPACE_END(artery)

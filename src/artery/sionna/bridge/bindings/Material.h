@@ -39,7 +39,7 @@ namespace artery {
             public:
                 SIONNA_BRIDGE_IMPORT_CORE_TYPES();
 
-                using ThicknessDefault = decltype(Constants<Float, Spectrum>::defaultThickness);
+                using DefaultedThicknessType = decltype(Constants<Float, Spectrum>::defaultThickness);
 
                 // IPythonClassIdentityCapability implementation.
                 const char* className() const override;
@@ -51,7 +51,7 @@ namespace artery {
                     const std::string& name,
                     Float64 conductivity = 0.0,
                     Float64 relativePermittivity = 1.0,
-                    typename ThicknessDefault::Argument thickness = Constants<Float, Spectrum>::defaultThickness
+                    typename DefaultedThicknessType::Argument thickness = Constants<Float, Spectrum>::defaultThickness
                 );
 
                 Float64 relativePermittivity() const;

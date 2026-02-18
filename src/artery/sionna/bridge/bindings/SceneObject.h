@@ -38,3 +38,5 @@ namespace artery {
         }
     }
 }
+
+SIONNA_BRIDGE_EXTERN_CLASS(artery::sionna::py::SceneObject)

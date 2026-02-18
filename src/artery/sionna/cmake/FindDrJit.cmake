@@ -17,3 +17,7 @@ endif()
 if(NOT TARGET drjit::drjit-core)
     add_library(drjit::drjit-core ALIAS drjit-core)
 endif()
+
+if(NOT TARGET drjit::drjit-extra)
+    add_library(drjit::drjit-extra ALIAS drjit-extra)
+endif()

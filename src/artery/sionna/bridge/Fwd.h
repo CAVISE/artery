@@ -10,9 +10,11 @@
 // we should comply with nanobind symbols visibility.
 
 #if defined(__GNUC__) && !defined(_WIN32)
-#  define SIONNA_BRIDGE_API __attribute__((visibility("hidden")))
+#  define SIONNA_BRIDGE_API __attribute__((visibility("default")))
+#  define SIONNA_BRIDGE_INTERNAL __attribute__((visibility("hidden")))
 #else
 #  define SIONNA_BRIDGE_API
+#  define SIONNA_BRIDGE_INTERNAL
 #endif
 
 /**
@@ -60,8 +62,9 @@ namespace artery {
         template <typename T>
         T access(const nanobind::object& obj, const std::string& attribute, bool convert = false);
 
-        namespace py {
+        namespace py SIONNA_BRIDGE_INTERNAL {
 
+            MI_VARIANT class Compat;
             MI_VARIANT class Constants;
             MI_VARIANT class IntersectionTypes;
             MI_VARIANT class RadioMaterialBase;
@@ -72,6 +75,7 @@ namespace artery {
         }
 
         MI_VARIANT struct SionnaBridgeAliases {
+            using Compat = py::Compat<Float, Spectrum>;
             using Constants = py::Constants<Float, Spectrum>;
             using IntersectionTypes = py::IntersectionTypes<Float, Spectrum>;
             using RadioMaterialBase = py::RadioMaterialBase<Float, Spectrum>;
@@ -91,10 +95,11 @@ namespace artery {
 #define SIONNA_BRIDGE_IMPORT_CORE_TYPES() \
     MI_IMPORT_CORE_TYPES()
 
-// Import all available bridge types, adding mitsuba core types.
+// Import all available bridge types, adding mitsuba core and render types.
 #define SIONNA_BRIDGE_IMPORT_BRIDGE_TYPES() \
-    SIONNA_BRIDGE_IMPORT_BRIDGE_TYPES() \
+    SIONNA_BRIDGE_IMPORT_RENDER_TYPES() \
     using SionnaBridgeAliases = artery::sionna::SionnaBridgeAliases<Float, Spectrum>; \
+    using Compat = typename SionnaBridgeAliases::Compat; \
     using Constants = typename SionnaBridgeAliases::Constants; \
     using IntersectionTypes = typename SionnaBridgeAliases::IntersectionTypes; \
     using RadioMaterialBase = typename SionnaBridgeAliases::RadioMaterialBase; \

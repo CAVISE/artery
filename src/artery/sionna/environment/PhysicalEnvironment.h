@@ -5,8 +5,6 @@
 
 #include <inet/environment/contract/IPhysicalEnvironment.h>
 
-#include <memory>
-
 
 namespace artery {
     namespace sionna {
@@ -16,25 +14,25 @@ namespace artery {
             PhysicalEnvironment() = default;
 
             // inet::physicalenvironment::IPhysicalEnvironment implementation
-            virtual inet::physicalenvironment::IObjectCache* getObjectCache() const override;
-            virtual inet::physicalenvironment::IGround* getGround() const override;
+            inet::physicalenvironment::IObjectCache* getObjectCache() const override;
+            inet::physicalenvironment::IGround* getGround() const override;
 
-            virtual const inet::Coord& getSpaceMin() const override;
-            virtual const inet::Coord& getSpaceMax() const override;
-            virtual const inet::physicalenvironment::IMaterialRegistry* getMaterialRegistry() const override;
+            const inet::Coord& getSpaceMin() const override;
+            const inet::Coord& getSpaceMax() const override;
+            const inet::physicalenvironment::IMaterialRegistry* getMaterialRegistry() const override;
 
-            virtual int getNumObjects() const override;
-            virtual const inet::physicalenvironment::IPhysicalObject* getObject(int index) const override;
-            virtual const inet::physicalenvironment::IPhysicalObject* getObjectById(int id) const override;
+            int getNumObjects() const override;
+            const inet::physicalenvironment::IPhysicalObject* getObject(int index) const override;
+            const inet::physicalenvironment::IPhysicalObject* getObjectById(int id) const override;
 
-            virtual void visitObjects(const inet::IVisitor* visitor, const inet::LineSegment& lineSegment) const override;
+            void visitObjects(const inet::IVisitor* visitor, const inet::LineSegment& lineSegment) const override;
 
         protected:
-            virtual int numInitStages() const override;
-            virtual void initialize(int stage) override;
+            int numInitStages() const override;
+            void initialize(int stage) override;
 
-            virtual void handleParameterChange(const char* parname) override;
-            virtual void refreshDisplay() const override;
+            void handleParameterChange(const char* parname) override;
+            void refreshDisplay() const override;
 
             virtual void buildSceneFromEnvironment();
             virtual void updateDynamicObjects();
@@ -43,7 +41,6 @@ namespace artery {
             void initializeScene();
             void initializeSceneWithConfig();
 
-        private:
             struct Parameters {
                 std::string rtBackend;
                 std::string materialSet;
@@ -51,5 +48,5 @@ namespace artery {
             } parameters_;
         };
 
-    }  // namespace sionna
-}  // namespace artery
+    }
+}

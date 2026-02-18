@@ -8,6 +8,8 @@
 
 using namespace artery::sionna;
 
+SIONNA_BRIDGE_INSTANTIATE_CLASS(artery::sionna::py::SionnaScene)
+
 MI_VARIANT
 py::SionnaScene<Float, Spectrum>::SionnaScene() {
     InitPythonClassCapability::init();

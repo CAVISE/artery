@@ -1,9 +1,9 @@
-#include <artery/sionna/bridge/Defaulted.h>
-#include <artery/sionna/bridge/Helpers.h>
 #include <gtest/gtest.h>
-#include <nanobind/nanobind.h>
 
-// For casters
+#include <artery/sionna/bridge/Helpers.h>
+#include <artery/sionna/bridge/Defaulted.h>
+
+#include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 
 #include <memory>
@@ -13,32 +13,40 @@ namespace nb = nanobind;
 namespace
 {
 
-class DefaultedTest : public testing::Test
-{
-public:
+class DefaultedTest
+    : public testing::Test {
+    public:
     void SetUp() override {
-        // For some reason WORKING_DIRECTORY is not enough, we have to append to system path
-        // manually.
-        auto sys = nb::module_::import_("sys");
-        auto cwd = std::filesystem::current_path().string();
-        sys.attr("path").attr("insert")(0, cwd);
+        nb::gil_scoped_acquire gil;
+        try {
+            mod_ = std::make_unique<nb::module_>(nb::module_::import_("mod"));
+            echo_ = std::make_unique<nb::object>(mod_->attr("echo_kwargs"));
+        } catch (const nb::python_error& error) {
+            if (error.matches(PyExc_ModuleNotFoundError) || error.matches(PyExc_ImportError)) {
+                GTEST_FAIL() << "Failed to import Python test module 'mod'. "
+                             << "Run tests via ctest so WORKING_DIRECTORY is set "
+                                << "and PYTHONPATH includes the test directory "
+                                << "(e.g. `ctest --test-dir build/Release -R test_bridge_module`). "
+                                << "If running the binary directly, set "
+                                << "`PYTHONPATH=src/artery/sionna/tests/bridge`. "
+                                << "Original error: " << error.what();
+                }
+                GTEST_FAIL() << "Unexpected Python error while importing 'mod': " << error.what();
+            }
+        }
 
-        mod_ = std::make_unique<nb::module_>(nb::module_::import_("mod"));
-        echo_ = std::make_unique<nb::object>(mod_->attr("echo_kwargs"));
-    }
+        static bool dictContains(const nb::dict& d, const std::string& attribute) {
+            return nb::cast<bool>(d.attr("__contains__")(attribute.c_str()));
+        }
 
-    bool dictContains(nb::dict d, const std::string& attribute) {
-        return nb::cast<bool>(d.attr("__contains__")(attribute.c_str()));
-    }
+        template<typename T>
+        T dictFetch(nb::dict d, const std::string& attribute) {
+            return nb::cast<T>(d[attribute.c_str()]);
+        }
 
-    template<typename T>
-    T dictFetch(nb::dict d, const std::string& attribute) {
-        return nb::cast<T>(d[attribute.c_str()]);
-    }
-
-    // Handles do not have defaults - so have to allocate them.
-    std::unique_ptr<nb::object> echo_;
-    std::unique_ptr<nb::module_> mod_;
+        // Handles do not have defaults - so have to allocate them.
+        std::unique_ptr<nb::object> echo_;
+        std::unique_ptr<nb::module_> mod_;
 };
 
 }  // namespace
@@ -46,9 +54,9 @@ public:
 TEST_F(DefaultedTest, PassingRegularArgsWorks)
 {
     using namespace artery::sionna::literals;
-    using artery::sionna::kwargs;
+    using artery::sionna::Kwargs;
 
-    auto kw = kwargs("integer"_a = 1, "double"_a = 2.5, "string"_a = nb::str("hello"));
+    auto kw = Kwargs::toDict("integer"_a = 1, "double"_a = 2.5, "string"_a = nb::str("hello"));
     nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
     ASSERT_TRUE(dictContains(d, "integer"));
@@ -80,7 +88,7 @@ TEST_F(DefaultedTest, ResolveWorks)
 TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
 {
     using namespace artery::sionna::literals;
-    using artery::sionna::kwargs;
+    using artery::sionna::Kwargs;
     using D = artery::sionna::Defaulted<int>;
 
     D defaulted{"mod", "GLOBAL_CONST"};
@@ -88,7 +96,7 @@ TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
     {
         // Make sure kwargs() resolves Defaulted type - if passed
         // to caster, this will break nanobind core library (nanobind-drjit).
-        auto kw = kwargs("x"_a = defaulted, "y"_a = 42);
+        auto kw = Kwargs::toDict("x"_a = defaulted, "y"_a = 42);
 
         nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
@@ -102,7 +110,7 @@ TEST_F(DefaultedTest, DefaultedArgsAreNotPassed)
     {
         D::Argument x = 99;
 
-        auto kw = kwargs("x"_a = x);
+        auto kw = Kwargs::toDict("x"_a = x);
         nb::dict d = nb::cast<nb::dict>((*echo_)(**kw));
 
         ASSERT_TRUE(dictContains(d, "x"));
