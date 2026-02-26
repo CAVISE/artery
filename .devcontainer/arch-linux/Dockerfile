@@ -44,12 +44,14 @@ RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclips
     && cd sumo \
     && cmake -B build . && cmake --build build --parallel $(nproc --all) \
     && cmake --install build --prefix /opt/inst \
+    && rm -rf /opt/inst/share/man \
     && cd .. && rm -rf sumo
 
 RUN git clone --recurse --depth 1 --branch ${GEOGRAPHICLIB_TAG} https://github.com/geographiclib/geographiclib \
     && cd geographiclib \
     && cmake -B build . && cmake --build build --parallel $(nproc --all) \
     && cmake --install build --prefix /opt/inst \
+    && rm -rf /opt/inst/share/man \
     && cd .. && rm -rf geographiclib
 
 ######################

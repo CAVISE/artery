@@ -35,6 +35,7 @@ RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclips
     && cd sumo \
     && cmake -B build . && cmake --build build --parallel $(nproc --all) \
     && cmake --install build --prefix /opt/sumo \
+    && rm -rf /opt/inst/share/man \
     && cd .. && rm -rf sumo
 
 ######################
