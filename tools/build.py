@@ -353,7 +353,7 @@ def parse_cli_args() -> argparse.Namespace:
     # Presets
     parser.add_argument('--preset', action='store', dest='preset')
     # TODO: allow more configs
-    parser.add_argument('--config', action='append', dest='configs', choices=['Debug', 'Release'])
+    parser.add_argument('--config', action='append', dest='configs', choices=['Debug', 'Release', 'RelWithDebInfo'])
     parser.add_argument('--parallel', action='store', dest='cores')
     parser.add_argument('--generator', action='store', dest='generator')
     # Profiles
