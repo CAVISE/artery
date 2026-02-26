@@ -93,7 +93,7 @@ USER ${USER}
 WORKDIR /workspace/artery
 
 # Which CMake configs to prebuild; space-separated, e.g. "Debug Release"
-ARG BUILD_CONFIGS="RelWithDebInfo"
+ARG BUILD_CONFIGS="Debug"
 
 COPY --chown=${USER} . .
 
