@@ -21,6 +21,6 @@ simple TransfusionService like ItsG5Service
 {
     parameters:
         string remote_ip = default("127.0.0.1");
-        int remote_port = default(40000);
+        int remote_port;
         bool tcp_no_delay = default(false);
 }
