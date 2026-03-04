@@ -174,8 +174,11 @@ class Routines:
         for config in self.__params.build_configs:
             source = Path.cwd()
             binary = self.__params.build_directory.joinpath(config)
+<<<<<<< current
             if self.__params.preset is not None:
                 binary= binary.joinpath(self.__params.preset)
+=======
+>>>>>>> incoming
             command = [
                 'cmake',
                 '--preset', f'conan-{config.lower()}',
