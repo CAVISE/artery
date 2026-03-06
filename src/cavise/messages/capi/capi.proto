@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package capi;
+
+import "capi/artery.proto";
+import "capi/opencda.proto";
+
+message Message {
+    oneof message {
+        ArteryMessage artery = 1;
+        OpenCDAMessage opencda = 2;
+    }
+}
