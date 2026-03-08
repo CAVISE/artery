@@ -118,6 +118,7 @@ if(WITH_SCENARIOS)
 endif()
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
 if(is_multi_config)
     foreach(config IN LISTS CMAKE_CONFIGURATION_TYPES)
         string(TOLOWER "${config}" config_lower)
