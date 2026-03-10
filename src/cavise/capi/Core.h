@@ -2,9 +2,9 @@
 
 #include <cavise/capi/ConnectionHandler.h>
 
-#include <capi/artery.pb.h>
-#include <capi/capi.pb.h>
-#include <capi/opencda.pb.h>
+#include <artery.pb.h>
+#include <capi.pb.h>
+#include <opencda.pb.h>
 
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>

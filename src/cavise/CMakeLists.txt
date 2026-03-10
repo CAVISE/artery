@@ -24,3 +24,6 @@ add_opp_message(
 target_link_libraries(capi PUBLIC cosim-message)
 
 add_subdirectory(messages)
+
+target_link_libraries(capi PUBLIC protos)
+add_dependencies(capi protos)

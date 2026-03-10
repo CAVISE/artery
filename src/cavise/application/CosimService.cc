@@ -20,6 +20,8 @@ using namespace cavise;
 
 Define_Module(CosimService)
 
+CosimService::CosimService() = default;
+
 void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnetpp::cPacket* packet, const artery::NetworkInterface& /* interface */)
 {
     const auto& vehicle = getFacilities().get_const<traci::VehicleController>();

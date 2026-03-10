@@ -5,5 +5,5 @@ package capi;
 import "capi/entity.proto";
 
 message OpenCDAMessage {
-    repeated Entity entity = 1;
+  repeated Entity entity = 1;
 }

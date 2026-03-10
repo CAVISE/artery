@@ -31,14 +31,26 @@ void CAPICore::initialize()
     handler_->connect();
     emit(initSignal, true);
 
-    scheduleAt(omnetpp::simTime() + updateInterval_, stepMessage_);
+    // Trigger first CAPI step immediately; subsequent steps remain periodic.
+    scheduleAt(omnetpp::simTime(), stepMessage_);
 }
 
 void CAPICore::finish()
 {
     emit(closeSignal, true);
 
-    cancelAndDelete(stepMessage_);
+    if (stepMessage_) {
+        if (stepMessage_->isScheduled()) {
+            cancelEvent(stepMessage_);
+        }
+
+        if (stepMessage_->getOwner() == this) {
+            delete stepMessage_;
+        }
+
+        stepMessage_ = nullptr;
+    }
+
     handler_->stop();
 }
 

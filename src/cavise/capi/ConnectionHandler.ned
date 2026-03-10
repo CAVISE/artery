@@ -1,4 +1,4 @@
-package cavise;
+package cavise.capi;
 
 moduleinterface ICAPIConnectionHandler
 {
@@ -12,7 +12,7 @@ moduleinterface ICAPIConnectionHandler
 simple ZmqCAPIConnectionHandler like ICAPIConnectionHandler
 {
     parameters:
-        @class(cavise::ZmqCAPIConnectionHandler);
+        @class(ZmqCAPIConnectionHandler);
 
         string address = default("tcp://127.0.0.1:5555");
         // Timeout for receive call, Artery will wait

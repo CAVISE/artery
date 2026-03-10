@@ -1,12 +1,10 @@
 #pragma once
 
-#include "artery/application/ItsG5Service.h"
-#include "artery/application/NetworkInterface.h"
-#include "capi/artery.pb.h"
-#include "cavise/capi/Listener.h"
-#include "capi/opencda.pb.h"
+#include <cavise/capi/Listener.h>
+#include <artery/application/ItsG5Service.h>
+#include <artery/application/NetworkInterface.h>
 
-#include <capi/capi.pb.h>
+#include <capi.pb.h>
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
 #include <omnetpp/simtime.h>

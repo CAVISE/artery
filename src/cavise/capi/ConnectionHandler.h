@@ -3,7 +3,8 @@
 #include <zmq.hpp>
 #include <omnetpp/csimplemodule.h>
 
-#include <capi/capi.pb.h>
+#include <string>
+#include <capi.pb.h>
 
 
 namespace cavise {
@@ -36,6 +37,9 @@ namespace cavise {
     private:
         zmq::context_t context_;
         zmq::socket_t socket_;
+
+        std::string identity_;
+        std::uint64_t lastOrder_;
     };
 
 }
