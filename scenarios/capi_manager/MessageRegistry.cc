@@ -1,28 +1,37 @@
 #include "MessageRegistry.h"
 
+#include "capi.pb.h"
+#include "omnetpp/checkandcast.h"
+#include "omnetpp/clog.h"
+#include "opencda.pb.h"
+
+#include <google/protobuf/util/message_differencer.h>
 #include <omnetpp/cexception.h>
 
-#include <algorithm>
 #include <sstream>
-#include <string>
+#include <typeindex>
 
 using namespace cavise;
 
 Define_Module(MessageRegistry);
 
 MessageRegistry::MessageRegistry()
-    : nextOrder_(1)
-    , minEntities_(1)
-    , maxEntities_(1)
-    , receivedOpenCdaCount_(0)
-    , receivedArteryCount_(0)
-{}
+{
+}
 
 void MessageRegistry::initialize()
 {
-    nextOrder_ = par("firstOrder").intValue();
-    minEntities_ = par("minEntities").intValue();
-    maxEntities_ = par("minEntities").intValue(), par("maxEntities").intValue();
+    for (SubmoduleIterator it(this); !it.end(); ++it) {
+        if (auto generator = dynamic_cast<IMessageGenerator*>(*it); generator) {
+            if (auto openCDAGenerator = dynamic_cast<OpenCDAMessageGenerator*>(generator); openCDAGenerator) {
+                const auto type = std::type_index(typeid(capi::OpenCDAMessage));
+                generators_[type] = openCDAGenerator;
+            } else {
+                // insert others above as needed.
+                EV_INFO << "message registry: found non-generator submodule " << (*it)->getName() << ", skipping";
+            }
+        }
+    }
 }
 
 void MessageRegistry::finish()
@@ -30,62 +39,65 @@ void MessageRegistry::finish()
     EV_INFO << summary() << "\n";
 }
 
-const capi::Message& MessageRegistry::appendMessage()
+template <>
+capi::OpenCDAMessage MessageRegistry::generateMessage<capi::OpenCDAMessage>()
 {
-    capi::Message message;
-    message.set_order(nextOrder_++);
-
-    auto* openCda = message.mutable_opencda();
-    const int entities = intuniform(minEntities_, maxEntities_);
-    for (std::size_t i = 0; i < entities; ++i) {
-        auto* entity = openCda->add_entity();
-        entity->set_id("dummy-" + std::to_string(intrand(100000)));
-        entity->set_velocity(uniform(0.0, 40.0));
+    const auto type = std::type_index(typeid(capi::OpenCDAMessage));
+    if (const auto it = generators_.find(type); it == generators_.end()) {
+        throw omnetpp::cRuntimeError("OpenCDAMessage generator is not registered");
+    } else {
+        return it->second->generate().opencda();
     }
-
-    holders_.push_back({
-        .timesConfirmed = 0,
-        .message = std::move(message)
-    });
-
-    return holders_.back().message;
 }
 
-const capi::Message& MessageRegistry::messageByOrder(std::uint64_t order) const {
-    return holders_.at(order).message;
+template <>
+void MessageRegistry::registerMessage<capi::ArteryMessage>(const capi::ArteryMessage& message)
+{
+    const auto type = std::type_index(typeid(capi::ArteryMessage));
+
+    capi::Message forHolder;
+    forHolder.mutable_artery()->CopyFrom(message);
+    holders_[type].push_back(Holder{.timesConfirmed = 0, .message = forHolder});
+}
+
+template <>
+void MessageRegistry::registerMessage<capi::OpenCDAMessage>(const capi::OpenCDAMessage& message)
+{
+    const auto type = std::type_index(typeid(capi::OpenCDAMessage));
+
+    capi::Message forHolder;
+    forHolder.mutable_opencda()->CopyFrom(message);
+    holders_[type].push_back(Holder{.timesConfirmed = 0, .message = forHolder});
 }
 
 void MessageRegistry::confirm(const capi::Message& message)
 {
-    std::ostringstream out;
-    out << "reply order=" << message.order();
+    for (auto& [type, holders] : holders_) {
+        EV_DEBUG << "confirm message: scanning " << type.name() << " message registry\n";
 
-    if (message.has_artery()) {
-        ++receivedArteryCount_;
-        out << " type=artery transmissions=" << message.artery().transmissions_size();
-        details = out.str();
-        return true;
+        for (auto& [times, heldMessage] : holders) {
+            EV_DEBUG << "confirm message: comparing " << message.ShortDebugString() << " with " << heldMessage.ShortDebugString();
+
+            if (google::protobuf::util::MessageDifferencer::Equals(message, heldMessage)) {
+                EV_DEBUG << "confirm message: messages equal each other. Incrementing confirmation counter, curr: " << ++times;
+                return;
+            }
+        }
     }
-
-    if (message.has_opencda()) {
-        ++receivedOpenCdaCount_;
-        out << " type=opencda entities=" << message.opencda().entity_size();
-        details = out.str();
-        return true;
-    }
-
-    out << " type=other";
-    details = out.str();
-    return false;
 }
 
 std::string MessageRegistry::summary() const
 {
     std::ostringstream out;
-    out << "MessageRegistry summary:"
-        << " sentOpenCda=" << sentOpenCdaCount_
-        << " receivedOpenCda=" << receivedOpenCdaCount_
-        << " receivedArtery=" << receivedArteryCount_
-        << " stored=" << messages_.size();
+    out << "MessageRegistry summary: \n";
+
+    for (const auto& [type, holders] : holders_) {
+        out << "holders for type: " << type.name() << ": \n";
+
+        for (const auto& [times, heldMessage] : holders) {
+            out << "- message: " << heldMessage.ShortDebugString() << " confirmed times " << times;
+        }
+    }
+
     return out.str();
 }

@@ -1,53 +1,65 @@
-#include "artery.pb.h"
-#include "opencda.pb.h"
+#include "MessageGenerator.h"
+
+#include <artery.pb.h>
 #include <capi.pb.h>
 #include <omnetpp/csimplemodule.h>
+#include <opencda.pb.h>
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
+#include <typeindex>
 #include <unordered_map>
 #include <vector>
 
-namespace cavise {
+namespace cavise
+{
 
-    class MessageRegistry
-        : public omnetpp::cSimpleModule {
-    public:
-        MessageRegistry();
+template<typename G>
+struct AlwaysFalse : std::false_type {};
 
-        void initialize() override;
-        void finish() override;
+class MessageRegistry : public omnetpp::cSimpleModule
+{
+public:
+    MessageRegistry();
 
-        template<typename T>
-        void append(const T&);
+    /* omnetpp::cSimpleModule implementation. */
+    void initialize() override;
+    void finish() override;
 
-        template<typename T>
-        const T& generate();
+    /**
+     * @brief Register a message of a given type.
+     */
+    template <typename T>
+    void registerMessage(const T&) {
+        static_assert(AlwaysFalse<T>::value, "cannot register message of requested type - look for overloads");
+    }
 
-        template<>
-        const capi::OpenCDAMessage& generate();
+    template <typename T>
+    T generateMessage() {
+        static_assert(AlwaysFalse<T>::value, "cannot generate message of requested type - look for overloads");
+    }
 
-        template<>
-        void append(const capi::ArteryMessage& message);
-        template<>
-        void append(const capi::OpenCDAMessage& message);
+    void confirm(const capi::Message& message);
+    std::string summary() const;
 
-        const capi::Message& messageByOrder(std::uint64_t order) const;
-
-        void confirm(const capi::Message& message);
-        std::string summary() const;
-
-    private:
-        struct Holder {
-            std::size_t timesConfirmed;
-            capi::Message message;
-        };
-
-        std::vector<Holder> holders_;
-
-        int minEntities_;
-        int maxEntities_;
-        std::int64_t nextOrder_;
+private:
+    struct Holder {
+        std::size_t timesConfirmed;
+        capi::Message message;
     };
 
-}
+    std::unordered_map<std::type_index, IMessageGenerator*> generators_;
+    std::unordered_map<std::type_index, std::vector<Holder>> holders_;
+};
+
+template <>
+capi::OpenCDAMessage MessageRegistry::generateMessage<capi::OpenCDAMessage>();
+
+template <>
+void MessageRegistry::registerMessage<capi::ArteryMessage>(const capi::ArteryMessage& message);
+
+template <>
+void MessageRegistry::registerMessage<capi::OpenCDAMessage>(const capi::OpenCDAMessage& message);
+
+}  // namespace cavise
