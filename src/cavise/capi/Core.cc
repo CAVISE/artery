@@ -3,6 +3,7 @@
 #include "omnetpp/csimulation.h"
 #include "omnetpp/simkerneldefs.h"
 
+#include <limits>
 #include <memory>
 
 using namespace cavise;
@@ -13,6 +14,11 @@ const omnetpp::simsignal_t CAPICore::initSignal = cComponent::registerSignal("ca
 const omnetpp::simsignal_t CAPICore::stepSignal = cComponent::registerSignal("capi.step");
 const omnetpp::simsignal_t CAPICore::closeSignal = cComponent::registerSignal("capi.close");
 
+CAPICore::~CAPICore()
+{
+    cancelAndDelete(stepMessage_);
+}
+
 void CAPICore::initialize()
 {
     if (omnetpp::cModule* parent = getParentModule(); !parent) {
@@ -20,13 +26,14 @@ void CAPICore::initialize()
     } else if (omnetpp::cModule* hmod = parent->getSubmodule("connection_handler"); !hmod) {
         throw omnetpp::cRuntimeError("connection_handler not found");
     } else {
-        handler_ = reinterpret_cast<ICAPIConnectionHandler*>(hmod);
+        handler_ = dynamic_cast<ICAPIConnectionHandler*>(hmod);
     }
 
     api_ = std::make_unique<CAPI>(this);
 
     updateInterval_ = par("updateInterval").doubleValue();
     stepMessage_ = new omnetpp::cMessage("CAPI step message");
+    stepMessage_->setSchedulingPriority(std::numeric_limits<short>::min());
 
     handler_->connect();
     emit(initSignal, true);
@@ -38,20 +45,9 @@ void CAPICore::initialize()
 void CAPICore::finish()
 {
     emit(closeSignal, true);
-
-    if (stepMessage_) {
-        if (stepMessage_->isScheduled()) {
-            cancelEvent(stepMessage_);
-        }
-
-        if (stepMessage_->getOwner() == this) {
-            delete stepMessage_;
-        }
-
-        stepMessage_ = nullptr;
+    if (stepMessage_->isScheduled()) {
+        handler_->stop();
     }
-
-    handler_->stop();
 }
 
 void CAPICore::handleMessage(omnetpp::cMessage* msg)
@@ -78,7 +74,7 @@ void CAPICore::handleMessage(omnetpp::cMessage* msg)
     message.mutable_artery()->Swap(&arteryMessage);
     handler_->cSend(message);
 
-    scheduleAt(omnetpp::simTime() + updateInterval_, stepMessage_);
+    scheduleAt(omnetpp::simTime() + updateInterval_, msg);
 }
 
 CAPI* CAPICore::getCAPI()

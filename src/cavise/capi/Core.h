@@ -31,6 +31,7 @@ public:
     static const omnetpp::simsignal_t closeSignal;
 
     /* cSimpleModule implementation */
+    ~CAPICore() override;
     void finish() override;
     void initialize() override;
     void handleMessage(omnetpp::cMessage* msg) override;
