@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cavise/capi/ConnectionHandler.h>
+#include <traci/Listener.h>
 
 #include <artery.pb.h>
 #include <capi.pb.h>
@@ -18,7 +19,7 @@ namespace cavise
 
 class CAPI;
 
-class CAPICore : public omnetpp::cSimpleModule
+class CAPICore : public omnetpp::cSimpleModule, public traci::Listener
 {
 public:
     // CAPI & Core are realistically the same entity, but since
@@ -43,11 +44,17 @@ public:
     const CAPI* getCAPI() const;
 
 private:
+    void traciInit() override;
+    void traciStep() override;
+    void runStep();
+
     capi::OpenCDAMessage OpenCDAMessage_;
     std::queue<capi::ArteryMessage::Transmission> transmissions_;
 
     omnetpp::cMessage* stepMessage_;
     omnetpp::SimTime updateInterval_;
+    unsigned traciStepCount_ = 0;
+    bool started_ = false;
 
     ICAPIConnectionHandler* handler_;
     std::unique_ptr<CAPI> api_;

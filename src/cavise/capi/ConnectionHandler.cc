@@ -12,7 +12,17 @@ Define_Module(ZmqCAPIConnectionHandler);
 
 namespace {
 
-    constexpr const char* OPENCDA_IDENTITY = "OpenCDA";
+    const char* messageKind(const capi::Message& message) {
+        if (message.has_opencda()) {
+            return "opencda";
+        } else if (message.has_artery()) {
+            return "artery";
+        } else if (message.has_ack()) {
+            return "ack";
+        } else {
+            return "unknown";
+        }
+    }
 
 } // namespace
 
@@ -26,12 +36,15 @@ void ZmqCAPIConnectionHandler::connect() {
     auto address = par("address").stdstringValue();
     EV_DEBUG << "binding ROUTER for OpenCDA on address: " << address;
 
-    if (int timeout = par("receiveTimeout").intValue(); timeout > 0) {
-        socket_.set(zmq::sockopt::rcvtimeo, timeout);
+    const int receiveTimeout = par("receiveTimeout").intValue();
+    const int sendTimeout = par("sendTimeout").intValue();
+
+    if (receiveTimeout > 0) {
+        socket_.set(zmq::sockopt::rcvtimeo, receiveTimeout);
     }
 
-    if (int timeout = par("sendTimeout").intValue(); timeout > 0) {
-        socket_.set(zmq::sockopt::sndtimeo, timeout);
+    if (sendTimeout > 0) {
+        socket_.set(zmq::sockopt::sndtimeo, sendTimeout);
     }
 
     try {
@@ -50,6 +63,9 @@ void ZmqCAPIConnectionHandler::cSend(capi::Message message) {
     }
 
     message.set_order(lastOrder_);
+    EV_INFO << "sending CAPI message to peer '" << identity_
+            << "' kind=" << messageKind(message)
+            << " order=" << message.order() << "\n";
     sendFrames(identity_, message);
 
     identity_.clear();
@@ -58,19 +74,32 @@ void ZmqCAPIConnectionHandler::cSend(capi::Message message) {
 capi::Message ZmqCAPIConnectionHandler::cReceive() {
     while (true) {
         capi::Message incoming;
-        receiveFrames(identity_, incoming);
+        EV_INFO << "awaiting CAPI message from OpenCDA\n";
+        try {
+            receiveFrames(identity_, incoming);
+        } catch (const zmq::error_t& e) {
+            if (e.num() == EAGAIN) {
+                EV_DEBUG << "receive timeout expired while waiting for OpenCDA; continuing without payload\n";
+                identity_.clear();
+                return {};
+            }
+
+            throw omnetpp::cRuntimeError("zmq error while receiving: %s", e.what());
+        }
+        EV_INFO << "received CAPI message from peer '" << identity_
+                << "' kind=" << messageKind(incoming)
+                << " order=" << incoming.order() << "\n";
 
         if (!incoming.has_opencda()) {
-            EV_WARN << "unexpected message type from OpenCDA peer; waiting for opencda payload\n";
+            EV_WARN << "unexpected message type from peer '" << identity_
+                    << "' kind=" << messageKind(incoming)
+                    << "; waiting for opencda payload\n";
             continue;
         }
 
         lastOrder_ = incoming.order();
-
-        capi::Message ack;
-        ack.mutable_ack();
-        cSend(std::move(ack));
-
+        EV_INFO << "accepting OpenCDA payload from peer '" << identity_
+                << "' with order=" << lastOrder_ << "\n";
         return incoming;
     }
 }

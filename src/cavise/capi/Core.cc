@@ -27,6 +27,9 @@ void CAPICore::initialize()
         throw omnetpp::cRuntimeError("connection_handler not found");
     } else {
         handler_ = dynamic_cast<ICAPIConnectionHandler*>(hmod);
+        if (!handler_) {
+            throw omnetpp::cRuntimeError("connection_handler does not implement ICAPIConnectionHandler");
+        }
     }
 
     api_ = std::make_unique<CAPI>(this);
@@ -35,17 +38,20 @@ void CAPICore::initialize()
     stepMessage_ = new omnetpp::cMessage("CAPI step message");
     stepMessage_->setSchedulingPriority(std::numeric_limits<short>::min());
 
-    handler_->connect();
-    emit(initSignal, true);
+    auto* manager = getParentModule();
+    auto* traciCore = manager ? manager->getModuleByPath(par("traciCoreModule")) : nullptr;
+    if (!traciCore) {
+        throw omnetpp::cRuntimeError("No traci.Core module found at %s", par("traciCoreModule").stringValue());
+    }
 
-    // Trigger first CAPI step immediately; subsequent steps remain periodic.
-    scheduleAt(omnetpp::simTime(), stepMessage_);
+    subscribeTraCI(traciCore);
 }
 
 void CAPICore::finish()
 {
+    unsubscribeTraCI();
     emit(closeSignal, true);
-    if (stepMessage_->isScheduled()) {
+    if (started_) {
         handler_->stop();
     }
 }
@@ -56,8 +62,14 @@ void CAPICore::handleMessage(omnetpp::cMessage* msg)
         return;
     }
 
+    runStep();
+}
+
+void CAPICore::runStep()
+{
     if (capi::Message message = handler_->cReceive(); !message.has_opencda()) {
-        throw omnetpp::cRuntimeError("CAPICore: expected OpenCDA message");
+        EV_DEBUG << "CAPICore: no OpenCDA message available for this TraCI tick\n";
+        return;
     } else {
         OpenCDAMessage_.Swap(message.mutable_opencda());
     }
@@ -73,8 +85,26 @@ void CAPICore::handleMessage(omnetpp::cMessage* msg)
     capi::Message message;
     message.mutable_artery()->Swap(&arteryMessage);
     handler_->cSend(message);
+}
 
-    scheduleAt(omnetpp::simTime() + updateInterval_, msg);
+void CAPICore::traciInit()
+{
+    if (started_) {
+        return;
+    }
+
+    handler_->connect();
+    started_ = true;
+    emit(initSignal, true);
+}
+
+void CAPICore::traciStep()
+{
+    if (!started_) {
+        return;
+    }
+
+    runStep();
 }
 
 CAPI* CAPICore::getCAPI()

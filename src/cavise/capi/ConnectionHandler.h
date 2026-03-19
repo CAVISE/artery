@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace cavise {
@@ -92,7 +93,7 @@ namespace cavise {
     void ZmqCAPIConnectionHandler::receiveFrame(T& payload, bool expectMore) {
         zmq::message_t message;
         if (auto rx = socket_.recv(message, zmq::recv_flags::none); !rx.has_value()) {
-            throw omnetpp::cRuntimeError("could not receive message part: timeout expired");
+            throw zmq::error_t(EAGAIN);
         }
 
         if (message.more() != expectMore) {
@@ -100,6 +101,23 @@ namespace cavise {
         }
 
         fromMessage(message, payload);
+
+        if constexpr (std::is_same_v<T, std::string>) {
+            EV_INFO << "received ROUTER frame: identity='" << payload
+                    << "' bytes=" << message.size()
+                    << " more=" << message.more() << "\n";
+        } else if constexpr (std::is_same_v<T, capi::Message>) {
+            const char* kind = payload.has_opencda() ? "opencda" :
+                    payload.has_artery() ? "artery" :
+                    payload.has_ack() ? "ack" : "unknown";
+            EV_INFO << "received ROUTER frame: protobuf kind=" << kind
+                    << " order=" << payload.order()
+                    << " bytes=" << message.size()
+                    << " more=" << message.more() << "\n";
+        } else {
+            EV_INFO << "received ROUTER frame: bytes=" << message.size()
+                    << " more=" << message.more() << "\n";
+        }
     }
 
 } // namespace cavise

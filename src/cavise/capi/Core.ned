@@ -5,5 +5,6 @@ simple CAPICore {
         @signal[capi.init](type=bool);
         @signal[capi.step](type=simtime_t);
         @signal[capi.close](type=bool);
+        string traciCoreModule;
         double updateInterval @unit(s) = default(1s);
 }

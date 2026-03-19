@@ -18,7 +18,7 @@ simple ZmqCAPIConnectionHandler like ICAPIConnectionHandler
         // Timeout for receive call, Artery will wait
         // up that number of milliseconds for OpenCDA.
         // Leave this zero to wait forever.
-        int receiveTimeout = default(10000);
+        int receiveTimeout = default(1000);
         // Same as above, but for send.
-        int sendTimeout = default(10000);
+        int sendTimeout = default(1000);
 }
