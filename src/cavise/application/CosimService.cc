@@ -15,6 +15,8 @@
 #include <cavise_msgs/CosimMessage_m.h>
 
 #include "CosimService.h"
+#include "omnetpp/cexception.h"
+#include "omnetpp/cparsimcomm.h"
 
 using namespace cavise;
 
@@ -53,7 +55,11 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
         return;
     }
 
-    auto payload = static_cast<CosimMessage*>(packet);
+    CosimMessage* payload = nullptr;
+    if (payload = dynamic_cast<CosimMessage*>(packet); payload == nullptr) {
+        throw omnetpp::cRuntimeError("message is not what it seems to be");
+    }
+
     capi::Entity receivedMessage;
     if (auto status = receivedMessage.ParseFromString(payload->getContents()); !status) {
         EV_ERROR << "error parsing message contents: " << status;
