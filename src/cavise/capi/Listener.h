@@ -21,7 +21,7 @@ protected:
     virtual void cStep(CAPI* api);
 
 private:
-    CAPICore* core_;
+    CAPICore* core_ = nullptr;
 };
 
 }  // namespace cavise

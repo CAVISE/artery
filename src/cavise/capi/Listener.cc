@@ -22,11 +22,14 @@ void CAPIOpenCDAListener::cSubscribe(CAPICore* c)
 
 void CAPIOpenCDAListener::cUnsubscribe()
 {
-    ASSERT(core_);
+    if (!core_) {
+        return;
+    }
 
     core_->unsubscribe(CAPICore::closeSignal, this);
     core_->unsubscribe(CAPICore::initSignal, this);
     core_->unsubscribe(CAPICore::stepSignal, this);
+    core_ = nullptr;
 }
 
 void CAPIOpenCDAListener::receiveSignal(

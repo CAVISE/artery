@@ -61,8 +61,10 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     }
 
     capi::Entity receivedMessage;
-    if (auto status = receivedMessage.ParseFromString(payload->getContents()); !status) {
-        EV_ERROR << "error parsing message contents: " << status;
+    if (auto status = google::protobuf::util::JsonStringToMessage(payload->getContents(), &receivedMessage); !status.ok()) {
+        EV_ERROR << "error parsing message contents: " << status.ToString() << "\n";
+        delete packet;
+        return;
     }
 
     accumulated_.push_back(std::move(receivedMessage));
@@ -92,12 +94,18 @@ void CosimService::trigger()
         req.gn.its_aid = itsAid;
 
         auto* message = new CosimMessage;
-        auto string = current_.SerializeAsString();
-        message->setContents(string.c_str());
+        std::string payload;
+        if (auto status = google::protobuf::util::MessageToJsonString(current_, &payload); !status.ok()) {
+            EV_ERROR << "error serializing message contents: " << status.ToString() << "\n";
+            delete message;
+            continue;
+        }
+
+        message->setContents(payload.c_str());
         const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
         EV_INFO << "sending cosim payload from vehicle " << vehicle.getVehicleId()
                 << " on channel " << channel
-                << ", payload bytes=" << string.size() << "\n";
+                << ", payload bytes=" << payload.size() << "\n";
         request(req, message, network.get());
     }
 }
