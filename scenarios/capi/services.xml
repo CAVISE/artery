@@ -5,5 +5,9 @@
 	</service>
 	<service type="cavise.application.CosimService">
 		<listener port="2002"/>
+		<filters>
+		    <name pattern="cav-.*" match="inverse"/>
+			<name pattern="rsu-.*" match="inverse"/>
+		</filters>
 	</service>
 </services>

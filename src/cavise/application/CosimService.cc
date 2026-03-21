@@ -22,6 +22,26 @@ Define_Module(CosimService)
 
 CosimService::CosimService() = default;
 
+void CosimService::initialize()
+{
+    ItsG5Service::initialize();
+
+    const auto* capiCoreModulePath = par("capiCoreModule").stringValue();
+    auto* capiCore = dynamic_cast<CAPICore*>(getModuleByPath(capiCoreModulePath));
+    if (!capiCore) {
+        throw omnetpp::cRuntimeError("CosimService: could not find CAPICore at path '%s'", capiCoreModulePath);
+    }
+
+    cSubscribe(capiCore);
+    EV_INFO << "CosimService subscribed to CAPICore signals\n";
+}
+
+void CosimService::finish()
+{
+    cUnsubscribe();
+    ItsG5Service::finish();
+}
+
 void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnetpp::cPacket* packet, const artery::NetworkInterface& /* interface */)
 {
     const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
@@ -40,6 +60,8 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
     }
 
     accumulated_.push_back(std::move(receivedMessage));
+    EV_INFO << "stored cosim payload on vehicle " << vehicle.getVehicleId()
+            << ", accumulated entities=" << accumulated_.size() << "\n";
     delete packet;
 }
 
@@ -66,6 +88,10 @@ void CosimService::trigger()
         auto* message = new CosimMessage;
         auto string = current_.SerializeAsString();
         message->setContents(string.c_str());
+        const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
+        EV_INFO << "sending cosim payload from vehicle " << vehicle.getVehicleId()
+                << " on channel " << channel
+                << ", payload bytes=" << string.size() << "\n";
         request(req, message, network.get());
     }
 }
@@ -79,18 +105,27 @@ void CosimService::cStep(CAPI* api) {
     const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
     std::string id = vehicle.getVehicleId();
     transmission.set_id(id);
+    EV_INFO << "cStep for vehicle " << id
+            << ": transmitting " << transmission.entity_size()
+            << " accumulated entities to CAPI\n";
 
     api->transmit(std::move(transmission));
+    accumulated_.clear();
 
     capi::OpenCDAMessage message = api->OpenCDAState();
+    EV_INFO << "cStep for vehicle " << id
+            << ": received OpenCDA state with " << message.entity_size()
+            << " entities\n";
 
     for (auto& entity : *message.mutable_entity()) {
-        const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
-        std::string id = vehicle.getVehicleId();
         if (entity.id() != id) {
             continue;
-        } 
+        }
 
         current_ = entity;
+        EV_INFO << "updated current cosim entity for vehicle " << id << "\n";
+        return;
     }
+
+    EV_DEBUG << "no matching OpenCDA entity found for vehicle " << id << "\n";
 }

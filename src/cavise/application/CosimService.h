@@ -19,6 +19,8 @@ public:
     CosimService();
 
     /* artery::ItsG5Service implementation */
+    void initialize() override;
+    void finish() override;
     void trigger() override;
     void indicate(const vanetza::btp::DataIndication& ind, omnetpp::cPacket* packet, const artery::NetworkInterface& interface) override;
 
