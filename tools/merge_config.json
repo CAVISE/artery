@@ -1,0 +1,17 @@
+{
+  "prefer_theirs": [
+    "src/artery",
+    ".devcontainer",
+    ".dockerignore"
+  ],
+  "prefer_ours": [
+    "src/cavise",
+    ".gitattributes",
+    ".github",
+    ".github/workflows",
+    ".gitmodules"
+  ],
+  "default_behavior": "prefer_theirs",
+  "upstream_remote": "upstream",
+  "upstream_branch": "master"
+}
