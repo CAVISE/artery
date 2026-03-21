@@ -41,7 +41,7 @@ jobs:
         distribution: [arch-linux, debian]
 
     needs: build-base
-    permissions: 
+    permissions:
       contents: read
       packages: write
 
