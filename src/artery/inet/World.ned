@@ -2,6 +2,7 @@ package artery.inet;
 
 import artery.StaticNodeManager;
 import artery.storyboard.Storyboard;
+import cavise.capi.CAPIManager;
 import inet.environment.contract.IPhysicalEnvironment;
 import inet.physicallayer.contract.packetlevel.IRadioMedium;
 import traci.Manager;
@@ -10,6 +11,7 @@ network World
 {
     parameters:
         bool withStoryboard = default(false);
+        bool withCAPI = default(false);
         bool withPhysicalEnvironment = default(false);
         int numRoadSideUnits = default(0);
         traci.mapper.personType = default("artery.inet.Person");
@@ -42,6 +44,11 @@ network World
         storyboard: Storyboard if withStoryboard {
             parameters:
                 @display("p=140,20");
+        }
+
+        capi: CAPIManager if withCAPI {
+            parameters:
+                @display("p=180,20");
         }
 
         rsu[numRoadSideUnits]: RSU {

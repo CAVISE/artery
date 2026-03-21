@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package capi;
+
+import "capi/ack.proto";
+import "capi/artery.proto";
+import "capi/opencda.proto";
+
+message Message {
+  int64 order = 1;
+  oneof message {
+    AckMessage ack = 2;
+    OpenCDAMessage opencda = 3;
+    ArteryMessage artery = 4;
+  }
+}
