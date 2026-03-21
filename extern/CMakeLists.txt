@@ -38,7 +38,7 @@ if(WITH_INET)
         OUTPUT_VARIABLE INET_OPP_MAKEMAKE
     )
     separate_arguments(INET_OPP_MAKEMAKE UNIX_COMMAND ${INET_OPP_MAKEMAKE})
-    
+
     # generate INET's features and opp_defines header
     set(INET_GEN_DIR ${PROJECT_BINARY_DIR}/INET_gen)
     file(MAKE_DIRECTORY ${INET_GEN_DIR}/inet)
@@ -63,7 +63,7 @@ if(WITH_INET)
         COMMAND ${CMAKE_COMMAND} -E touch ${INET_GEN_DIR}/inet/opp_defines.h
         COMMENT "Generate INET opp_defines.h"
     )
-    
+
     add_opp_target(
         TARGET INET ROOT_DIR ${INET_DIR}
         DEPENDS ${INET_GEN_DIR}/inet/features.h ${INET_GEN_DIR}/inet/opp_defines.h
@@ -95,4 +95,8 @@ if(WITH_OTS)
     set(SIM0MQPP_INSTALL ON)
     set(SIM0MQPP_SHARED_LIB ON)
     add_subdirectory(sim0mqpp ${PROJECT_BINARY_DIR}/sim0mqpp)
+endif()
+
+if(WITH_PRETTY_BACKTRACE_PRINTING)
+    add_subdirectory(backward-cpp)
 endif()

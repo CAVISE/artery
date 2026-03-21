@@ -29,6 +29,7 @@ option(WITH_STORYBOARD "Build Artery with storyboard feature" ON)
 option(WITH_TRANSFUSION "Build Artery with transfusion feature" OFF)
 
 # Miscellaneous stuff, does not affect functionality directly.
+option(WITH_PRETTY_BACKTRACE_PRINTING "Print backtraces nicely on errors" ON)
 option(WITH_SCENARIOS "Build Artery with scenarios" ON)
 option(VSCODE_LAUNCH_INTEGRATION "Generate VS Code configuration for debugging Artery (requires debug build)" OFF)
 
@@ -115,6 +116,10 @@ add_artery_subdirectory(src/ots REQUIRES INET PkgConfig::ZEROMQ SWITCH WITH_OTS)
 # scenarios directory is part of repository but omitted for Docker build context
 if(WITH_SCENARIOS)
     add_subdirectory(scenarios)
+endif()
+
+if(WITH_PRETTY_BACKTRACE_PRINTING)
+    target_link_libraries(core PUBLIC Backward::Object)
 endif()
 
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
