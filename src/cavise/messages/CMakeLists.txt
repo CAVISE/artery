@@ -3,7 +3,6 @@ set(PROTO_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(protos
     OBJECT
-        ${PROTO_SOURCE_DIR}/capi/ack.proto
         ${PROTO_SOURCE_DIR}/capi/capi.proto
         ${PROTO_SOURCE_DIR}/capi/artery.proto
         ${PROTO_SOURCE_DIR}/capi/opencda.proto
