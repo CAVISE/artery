@@ -17,8 +17,6 @@ namespace {
             return "opencda";
         } else if (message.has_artery()) {
             return "artery";
-        } else if (message.has_ack()) {
-            return "ack";
         } else {
             return "unknown";
         }
