@@ -108,8 +108,7 @@ namespace cavise {
                     << " more=" << message.more() << "\n";
         } else if constexpr (std::is_same_v<T, capi::Message>) {
             const char* kind = payload.has_opencda() ? "opencda" :
-                    payload.has_artery() ? "artery" :
-                    payload.has_ack() ? "ack" : "unknown";
+                    payload.has_artery() ? "artery" : "unknown";
             EV_INFO << "received ROUTER frame: protobuf kind=" << kind
                     << " order=" << payload.order()
                     << " bytes=" << message.size()
