@@ -13,12 +13,12 @@
 [submodule "extern/veins"]
   path = extern/veins
   url = https://github.com/sommer/veins
-[submodule "extern/backward-cpp"]
+[submodule "extern/sim0mqpp"]
 	path = extern/sim0mqpp
 	url = https://github.com/riebl/sim0mqpp.git
 [submodule "extern/robin-map"]
 	path = extern/robin-map
 	url = https://github.com/Tessil/robin-map
-[submodule "extern/backward"]
+[submodule "extern/backward-cpp"]
 	path = extern/backward-cpp
 	url = https://github.com/bombela/backward-cpp
