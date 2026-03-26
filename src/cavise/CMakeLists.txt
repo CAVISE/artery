@@ -27,3 +27,5 @@ add_subdirectory(messages)
 
 target_link_libraries(capi PUBLIC protos)
 add_dependencies(capi protos)
+
+add_artery_subdirectory(sionna REQUIRES INET SWITCH WITH_SIONNA)
