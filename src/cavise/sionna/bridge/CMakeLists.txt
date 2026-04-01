@@ -4,12 +4,12 @@
 
 set(SIONNA_BRIDGE_COMPILATION_MODES Basic Inet)
 
+# Triplets compiled for bridge, in form name, float type, spectrum type.
 set(SIONNA_BRIDGE_TARGET_TRIPLETS
-    "scalar|float|mitsuba::Color<float$<COMMA> 3>"
-    "llvm-detached|drjit::LLVMArray<float>|mitsuba::Color<drjit::LLVMArray<float>$<COMMA> 3>"
-    "llvm-ad|drjit::LLVMDiffArray<float>|mitsuba::Color<drjit::LLVMDiffArray<float>$<COMMA> 3>"
+    "scalar|float|mitsuba::Color<float,3>"
+    "llvm-detached|drjit::LLVMArray<float>|mitsuba::Color<drjit::LLVMArray<float>,3>"
+    "llvm-ad|drjit::LLVMDiffArray<float>|mitsuba::Color<drjit::LLVMDiffArray<float>,3>"
 )
-set(SIONNA_BRIDGE_TARGET_MODE_PAIRS)
 
 # Main target(s). There is a separate library for each compilation mode and
 # resolve profile.
@@ -23,7 +23,6 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
         list(GET _profile_parts 2 _resolve_spectrum)
 
         set(_target sionna-bridge-${_mode_lowercase}-${_profile_suffix})
-        list(APPEND SIONNA_BRIDGE_TARGET_MODE_PAIRS "${_target}|${_mode}")
         add_library(${_target} SHARED)
 
         target_sources(${_target}
@@ -70,19 +69,23 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
         set_target_properties(${_target}
             PROPERTIES
                 SIONNA_BRIDGE_COMPILATION_MODE ${_mode}
-                SIONNA_FLOAT_TYPE ${_resolve_float}
-                SIONNA_SPECTRUM_TYPE ${_resolve_spectrum}
+                INTERFACE_SIONNA_FLOAT_TYPE ${_resolve_float}
+                INTERFACE_SIONNA_SPECTRUM_TYPE ${_resolve_spectrum}
         )
+
+        # Propagate and enforce a single resolve profile across link interfaces.
+        set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_FLOAT_TYPE)
+        set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_SPECTRUM_TYPE)
+
+        target_compile_definitions(${_target}
+            PUBLIC
+                SIONNA_BRIDGE_RESOLVE_FLOAT=${_resolve_float}
+                SIONNA_BRIDGE_RESOLVE_SPECTRUM=${_resolve_spectrum}
+        )
+
+        # Post configuration for various compilation modes.
+        if(_mode STREQUAL "Inet")
+            target_link_libraries(${_target} PUBLIC INET)
+        endif()
     endforeach()
-endforeach()
-
-# Post configuration for various compilation modes.
-foreach(_pair IN LISTS SIONNA_BRIDGE_TARGET_MODE_PAIRS)
-    string(REPLACE "|" ";" _pair_parts ${_pair})
-    list(GET _pair_parts 0 _target)
-    list(GET _pair_parts 1 _mode)
-
-    if(_mode STREQUAL "Inet")
-        target_link_libraries(${_target} PUBLIC INET)
-    endif()
 endforeach()

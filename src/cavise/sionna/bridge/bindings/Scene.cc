@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "nanobind/nanobind.h"
 
 #include <cavise/sionna/bridge/Helpers.h>
 
@@ -16,20 +17,33 @@ py::SionnaScene::SionnaScene(nanobind::object obj) {
     WrapPythonClassCapability::init(std::move(obj));
 }
 
+py::SionnaScene::SionnaScene(mitsuba::ref<mitsuba::Resolve::Scene> scene) {
+    InitPythonClassCapability::init("mi_scene"_a = std::move(scene));
+}
+
 const char* py::SionnaScene::className() const {
     return "Scene";
 }
 
-void py::SionnaScene::add(const py::SceneObject& obj) {
-    callAny(bound_, "add", "item"_a = obj.object());
+void py::SionnaScene::edit(const std::unordered_map<std::string, SceneObject>& add, const std::vector<std::string>& remove) {
+    sionna::call(bound_, "edit", "add"_a = add, "remove"_a = remove);
 }
 
-void py::SionnaScene::add(const py::RadioMaterial& mat) {
-    callAny(bound_, "add", "item"_a = mat.object());
-}
+py::SionnaScene::SceneElement py::SionnaScene::get(const std::string& name) const {
+    nanobind::object value = sionna::call<nanobind::object>(bound_, "get", "name"_a = name);
+    if (value.is_none()) {
+        return std::monostate{};
+    }
 
-void py::SionnaScene::remove(const std::string& name) {
-    callAny(bound_, "remove", "name"_a = name);
+    if (nanobind::isinstance<py::SceneObject>(value)) {
+        return nanobind::cast<py::SceneObject>(value);
+    }
+
+    if (nanobind::isinstance<py::RadioMaterial>(value)) {
+        return nanobind::cast<py::RadioMaterial>(value);
+    }
+
+    throw sionna::wrapRuntimeError("Scene::get: unsupported item type");
 }
 
 std::unordered_map<std::string, py::RadioMaterial>

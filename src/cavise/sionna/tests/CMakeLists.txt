@@ -35,6 +35,7 @@ function(add_sionna_test target)
     set_target_properties(${target}
         PROPERTIES
             SIONNA_BRIDGE_COMPILATION_MODE Basic
+            COMPATIBLE_INTERFACE_STRING "SIONNA_FLOAT_TYPE;SIONNA_SPECTRUM_TYPE"
     )
 
     add_test(NAME ${args_TEST_NAME} COMMAND $<TARGET_FILE:${target}>)

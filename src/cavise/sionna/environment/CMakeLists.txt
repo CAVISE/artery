@@ -9,6 +9,10 @@ target_sources(sionna-phy
         Material.cc
         PathLoss.cc
         PhysicalEnvironment.cc
+        config/scenes/FileSceneConfigProvider.cc
+        config/meshes/SionnaAssetMeshRegistry.cc
+        config/TraciDynamicSceneConfigProvider.cc
+        visualization/SionnaSceneVisualizer.cc
     PUBLIC
         Compat.h
         Ground.h
@@ -18,8 +22,19 @@ target_sources(sionna-phy
         Material.h
         PathLoss.h
         PhysicalEnvironment.h
+        config/IConfigProvider.h
+        config/meshes/IMeshRegistry.h
+        config/scenes/FileSceneConfigProvider.h
+        config/meshes/SionnaAssetMeshRegistry.h
+        config/TraciDynamicSceneConfigProvider.h
+        visualization/ISceneVisualizer.h
+        visualization/SionnaSceneVisualizer.h
 )
 
-set_target_properties(sionna-phy PROPERTIES SIONNA_BRIDGE_COMPILATION_MODE Inet)
-target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet)
+set_target_properties(sionna-phy
+    PROPERTIES
+        SIONNA_BRIDGE_COMPILATION_MODE Inet
+        COMPATIBLE_INTERFACE_STRING "SIONNA_FLOAT_TYPE;SIONNA_SPECTRUM_TYPE"
+)
+target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet-llvm-ad)
 target_compile_options(sionna-phy PUBLIC $<$<CONFIG:Debug>:-DNDEBUG>)

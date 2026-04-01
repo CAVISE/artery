@@ -1,9 +1,16 @@
-// SionnaPhysicalEnvironment.h
 #pragma once
+
+#include <cavise/sionna/bridge/bindings/Scene.h>
+#include <cavise/sionna/bridge/Helpers.h>
+#include <cavise/sionna/environment/config/IConfigProvider.h>
+#include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
 
 #include <omnetpp/csimplemodule.h>
 
 #include <inet/environment/contract/IPhysicalEnvironment.h>
+
+#include <memory>
+#include <optional>
 
 namespace artery {
     namespace sionna {
@@ -38,14 +45,19 @@ namespace artery {
             virtual void updateDynamicObjects();
 
         private:
+            void initializePythonRuntime();
             void initializeScene();
-            void initializeSceneWithConfig();
+            void initializeDynamicConfigProvider();
+            void initializeSceneVisualizer();
 
             struct Parameters {
                 std::string rtBackend;
                 std::string materialSet;
                 bool enableGradients;
             } parameters_;
+
+            std::unique_ptr<ScopedInterpreter> interpreter_;
+            std::optional<py::SionnaScene> scene_;
         };
 
     } // namespace sionna

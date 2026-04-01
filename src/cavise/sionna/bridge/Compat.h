@@ -69,12 +69,19 @@ namespace artery::sionna {
         }
     }
 
-    // For JIT non-AD types, select their AD counterpart. Otherwise return T. Used when
-    // underlying API tracks gradient and SB module wishes to maintain that.
+    // For LLVM non-AD arrays, select their AD counterpart. Otherwise return T.
     template <typename T>
-    using maybe_diff_t =
-        std::conditional_t<drjit::is_array_v<T> && !drjit::is_diff_v<T>,
-                           drjit::diff_array_t<T>,
-                           T>;
+    struct MaybeDiff {
+        using type = T;
+    };
+
+    template <typename T>
+        requires(drjit::is_llvm_v<T> && !drjit::is_diff_v<T>)
+    struct MaybeDiff<T> {
+        using type = drjit::LLVMDiffArray<drjit::scalar_t<T>>;
+    };
+
+    template <typename T>
+    using maybe_diff_t = typename MaybeDiff<T>::type;
 
 } // namespace artery::sionna

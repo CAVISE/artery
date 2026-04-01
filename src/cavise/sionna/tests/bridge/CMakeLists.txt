@@ -11,7 +11,6 @@ add_sionna_test(test_bridge_module
         TestBridgeMaterial.cc
         TestBridgeSceneObject.cc
         TestDefaulted.cc
-        TestCompat.cc
 )
 
 target_link_libraries(test_bridge_module

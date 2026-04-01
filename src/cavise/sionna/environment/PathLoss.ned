@@ -1,4 +1,4 @@
-package artery.sionna.environment;
+package cavise.sionna.environment;
 
 import inet.physicallayer.contract.packetlevel.IPathLoss;
 

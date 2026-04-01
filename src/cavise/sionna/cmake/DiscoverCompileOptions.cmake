@@ -47,11 +47,11 @@ set(_resolve_compilation_mode $<IF:${_check_default_mode_set},${SIONNA_DEFAULT_C
 list(APPEND SIONNA_CXX_DEFINITIONS -D${_resolve_compilation_mode})
 
 # Bridge resolve type dispatch is property-based.
-set(_resolve_float $<TARGET_PROPERTY:SIONNA_FLOAT_TYPE>)
-set(_resolve_spectrum $<TARGET_PROPERTY:SIONNA_SPECTRUM_TYPE>)
-
-list(APPEND SIONNA_CXX_DEFINITIONS SIONNA_BRIDGE_RESOLVE_FLOAT=${_resolve_float})
-list(APPEND SIONNA_CXX_DEFINITIONS SIONNA_BRIDGE_RESOLVE_SPECTRUM=${_resolve_spectrum})
+# Do not define these macros when target properties are not set.
+list(APPEND SIONNA_CXX_DEFINITIONS
+    $<$<BOOL:$<TARGET_PROPERTY:SIONNA_FLOAT_TYPE>>:SIONNA_BRIDGE_RESOLVE_FLOAT=$<TARGET_PROPERTY:SIONNA_FLOAT_TYPE>>
+    $<$<BOOL:$<TARGET_PROPERTY:SIONNA_SPECTRUM_TYPE>>:SIONNA_BRIDGE_RESOLVE_SPECTRUM=$<TARGET_PROPERTY:SIONNA_SPECTRUM_TYPE>>
+)
 
 # This variable hints Sionna bridge at virtual environment, as we know it
 # during configuration phase. At runtime, Sionna should fall back to these if

@@ -1,8 +1,10 @@
-package artery.sionna.environment;
+package cavise.sionna.environment;
 
 import inet.environment.common.PhysicalEnvironment;
-import artery.sionna.environment.providers.IDynamicSceneConfigProvider;
-import artery.sionna.environment.providers.ISceneConfigProvider;
+import cavise.sionna.environment.config.IDynamicSceneConfigProvider;
+import cavise.sionna.environment.config.IBootstrapSceneConfigProvider;
+import cavise.sionna.environment.config.IMeshRegistry;
+import cavise.sionna.environment.visualization.ISceneVisualizer;
 
 //
 // Extension of INET PhysicalEnvironment that mirrors the configured physical
@@ -13,19 +15,17 @@ import artery.sionna.environment.providers.ISceneConfigProvider;
 // - a dedicated provider emits dynamic updates
 // - scene/material mismatches fail fast by default
 //
-simple SionnaPhysicalEnvironment extends PhysicalEnvironment
+module SionnaPhysicalEnvironment extends PhysicalEnvironment
 {
     parameters:
         @namespace(artery::sionna);
         @class(PhysicalEnvironment);
 
-        // Keep INET defaults explicit so scenarios can override them centrally.
-        string objectCacheType = default("BVHObjectCache");
-        string groundType = default("FlatGround");
-
         // Scene providers. Keep source selection out of the environment itself.
-        string sceneConfigProviderType = default("artery.sionna.environment.providers.InetSceneConfigProvider"); // scene-file provider: artery.sionna.environment.providers.scenefile.SceneFileConfigProvider
+        string sceneConfigProviderType = default("cavise.sionna.environment.config.scenes.FileSceneConfigProvider");
         string dynamicSceneConfigProviderType = default("");
+        string meshRegistryType = default("");
+        string sceneVisualizerType = default("");
 
         // Runtime policy.
         string rtBackend = default("llvm"); // safer default for a first scenario
@@ -34,11 +34,19 @@ simple SionnaPhysicalEnvironment extends PhysicalEnvironment
         bool failOnUnknownMaterial = default(true);
 
     submodules:
-        sceneConfigProvider: <sceneConfigProviderType> like ISceneConfigProvider {
+        sceneConfigProvider: <sceneConfigProviderType> like IBootstrapSceneConfigProvider {
             @display("p=140,60");
         }
 
         dynamicSceneConfigProvider: <dynamicSceneConfigProviderType> like IDynamicSceneConfigProvider if dynamicSceneConfigProviderType != "" {
             @display("p=140,100");
+        }
+
+        meshRegistry: <meshRegistryType> like IMeshRegistry if meshRegistryType != "" {
+            @display("p=140,140");
+        }
+
+        sceneVisualizer: <sceneVisualizerType> like ISceneVisualizer if sceneVisualizerType != "" {
+            @display("p=140,180");
         }
 }

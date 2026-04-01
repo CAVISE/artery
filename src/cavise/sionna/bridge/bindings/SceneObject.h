@@ -25,8 +25,14 @@ namespace artery::sionna::py {
 
         mitsuba::Resolve::Point3f position() const;
         mitsuba::Resolve::Point3f orientation() const;
+        mitsuba::Resolve::Vector3f velocity() const;
         mitsuba::ref<mitsuba::Resolve::Mesh> mesh() const;
         RadioMaterial material() const;
+
+        void setPosition(const mitsuba::Resolve::Point3f& position);
+        void setOrientation(const mitsuba::Resolve::Point3f& orientation);
+        void setVelocity(const mitsuba::Resolve::Vector3f& velocity);
+        void setMaterial(const RadioMaterial& material);
     };
 
 } // namespace artery::sionna::py

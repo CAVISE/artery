@@ -8,6 +8,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 namespace artery::sionna::py {
 
@@ -20,10 +21,12 @@ namespace artery::sionna::py {
 
         SionnaScene();
         explicit SionnaScene(nanobind::object obj);
+        explicit SionnaScene(mitsuba::ref<mitsuba::Resolve::Scene> scene);
 
-        void add(const SceneObject& obj);
-        void add(const RadioMaterial& mat);
-        void remove(const std::string& name);
+        using SceneElement = std::variant<std::monostate, SceneObject, RadioMaterial>;
+
+        void edit(const std::unordered_map<std::string, SceneObject>& add, const std::vector<std::string>& remove);
+        SceneElement get(const std::string& name) const;
 
         std::unordered_map<std::string, RadioMaterial> radioMaterials() const;
         std::unordered_map<std::string, SceneObject> sceneObjects() const;
