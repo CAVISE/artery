@@ -17,6 +17,10 @@ namespace nanobind::detail {
         NB_TYPE_CASTER(T, const_name<T>())
 
         bool from_python(handle src, uint8_t, cleanup_list*) noexcept {
+            if (Value probe; !nanobind::isinstance(src, probe.type())) {
+                return false;
+            }
+
             value = Value();
             value.init(borrow<object>(src));
             return true;

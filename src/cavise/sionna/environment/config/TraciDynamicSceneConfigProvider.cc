@@ -107,17 +107,35 @@ void TraciDynamicSceneConfigProvider::finish() {
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::updatePersonSignal, this);
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::removePersonSignal, this);
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::updateNodeSignal, this);
+
+    scene_.reset();
+    pendingObjects_.clear();
+    cachedObjects_.clear();
+    toAdd_.clear();
+    toRemove_.clear();
 }
 
-void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const char* id, omnetpp::cObject* /* object */) {
+void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const char* id, omnetpp::cObject* details) {
     if (signal == traci::BasicNodeManager::addVehicleSignal) {
         dispatchAddVehicle(id);
     } else if (signal == traci::BasicNodeManager::addPersonSignal) {
         dispatchAddPerson(id);
     } else if (signal == traci::BasicNodeManager::removeVehicleSignal) {
         dispatchRemoveVehicle(id);
+    } else if (signal == traci::BasicNodeManager::updateVehicleSignal) {
+        if (auto* vehicle = dynamic_cast<traci::BasicNodeManager::VehicleObject*>(details); vehicle) {
+            dispatchUpdateVehicle(vehicle);
+        } else {
+            throw omnetpp::cRuntimeError("could not dispatch signal: invalid vehicle update details for id %s", id);
+        }
     } else if (signal == traci::BasicNodeManager::removePersonSignal) {
         dispatchRemovePerson(id);
+    } else if (signal == traci::BasicNodeManager::updatePersonSignal) {
+        if (auto* person = dynamic_cast<traci::BasicNodeManager::PersonObject*>(details); person) {
+            dispatchUpdatePerson(person);
+        } else {
+            throw omnetpp::cRuntimeError("could not dispatch signal: invalid person update details for id %s", id);
+        }
     } else {
         throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
     }
@@ -162,15 +180,8 @@ void TraciDynamicSceneConfigProvider::dispatchAddPerson(const char* id) {
 }
 
 void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, omnetpp::cObject* object, omnetpp::cObject* /* details */) {
-    if (signal == traci::BasicNodeManager::updatePersonSignal) {
-        if (auto* person = dynamic_cast<traci::BasicNodeManager::PersonObject*>(object); person) {
-            dispatchUpdatePerson(person);
-        }
-    } else if (signal == traci::BasicNodeManager::updateVehicleSignal) {
-        if (auto* vehicle = dynamic_cast<traci::BasicNodeManager::VehicleObject*>(object); vehicle) {
-            dispatchUpdateVehicle(vehicle);
-        }
-    } else {
+    if (signal != traci::BasicNodeManager::updatePersonSignal
+        && signal != traci::BasicNodeManager::updateVehicleSignal) {
         throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
     }
 }
@@ -197,7 +208,15 @@ void TraciDynamicSceneConfigProvider::edit() {
 
     std::vector<std::string> toRemove(toRemove_.begin(), toRemove_.end());
 
-    scene_->edit(pendingObjects_, toRemove);
+    try {
+        scene_->edit(pendingObjects_, toRemove);
+    } catch (const std::bad_cast&) {
+        throw omnetpp::cRuntimeError(
+            "failed to convert queued scene edit to python objects: add=%zu remove=%zu",
+            pendingObjects_.size(),
+            toRemove.size());
+    }
+
     for (auto& [addedId, added] : pendingObjects_) {
         cachedObjects_.insert_or_assign(addedId, added);
     }

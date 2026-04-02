@@ -29,13 +29,11 @@ namespace {
 } // namespace
 
 void SionnaDirectAssetMeshRegistry::initialize() {
-    auto path = ScenesFileview::scenes();
-    EV_INFO << "Using meshes root: " << path;
+    root_ = ScenesFileview::scenes();
+    EV_INFO << "Using meshes root: " << root_ << "\n";
 
-    if (mitsuba::fs::path scenes = path; scenes.empty()) {
+    if (root_.empty()) {
         throw omnetpp::cRuntimeError("could not find Sionna's scene root: path is empty");
-    } else {
-        root_ = scenes.parent_path();
     }
 }
 
@@ -46,7 +44,8 @@ mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::getMesh(Mesh
         const auto& [_, suffix] = *mesh;
 
         mitsuba::Properties props("ply");
-        props.set("filename", (root_ / suffix).native());
+        props.set("filename", (root_ / suffix).string());
+
         return mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props);
     }
 }

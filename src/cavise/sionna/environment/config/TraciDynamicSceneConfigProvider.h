@@ -56,7 +56,13 @@ namespace artery::sionna {
                 toAdd_.extract(iter);
 
                 // Create new object and call update on it to initialize.
-                auto object = py::SceneObject(meshRegistry_->getMesh(MeshAsset::LowPolyCar));
+                py::SceneObject object = [&]() {
+                    try {
+                        return py::SceneObject(meshRegistry_->getMesh(MeshAsset::LowPolyCar));
+                    } catch (const std::bad_cast&) {
+                        throw omnetpp::cRuntimeError("failed to construct SceneObject for entity %s from mesh registry result", id.c_str());
+                    }
+                }();
                 add(id, Traits::update(object, entity));
 
                 if (toAdd_.empty()) {
@@ -64,8 +70,18 @@ namespace artery::sionna {
                 }
             }
 
+            if (auto pending = pendingObjects_.find(id); pending != pendingObjects_.end()) {
+                Traits::update(pending->second, entity);
+                return;
+            }
+
             if (!cachedObjects_.contains(id)) {
-                cachedObjects_.insert_or_assign(id, std::get<py::SceneObject>(scene_->get(id)));
+                auto item = scene_->get(id);
+                if (auto* object = std::get_if<py::SceneObject>(&item); object != nullptr) {
+                    cachedObjects_.insert_or_assign(id, *object);
+                } else {
+                    return;
+                }
             }
 
             auto cached = cachedObjects_.find(id);

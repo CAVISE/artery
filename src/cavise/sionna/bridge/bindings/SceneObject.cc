@@ -14,7 +14,7 @@ py::SceneObject::SceneObject(nanobind::object obj) {
 
 py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh) {
     using namespace literals;
-    this->InitPythonClassCapability::init("mesh"_a = std::move(mesh));
+    this->InitPythonClassCapability::init("mi_mesh"_a = std::move(mesh));
 }
 
 py::SceneObject::SceneObject(const std::string& fname, const std::string& name, const py::RadioMaterial& material) {

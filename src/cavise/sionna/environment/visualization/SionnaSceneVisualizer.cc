@@ -26,6 +26,8 @@ void SionnaSceneVisualizer::handleMessage(omnetpp::cMessage* msg) {
 }
 
 void SionnaSceneVisualizer::finish() {
+    scene_.reset();
+
     if (renderTimer_ != nullptr) {
         cancelAndDelete(renderTimer_);
         renderTimer_ = nullptr;

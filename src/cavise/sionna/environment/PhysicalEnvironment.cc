@@ -1,5 +1,5 @@
 #include "PhysicalEnvironment.h"
-
+#include <cstdint>
 #include <inet/environment/common/MaterialRegistry.h>
 
 #include <drjit-core/jit.h>
@@ -8,18 +8,18 @@
 #include <omnetpp/cmodule.h>
 #include <omnetpp/cexception.h>
 
-#include <cstdlib>
-#include <filesystem>
-
 using namespace artery;
 
 Define_Module(sionna::PhysicalEnvironment);
 
 namespace {
-    constexpr int NUM_INIT_STAGES = 2;
+    constexpr int NUM_INIT_STAGES = 4;
 
-    enum class InitStage : int { LOAD_SCENE,
-                                 INITIALIZE_SUBMODULES };
+    enum class InitStage : std::uint8_t { INITIALIZE_PYTHON_RUNTIME,
+                                          LOAD_STATIC_SCENE,
+                                          LOAD_DYNAMIC_SCENE,
+                                          POST_SCENE_LOAD_CONFIGURATION
+    };
 
 } // namespace
 
@@ -31,15 +31,30 @@ void sionna::PhysicalEnvironment::initialize(int stage) {
     InitStage initStage = static_cast<InitStage>(stage);
 
     switch (initStage) {
-        case InitStage::LOAD_SCENE:
+        // First, load python runtime with mitsuba library.
+        case InitStage::INITIALIZE_PYTHON_RUNTIME:
             initializePythonRuntime();
+            break;
+        // Second, load static scene.
+        case InitStage::LOAD_STATIC_SCENE:
             initializeScene();
             break;
-        case InitStage::INITIALIZE_SUBMODULES:
+        // Third, load dynamic scene provider to manage scene objects
+        // in simulation.
+        case InitStage::LOAD_DYNAMIC_SCENE:
             initializeDynamicConfigProvider();
+            break;
+        // Load anything else. At this point, scene is fully ready.
+        case InitStage::POST_SCENE_LOAD_CONFIGURATION:
             initializeSceneVisualizer();
             break;
     }
+}
+
+void sionna::PhysicalEnvironment::finish() {
+    scene_.reset();
+    interpreter_.reset();
+    omnetpp::cSimpleModule::finish();
 }
 
 void sionna::PhysicalEnvironment::initializePythonRuntime() {
@@ -47,73 +62,39 @@ void sionna::PhysicalEnvironment::initializePythonRuntime() {
         return;
     }
 
-    parameters_.rtBackend = par("rtBackend").stdstringValue();
-    parameters_.enableGradients = par("enableGradients").boolValue();
-
-    interpreter_ = std::make_unique<ScopedInterpreter>(SIONNA_VENV_HINT);
-
-    if (parameters_.rtBackend == "llvm") {
-        if (std::getenv("DRJIT_LIBLLVM_PATH") == nullptr) {
-            constexpr const char* kFallbackLlvmPath = "/usr/lib/libLLVM.so";
-            if (std::filesystem::exists(kFallbackLlvmPath)) {
-                setenv("DRJIT_LIBLLVM_PATH", kFallbackLlvmPath, 0);
-            }
-        }
-
-        jit_init((uint32_t)JitBackend::LLVM);
-        if (jit_has_backend(JitBackend::LLVM) == 0) {
-            throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: LLVM backend is not available");
-        }
+    if (hasPar("virtualEnvironmentPath")) {
+        interpreter_ = std::make_unique<ScopedInterpreter>(par("virtualEnvironmentPath").stdstringValue());
+    } else {
+        // clang-format off
+        #if defined(SIONNA_VENV_HINT)
+            interpreter_ = std::make_unique<ScopedInterpreter>(SIONNA_VENV_HINT);
+        #else
+            throw omnetpp::cRuntimeError("failed to initialize interpreter, python virtual environment is not set");
+        #endif
+        // clang-format on
     }
 
     nanobind::gil_scoped_acquire gil;
     auto mi = nanobind::module_::import_("mitsuba");
 
-    if (parameters_.rtBackend == "llvm") {
-        mi.attr("set_variant")("llvm_ad_rgb");
-    } else if (parameters_.rtBackend == "scalar") {
-        mi.attr("set_variant")("scalar_rgb");
-    } else {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: unsupported rtBackend \"%s\"", parameters_.rtBackend.c_str());
-    }
+    // Variant is defined during compilation.
+    using VariantName = mitsuba::detail::variant<mitsuba::Resolve::Float, mitsuba::Resolve::Spectrum>;
+    mi.attr("set_variant")(VariantName::name);
 }
 
 void sionna::PhysicalEnvironment::initializeScene() {
-    if (auto* providerModule = getSubmodule("sceneConfigProvider"); !providerModule) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: missing sceneConfigProvider submodule");
-    } else if (auto* provider = dynamic_cast<IStaticSceneProvider*>(providerModule); !provider) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: sceneConfigProvider does not implement IStaticSceneProvider");
-    } else {
-        scene_.emplace(provider->getSceneConfig());
-    }
+    auto* provider = getSubmoduleAsType<IStaticSceneProvider>("sceneConfigProvider");
+    scene_.emplace(provider->getSceneConfig());
 }
 
 void sionna::PhysicalEnvironment::initializeDynamicConfigProvider() {
-    if (!scene_.has_value()) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: scene must be initialized before dynamic configuration");
-    }
-
-    if (auto* providerModule = getSubmodule("dynamicSceneConfigProvider"); !providerModule) {
-        return;
-    } else if (auto* provider = dynamic_cast<IDynamicSceneConfigProvider*>(providerModule); !provider) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: dynamicSceneConfigProvider does not implement IDynamicSceneConfigProvider");
-    } else {
-        provider->setScene(*scene_);
-    }
+    auto* provider = getSubmoduleAsType<IDynamicSceneConfigProvider>("dynamicSceneConfigProvider");
+    provider->setScene(*scene_);
 }
 
 void sionna::PhysicalEnvironment::initializeSceneVisualizer() {
-    if (!scene_.has_value()) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: scene must be initialized before scene visualization");
-    }
-
-    if (auto* visualizerModule = getSubmodule("sceneVisualizer"); !visualizerModule) {
-        return;
-    } else if (auto* visualizer = dynamic_cast<ISceneVisualizer*>(visualizerModule); !visualizer) {
-        throw omnetpp::cRuntimeError("SionnaPhysicalEnvironment: sceneVisualizer does not implement ISceneVisualizer");
-    } else {
-        visualizer->setScene(*scene_);
-    }
+    auto* visualizer = getSubmoduleAsType<ISceneVisualizer>("sceneVisualizer");
+    visualizer->setScene(*scene_);
 }
 
 void sionna::PhysicalEnvironment::handleParameterChange(const char* /* parname */) {

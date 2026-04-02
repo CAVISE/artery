@@ -27,12 +27,6 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
         string meshRegistryType = default("");
         string sceneVisualizerType = default("");
 
-        // Runtime policy.
-        string rtBackend = default("llvm"); // safer default for a first scenario
-        bool enableGradients = default(false);
-        bool failOnMissingMeshes = default(true);
-        bool failOnUnknownMaterial = default(true);
-
     submodules:
         sceneConfigProvider: <sceneConfigProviderType> like IBootstrapSceneConfigProvider {
             @display("p=140,60");

@@ -4,6 +4,8 @@
 #include <cavise/sionna/bridge/Capabilities.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
 
+#include <nanobind/stl/string.h>
+
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/core/filesystem.h>
 
