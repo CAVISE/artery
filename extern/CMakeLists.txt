@@ -100,3 +100,7 @@ endif()
 if(WITH_PRETTY_BACKTRACE_PRINTING)
     add_subdirectory(backward-cpp)
 endif()
+
+if(WITH_SIONNA)
+    add_subdirectory(robin-map)
+endif()

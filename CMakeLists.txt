@@ -27,11 +27,14 @@ option(WITH_TESTBED "Build Artery with testbed feature" OFF)
 option(WITH_ENVMOD "Build Artery with environment model feature" ON)
 option(WITH_STORYBOARD "Build Artery with storyboard feature" ON)
 option(WITH_TRANSFUSION "Build Artery with transfusion feature" OFF)
+option(WITH_SIONNA "Build Artery with Sionna integration" OFF)
 
 # Miscellaneous stuff, does not affect functionality directly.
 option(WITH_PRETTY_BACKTRACE_PRINTING "Print backtraces nicely on errors" ON)
 option(WITH_SCENARIOS "Build Artery with scenarios" ON)
 option(VSCODE_LAUNCH_INTEGRATION "Generate VS Code configuration for debugging Artery (requires debug build)" OFF)
+
+option(WITH_TESTS "Build Artery tests" OFF)
 
 ##############################
 # Artery build configuration #
@@ -52,7 +55,7 @@ set(BUILD_SHARED_LIBS ON CACHE INTERNAL "Cached for propagation to sub-projects 
 ###############################
 
 find_package(OmnetPP 5.5.1 MODULE REQUIRED)
-find_package(Boost 1.69 REQUIRED COMPONENTS date_time CONFIG)
+find_package(Boost 1.59 REQUIRED COMPONENTS date_time CONFIG)
 
 include(AddOppRun)
 include(AddOppTarget)
@@ -79,6 +82,10 @@ endif()
 
 if(SEA_V2X_FOUND)
     mark_as_advanced(SEA_V2X_DIR)
+endif()
+
+if(WITH_TESTS)
+    find_package(GTest)
 endif()
 
 add_subdirectory(extern)
