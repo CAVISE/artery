@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cavise/sionna/bridge/Compat.h>
-#include <cavise/sionna/bridge/Capabilities.h>
 #include <cavise/sionna/bridge/bindings/Constants.h>
+#include <cavise/sionna/bridge/capabilities/Core.h>
+#include <cavise/sionna/bridge/capabilities/Calling.h>
 
 #include <drjit/array_traits.h>
 #include <nanobind/nanobind.h>
@@ -14,7 +15,7 @@ namespace artery::sionna::py {
 
     class SIONNA_BRIDGE_API RadioMaterialBase
         : public SionnaRtModule
-        , public ExportBoundObjectCapability {
+        , public InitPythonClassCapability {
     public:
         using TColor = std::tuple<float, float, float>;
 

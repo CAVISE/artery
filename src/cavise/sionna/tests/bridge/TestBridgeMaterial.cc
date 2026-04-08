@@ -3,54 +3,44 @@
 
 #include <gtest/gtest.h>
 
-#include <limits>
+namespace artery::sionna::tests {
 
-using namespace artery::sionna;
+    TEST_F(MitsubaLLVMFixture, ConstructAndAccessProperties) {
+        auto material = getProvider<py::RadioMaterial>().next();
 
-namespace {
+        EXPECT_NO_FATAL_FAILURE(material.materialName());
 
-    class MaterialLLVMFixture
-        : public artery::sionna::tests::MitsubaLLVMFixture {
-    public:
-        const double eps_ = std::numeric_limits<float>::epsilon();
-    };
+        constexpr double newThickness = 0.1;
+        constexpr double newConductivity = 0.3;
+        constexpr double newRelativePermittivity = 1.5;
 
-} // namespace
+        material.setThickness(fromScalar<mitsuba::Resolve::Float>(newThickness));
+        material.setConductivity(fromScalar<mitsuba::Resolve::Float>(newConductivity));
+        material.setRelativePermittivity(fromScalar<mitsuba::Resolve::Float>(newRelativePermittivity));
 
-TEST_F(MaterialLLVMFixture, ConstructAndAccessProperties) {
-    py::RadioMaterial material("test_mat", /* conductivity = */ 2.5, /* relativePermittivity = */ 3.5, /* thickness = */ 0.2);
+        const double thickness = toScalar<double>(material.thickness());
+        const double conductivity = toScalar<double>(material.conductivity());
+        const double permittivity = toScalar<double>(material.relativePermittivity());
 
-    EXPECT_EQ(material.materialName(), "test_mat");
+        EXPECT_NEAR(thickness, newThickness, eps_);
+        EXPECT_NEAR(conductivity, newConductivity, eps_);
+        EXPECT_NEAR(permittivity, newRelativePermittivity, eps_);
+    }
 
-    const double thickness = artery::sionna::toScalar<double>(material.thickness());
-    const double conductivity = artery::sionna::toScalar<double>(material.conductivity());
-    const double permittivity = artery::sionna::toScalar<double>(material.relativePermittivity());
+    TEST_F(MitsubaLLVMFixture, ColorRoundTrip) {
+        auto material = getProvider<py::RadioMaterial>().next();
 
-    EXPECT_NEAR(thickness, 0.2, eps_);
-    EXPECT_NEAR(conductivity, 2.5, eps_);
-    EXPECT_NEAR(permittivity, 3.5, eps_);
+        py::RadioMaterial::TColor newColor{0.1, 0.2, 0.3};
+        material.setColor(newColor);
 
-    material.setThickness(artery::sionna::fromScalar<mitsuba::Resolve::Float>(0.1));
-    material.setConductivity(artery::sionna::fromScalar<mitsuba::Resolve::Float>(0.3));
-    material.setRelativePermittivity(artery::sionna::fromScalar<mitsuba::Resolve::Float>(1.5));
+        auto color = material.color();
+        const double r = toScalar<double>(std::get<0>(color));
+        const double g = toScalar<double>(std::get<1>(color));
+        const double b = toScalar<double>(std::get<2>(color));
 
-    EXPECT_NEAR(artery::sionna::toScalar<double>(material.thickness()), 0.1, eps_);
-    EXPECT_NEAR(artery::sionna::toScalar<double>(material.conductivity()), 0.3, eps_);
-    EXPECT_NEAR(artery::sionna::toScalar<double>(material.relativePermittivity()), 1.5, eps_);
-}
+        EXPECT_NEAR(r, std::get<0>(newColor), eps_);
+        EXPECT_NEAR(g, std::get<1>(newColor), eps_);
+        EXPECT_NEAR(b, std::get<2>(newColor), eps_);
+    }
 
-TEST_F(MaterialLLVMFixture, ColorRoundTrip) {
-    using Mat = artery::sionna::py::RadioMaterial;
-
-    Mat material("colored");
-    material.setColor({0.1, 0.2, 0.3});
-
-    auto color = material.color();
-    const double r = artery::sionna::toScalar<double>(std::get<0>(color));
-    const double g = artery::sionna::toScalar<double>(std::get<1>(color));
-    const double b = artery::sionna::toScalar<double>(std::get<2>(color));
-
-    EXPECT_NEAR(r, 0.1, eps_);
-    EXPECT_NEAR(g, 0.2, eps_);
-    EXPECT_NEAR(b, 0.3, eps_);
-}
+} // namespace artery::sionna::tests

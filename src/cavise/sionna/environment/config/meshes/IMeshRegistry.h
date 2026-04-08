@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cavise/sionna/bridge/Fwd.h>
-#include <cavise/sionna/bridge/Capabilities.h>
+#include <cavise/sionna/bridge/Helpers.h>
+#include <cavise/sionna/bridge/capabilities/Core.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
+#include <cavise/sionna/bridge/bindings/Material.h>
 
 #include <nanobind/stl/string.h>
 
@@ -36,13 +38,18 @@ namespace artery::sionna {
         LowPolyCar
     };
 
-    // Registry contract for retrieving Mitsuba meshes by logical asset id.
+    struct SionnaMeshAsset {
+        mitsuba::ref<mitsuba::Resolve::Mesh> mesh;
+        py::RadioMaterial material;
+    };
+
+    // Registry contract for retrieving Mitsuba meshes and defaults by logical asset id.
     class IMeshRegistry {
     public:
         virtual ~IMeshRegistry() = default;
 
-        // Return mesh for a given logical asset.
-        virtual mitsuba::ref<mitsuba::Resolve::Mesh> getMesh(MeshAsset asset) const = 0;
+        // Return asset payload for a given logical asset.
+        virtual SionnaMeshAsset getAsset(MeshAsset asset) const = 0;
     };
 
 } // namespace artery::sionna

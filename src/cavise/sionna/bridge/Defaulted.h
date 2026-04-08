@@ -1,7 +1,10 @@
 #pragma once
 
-#include <cavise/sionna/bridge/Fwd.h>
+// Ensure nb::ref is available
 #include <nanobind/nanobind.h>
+
+#include <cavise/sionna/bridge/Fwd.h>
+#include <cavise/sionna/bridge/Casters.h>
 
 #include <cstring>
 #include <type_traits>

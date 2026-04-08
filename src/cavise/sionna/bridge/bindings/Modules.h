@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cavise/sionna/bridge/Capabilities.h>
+#include <cavise/sionna/bridge/capabilities/Core.h>
 
 namespace artery::sionna::py {
 

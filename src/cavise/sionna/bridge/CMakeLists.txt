@@ -14,18 +14,18 @@ set(SIONNA_BRIDGE_TARGET_TRIPLETS
 # Main target(s). There is a separate library for each compilation mode and
 # resolve profile.
 foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
-    string(TOLOWER ${_mode} _mode_lowercase)
+  string(TOLOWER ${_mode} _mode_lowercase)
 
-    foreach(_profile_triplet IN LISTS SIONNA_BRIDGE_TARGET_TRIPLETS)
-        string(REPLACE "|" ";" _profile_parts ${_profile_triplet})
-        list(GET _profile_parts 0 _profile_suffix)
-        list(GET _profile_parts 1 _resolve_float)
-        list(GET _profile_parts 2 _resolve_spectrum)
+  foreach(_profile_triplet IN LISTS SIONNA_BRIDGE_TARGET_TRIPLETS)
+    string(REPLACE "|" ";" _profile_parts ${_profile_triplet})
+    list(GET _profile_parts 0 _profile_suffix)
+    list(GET _profile_parts 1 _resolve_float)
+    list(GET _profile_parts 2 _resolve_spectrum)
 
-        set(_target sionna-bridge-${_mode_lowercase}-${_profile_suffix})
-        add_library(${_target} SHARED)
+    set(_target sionna-bridge-${_mode_lowercase}-${_profile_suffix})
+    add_library(${_target} SHARED)
 
-        target_sources(${_target}
+    target_sources(${_target}
             PRIVATE
                 bindings/Constants.cc
                 bindings/Material.cc
@@ -36,19 +36,21 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
                 Helpers.h
                 Compat.h
                 Defaulted.h
-                Capabilities.h
+                capabilities/Calling.h
+                capabilities/Core.h
+                capabilities/Defaulted.h
                 bindings/Constants.h
                 bindings/Material.h
                 bindings/Scene.h
                 bindings/SceneObject.h
         )
 
-        target_include_directories(${_target}
+    target_include_directories(${_target}
             PUBLIC
                 ${CMAKE_SOURCE_DIR}/src
         )
 
-        target_link_libraries(${_target}
+    target_link_libraries(${_target}
             PUBLIC
                 Mitsuba::nanobind-drjit
                 Mitsuba::mitsuba
@@ -61,31 +63,31 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
                 Backward::Backward
         )
 
-        target_compile_options(${_target}
+    target_compile_options(${_target}
             PUBLIC
                 $<$<CONFIG:Debug>:-DNDEBUG>
         )
 
-        set_target_properties(${_target}
+    set_target_properties(${_target}
             PROPERTIES
                 SIONNA_BRIDGE_COMPILATION_MODE ${_mode}
                 INTERFACE_SIONNA_FLOAT_TYPE ${_resolve_float}
                 INTERFACE_SIONNA_SPECTRUM_TYPE ${_resolve_spectrum}
         )
 
-        # Propagate and enforce a single resolve profile across link interfaces.
-        set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_FLOAT_TYPE)
-        set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_SPECTRUM_TYPE)
+    # Propagate and enforce a single resolve profile across link interfaces.
+    set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_FLOAT_TYPE)
+    set_property(TARGET ${_target} APPEND PROPERTY INTERFACE_COMPATIBLE_INTERFACE_STRING SIONNA_SPECTRUM_TYPE)
 
-        target_compile_definitions(${_target}
+    target_compile_definitions(${_target}
             PUBLIC
                 SIONNA_BRIDGE_RESOLVE_FLOAT=${_resolve_float}
                 SIONNA_BRIDGE_RESOLVE_SPECTRUM=${_resolve_spectrum}
         )
 
-        # Post configuration for various compilation modes.
-        if(_mode STREQUAL "Inet")
-            target_link_libraries(${_target} PUBLIC INET)
-        endif()
-    endforeach()
+    # Post configuration for various compilation modes.
+    if(_mode STREQUAL "Inet")
+      target_link_libraries(${_target} PUBLIC INET)
+    endif()
+  endforeach()
 endforeach()

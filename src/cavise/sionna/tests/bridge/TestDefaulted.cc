@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <cavise/sionna/bridge/Helpers.h>
-#include <cavise/sionna/bridge/Defaulted.h>
+#include <cavise/sionna/bridge/SionnaBridge.h>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>

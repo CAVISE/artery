@@ -25,7 +25,7 @@ const char* py::SionnaScene::className() const {
     return "Scene";
 }
 
-void py::SionnaScene::edit(const std::unordered_map<std::string, SceneObject>& add, const std::vector<std::string>& remove) {
+void py::SionnaScene::edit(const std::vector<SceneObject>& add, const std::vector<std::string>& remove) {
     sionna::call(bound_, "edit", "add"_a = add, "remove"_a = remove);
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cavise/sionna/bridge/Defaulted.h>
-#include <cavise/sionna/bridge/Capabilities.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
+#include <cavise/sionna/bridge/capabilities/Defaulted.h>
 
 #include <mitsuba/core/fwd.h>
 

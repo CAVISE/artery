@@ -32,9 +32,18 @@ TEST_F(ConstantsLLVMFixture, DefaultThicknessViaBridgeResolves) {
 }
 
 TEST_F(ConstantsLLVMFixture, InteractionTypesViaBridgeResolve) {
-    EXPECT_NO_FATAL_FAILURE(toScalar<int>(py::IntersectionTypes::none.value()));
-    EXPECT_NO_FATAL_FAILURE(toScalar<int>(py::IntersectionTypes::specular.value()));
-    EXPECT_NO_FATAL_FAILURE(toScalar<int>(py::IntersectionTypes::diffuse.value()));
-    EXPECT_NO_FATAL_FAILURE(toScalar<int>(py::IntersectionTypes::refraction.value()));
-    EXPECT_NO_FATAL_FAILURE(toScalar<int>(py::IntersectionTypes::diffraction.value()));
+    using TIntersection = py::IntersectionTypes;
+
+    // clang-format off
+    for (const auto& var : {
+             TIntersection::none,
+             TIntersection::specular,
+             TIntersection::diffuse,
+             TIntersection::refraction,
+             TIntersection::diffraction
+        }
+    ) {
+        EXPECT_NO_FATAL_FAILURE(toScalar<int>(var.value()));
+    }
+    // clang-format on
 }

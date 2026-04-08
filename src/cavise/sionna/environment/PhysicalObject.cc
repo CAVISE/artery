@@ -23,7 +23,7 @@ PhysicalObject::PhysicalObject(nanobind::object obj)
 }
 
 PhysicalObject::PhysicalObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh)
-    : py_(std::move(mesh)) {
+    : py_(std::move(mesh), py::RadioMaterial("physical_object_material")) {
 }
 
 PhysicalObject::PhysicalObject(const std::string& fname, const std::string& name, py::RadioMaterial material)

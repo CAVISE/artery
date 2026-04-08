@@ -23,11 +23,14 @@
 // clang-format on
 
 #include <cavise/sionna/bridge/Fwd.h>
+#include <cavise/sionna/bridge/Casters.h>
 #include <cavise/sionna/bridge/Helpers.h>
 #include <cavise/sionna/bridge/Defaulted.h>
 #include <cavise/sionna/bridge/Compat.h>
-#include <cavise/sionna/bridge/Casters.h>
-#include <cavise/sionna/bridge/Capabilities.h>
+
+#include <cavise/sionna/bridge/capabilities/Core.h>
+#include <cavise/sionna/bridge/capabilities/Calling.h>
+#include <cavise/sionna/bridge/capabilities/Defaulted.h>
 
 #include <cavise/sionna/bridge/bindings/Modules.h>
 #include <cavise/sionna/bridge/bindings/Constants.h>

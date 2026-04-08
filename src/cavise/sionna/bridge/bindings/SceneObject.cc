@@ -1,3 +1,5 @@
+#include <nanobind/nanobind.h>
+
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/core/vector.h>
 
@@ -12,9 +14,19 @@ py::SceneObject::SceneObject(nanobind::object obj) {
     WrapPythonClassCapability::init(std::move(obj));
 }
 
-py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh) {
+py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const py::RadioMaterial& material) {
     using namespace literals;
-    this->InitPythonClassCapability::init("mi_mesh"_a = std::move(mesh));
+    this->InitPythonClassCapability::init(
+        "mi_mesh"_a = mesh.get(),
+        "radio_material"_a = material);
+}
+
+py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const std::string& name, const py::RadioMaterial& material) {
+    using namespace literals;
+    this->InitPythonClassCapability::init(
+        "mi_mesh"_a = mesh.get(),
+        "name"_a = name,
+        "radio_material"_a = material);
 }
 
 py::SceneObject::SceneObject(const std::string& fname, const std::string& name, const py::RadioMaterial& material) {
@@ -27,6 +39,10 @@ py::SceneObject::SceneObject(const std::string& fname, const std::string& name, 
 
 const char* py::SceneObject::className() const {
     return "SceneObject";
+}
+
+std::string py::SceneObject::name() const {
+    return sionna::access<std::string>(bound_, "name");
 }
 
 typename mitsuba::Resolve::Point3f py::SceneObject::position() const {
@@ -42,7 +58,7 @@ typename mitsuba::Resolve::Vector3f py::SceneObject::velocity() const {
 }
 
 mitsuba::ref<mitsuba::Resolve::Mesh> py::SceneObject::mesh() const {
-    return sionna::access<mitsuba::ref<mitsuba::Resolve::Mesh>>(bound_, "_mesh");
+    return sionna::access<mitsuba::ref<mitsuba::Resolve::Mesh>>(bound_, "_mi_mesh");
 }
 
 py::RadioMaterial py::SceneObject::material() const {

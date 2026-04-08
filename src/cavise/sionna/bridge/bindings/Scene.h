@@ -2,9 +2,9 @@
 
 #include <nanobind/nanobind.h>
 
-#include <cavise/sionna/bridge/Capabilities.h>
 #include <cavise/sionna/bridge/bindings/Material.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
+#include <cavise/sionna/bridge/capabilities/Calling.h>
 
 #include <string>
 #include <unordered_map>
@@ -14,7 +14,7 @@ namespace artery::sionna::py {
 
     class SIONNA_BRIDGE_API SionnaScene
         : public SionnaRtModule
-        , public WrapPythonClassCapability {
+        , public InitPythonClassCapability {
     public:
         // IPythonClassIdentityCapability implementation.
         const char* className() const override;
@@ -25,7 +25,7 @@ namespace artery::sionna::py {
 
         using SceneElement = std::variant<std::monostate, SceneObject, RadioMaterial>;
 
-        void edit(const std::unordered_map<std::string, SceneObject>& add, const std::vector<std::string>& remove);
+        void edit(const std::vector<SceneObject>& add, const std::vector<std::string>& remove);
         SceneElement get(const std::string& name) const;
 
         std::unordered_map<std::string, RadioMaterial> radioMaterials() const;

@@ -209,7 +209,13 @@ void TraciDynamicSceneConfigProvider::edit() {
     std::vector<std::string> toRemove(toRemove_.begin(), toRemove_.end());
 
     try {
-        scene_->edit(pendingObjects_, toRemove);
+        std::vector<py::SceneObject> toAdd;
+        toAdd.reserve(pendingObjects_.size());
+        for (const auto& [_, object] : pendingObjects_) {
+            toAdd.push_back(object);
+        }
+
+        scene_->edit(toAdd, toRemove);
     } catch (const std::bad_cast&) {
         throw omnetpp::cRuntimeError(
             "failed to convert queued scene edit to python objects: add=%zu remove=%zu",

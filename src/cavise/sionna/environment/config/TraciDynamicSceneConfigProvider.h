@@ -58,7 +58,8 @@ namespace artery::sionna {
                 // Create new object and call update on it to initialize.
                 py::SceneObject object = [&]() {
                     try {
-                        return py::SceneObject(meshRegistry_->getMesh(MeshAsset::LowPolyCar));
+                        auto asset = meshRegistry_->getAsset(MeshAsset::LowPolyCar);
+                        return py::SceneObject(asset.mesh, id, asset.material);
                     } catch (const std::bad_cast&) {
                         throw omnetpp::cRuntimeError("failed to construct SceneObject for entity %s from mesh registry result", id.c_str());
                     }

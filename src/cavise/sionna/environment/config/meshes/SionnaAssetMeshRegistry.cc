@@ -1,7 +1,6 @@
 #include "SionnaAssetMeshRegistry.h"
 
 #include <cavise/sionna/bridge/Fwd.h>
-#include <cavise/sionna/bridge/Capabilities.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
 
@@ -37,7 +36,7 @@ void SionnaDirectAssetMeshRegistry::initialize() {
     }
 }
 
-mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::getMesh(MeshAsset asset) const {
+SionnaMeshAsset SionnaDirectAssetMeshRegistry::getAsset(MeshAsset asset) const {
     if (auto mesh = meshes.find(asset); mesh == meshes.end()) {
         throw omnetpp::cRuntimeError("could not access asset: path for this asset is not defined");
     } else {
@@ -46,6 +45,9 @@ mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::getMesh(Mesh
         mitsuba::Properties props("ply");
         props.set("filename", (root_ / suffix).string());
 
-        return mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props);
+        return {
+            mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props),
+            py::RadioMaterial("mat-low_poly_car")
+        };
     }
 }

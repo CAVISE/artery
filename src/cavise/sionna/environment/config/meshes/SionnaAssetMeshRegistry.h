@@ -20,7 +20,7 @@ namespace artery::sionna {
         void initialize() override;
 
         // IMeshRegistry implementation.
-        mitsuba::ref<mitsuba::Resolve::Mesh> getMesh(MeshAsset asset) const override;
+        SionnaMeshAsset getAsset(MeshAsset asset) const override;
 
     private:
         mitsuba::fs::path root_;

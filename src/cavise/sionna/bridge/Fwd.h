@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/render/fwd.h>
+#include <mitsuba/core/parser.h>
 
 #include <drjit/array_traits.h>
 
@@ -53,3 +54,8 @@ namespace mitsuba {
     #define SIONNA_BRIDGE_API
     #define SIONNA_BRIDGE_INTERNAL
 #endif
+
+namespace artery::sionna {
+    // Statci access to current variant name.
+    using VariantName = mitsuba::detail::variant<mitsuba::Resolve::Float, mitsuba::Resolve::Spectrum>;
+}

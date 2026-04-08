@@ -7,8 +7,10 @@ add_sionna_test(test_bridge_module
         test_bridge_module
     FILES
         TestCapabilities.cc
+        TestCasters.cc
         TestBridgeConstants.cc
         TestBridgeMaterial.cc
+        TestBridgeScene.cc
         TestBridgeSceneObject.cc
         TestDefaulted.cc
 )

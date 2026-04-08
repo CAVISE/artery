@@ -1,19 +1,11 @@
 #pragma once
 
-#include <cavise/sionna/bridge/Defaulted.h>
 #include <cavise/sionna/bridge/Fwd.h>
-#include <cavise/sionna/bridge/Helpers.h>
 
 #include <nanobind/nanobind.h>
 
-#include <utility>
 #include <type_traits>
-
-/**
- * @file Python to C++ bindings rely on capabilities, which are assigned to each
- * bound class, specifying what that class can do. Most capabilities have a base form, which
- * may be overridden to expand the functionality.
- */
+#include <utility>
 
 namespace artery::sionna::py {
 
@@ -69,25 +61,6 @@ namespace artery::sionna::py {
      */
 
     /**
-     * @brief Capability to call arbitrary methods in python.
-     */
-    class SIONNA_BRIDGE_API CallAnyCapability
-        : public virtual IPythonCapability {
-    public:
-        /*
-         * @brief call a callable attribute on target. This method runs type convertions
-         * as needed and supported.
-         */
-        template <typename ReturnType = nanobind::object, typename... Args>
-        ReturnType callAny(nanobind::handle target, const char* name, Args&&... args) const {
-            return sionna::call<ReturnType>(
-                nanobind::borrow<nanobind::object>(target),
-                name,
-                std::forward<Args>(args)...);
-        }
-    };
-
-    /**
      * @brief Basic stateless python module import capability.
      */
     class SIONNA_BRIDGE_API BasePythonImportCapability
@@ -136,7 +109,7 @@ namespace artery::sionna::py {
          */
         virtual nanobind::object type() const {
             nanobind::gil_scoped_acquire gil;
-            return sionna::access<nanobind::object>(module(), className());
+            return nanobind::getattr(module(), className());
         }
     };
 
@@ -162,20 +135,10 @@ namespace artery::sionna::py {
     };
 
     /**
-     * @brief Capability to initialize an object.
+     * @brief Capability that holds bound python object.
      */
-    class SIONNA_BRIDGE_API InitPythonClassCapability
-        : public BasePythonFetchCapability
-        , public CallAnyCapability {
-    public:
-        /**
-         * @brief Call a type object to initialize python object.
-         */
-        template <typename... Args>
-        void init(Args&&... args) {
-            bound_ = callObject(type(), std::forward<Args>(args)...);
-        }
-
+    class SIONNA_BRIDGE_API BoundPythonClassCapability
+        : public IPythonCapability {
     protected:
         nanobind::object bound_;
 
@@ -187,7 +150,7 @@ namespace artery::sionna::py {
      * @brief Capability to wrap existing object.
      */
     class SIONNA_BRIDGE_API WrapPythonClassCapability
-        : public InitPythonClassCapability {
+        : public BoundPythonClassCapability {
     public:
         void init(nanobind::object obj) {
             bound_ = std::move(obj);
@@ -204,75 +167,5 @@ namespace artery::sionna::py {
             return this->bound_;
         }
     };
-
-    class DefaultedDeferredFactoryCapability {
-    protected:
-        template <typename>
-        using ModuleResolver = const char* (*)();
-
-        template <typename>
-        using ModuleAndClassResolver = std::pair<const char*, const char*> (*)();
-
-        template <typename T, typename Resolver>
-        static DefaultedWithDeferredResolution<T, std::decay_t<Resolver>>
-        makeDeferredDefaulted(const char* name, Resolver&& resolver) {
-            return DefaultedWithDeferredResolution<T, std::decay_t<Resolver>>(
-                name,
-                std::forward<Resolver>(resolver));
-        }
-    };
-
-    class SIONNA_BRIDGE_API DefaultedModuleProviderCapability
-        : public virtual IPythonModuleIdentityCapability
-        , protected DefaultedDeferredFactoryCapability {
-    protected:
-        template <typename T>
-        static const char* moduleResolverFn() {
-            T obj;
-            return obj.moduleName();
-        }
-
-        template <typename T>
-        static ModuleResolver<T> moduleResolver() {
-            return &moduleResolverFn<T>;
-        }
-    };
-
-    class SIONNA_BRIDGE_API DefaultedClassProviderCapability
-        : public virtual IPythonClassIdentityCapability
-        , protected DefaultedDeferredFactoryCapability {
-    protected:
-        template <typename T>
-        static std::pair<const char*, const char*> moduleAndClassResolverFn() {
-            T obj;
-            return std::make_pair(obj.moduleName(), obj.className());
-        }
-
-        template <typename T>
-        static ModuleAndClassResolver<T> moduleAndClassResolver() {
-            return &moduleAndClassResolverFn<T>;
-        }
-    };
-
-    /*****************
-     * Caster Traits *
-     *****************
-     */
-
-    // Resolves to true if T supports all capabilities required by wrapper caster.
-    template <typename T>
-    struct sionna_wrap_caster_enabled
-        : supports_capabilities<
-              T,
-              WrapPythonClassCapability,
-              IPythonClassIdentityCapability> {};
-
-    // Enables template if matches sionna_wrap_caster_enabled, which means that it
-    // supports all necessary capabilities.
-    template <typename T>
-    using enable_if_wrap_caster =
-        std::enable_if_t<
-            sionna_wrap_caster_enabled<T>::value && std::is_default_constructible_v<T>,
-            int>;
 
 } // namespace artery::sionna::py
