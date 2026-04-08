@@ -4,6 +4,8 @@
 #include <cavise/sionna/bridge/Helpers.h>
 
 #include <nanobind/stl/string.h>
+
+#include <tuple>
 #include <mitsuba/render/scene.h>
 
 using namespace artery::sionna;
@@ -27,6 +29,48 @@ const char* py::SionnaScene::className() const {
 
 void py::SionnaScene::edit(const std::vector<SceneObject>& add, const std::vector<std::string>& remove) {
     sionna::call(bound_, "edit", "add"_a = add, "remove"_a = remove);
+}
+
+void py::SionnaScene::renderToFile(
+    const std::string& camera,
+    const std::string& filename,
+    int numSamples,
+    int width,
+    int height,
+    std::optional<float> fov,
+    std::optional<std::string> envmap,
+    float lightingScale) const {
+    sionna::call(
+        bound_,
+        "render_to_file",
+        "camera"_a = camera,
+        "filename"_a = filename,
+        "num_samples"_a = numSamples,
+        "resolution"_a = std::make_tuple(width, height),
+        "fov"_a = std::move(fov),
+        "envmap"_a = std::move(envmap),
+        "lighting_scale"_a = lightingScale);
+}
+
+void py::SionnaScene::renderToFile(
+    const Camera& camera,
+    const std::string& filename,
+    int numSamples,
+    int width,
+    int height,
+    std::optional<float> fov,
+    std::optional<std::string> envmap,
+    float lightingScale) const {
+    sionna::call(
+        bound_,
+        "render_to_file",
+        "camera"_a = camera,
+        "filename"_a = filename,
+        "num_samples"_a = numSamples,
+        "resolution"_a = std::make_tuple(width, height),
+        "fov"_a = std::move(fov),
+        "envmap"_a = std::move(envmap),
+        "lighting_scale"_a = lightingScale);
 }
 
 py::SionnaScene::SceneElement py::SionnaScene::get(const std::string& name) const {

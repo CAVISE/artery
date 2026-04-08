@@ -1,10 +1,11 @@
+#include <nanobind/nanobind.h>
+
 #include "SionnaAssetMeshRegistry.h"
 
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
+#include <cavise/sionna/bridge/bindings/Material.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
-
-#include <nanobind/nanobind.h>
 
 #include <omnetpp/cexception.h>
 
@@ -18,12 +19,33 @@ Define_Module(SionnaDirectAssetMeshRegistry);
 
 namespace {
 
+    // Even worse than meshes. Taken from itu.py file.
+    namespace known {
+        constexpr const char* concrete = "concrete";
+        constexpr const char* brick = "brick";
+        constexpr const char* plasterboard = "plasterboard";
+        constexpr const char* wood = "wood";
+        constexpr const char* glass = "glass";
+        constexpr const char* ceilingBoard = "ceiling_board";
+        constexpr const char* chipboard = "chipboard";
+        constexpr const char* plywood = "plywood";
+        constexpr const char* marble = "marble";
+        constexpr const char* floorboard = "floorboard";
+        constexpr const char* metal = "metal";
+        constexpr const char* veryDryGround = "very_dry_ground";
+        constexpr const char* mediumDryGround = "medium_dry_ground";
+        constexpr const char* wetGround = "wet_ground";
+    } // namespace known
+
     using path = mitsuba::fs::path;
 
     // I don't think there is a better way to do that.
     // Paths are relative to scenes/ module.
     const std::unordered_map<MeshAsset, mitsuba::fs::path> meshes = {
         {MeshAsset::LowPolyCar, path("low_poly_car.ply")}};
+
+    const std::unordered_map<MeshAsset, std::string> materials = {
+        {MeshAsset::LowPolyCar, known::metal}};
 
 } // namespace
 
@@ -36,18 +58,37 @@ void SionnaDirectAssetMeshRegistry::initialize() {
     }
 }
 
-SionnaMeshAsset SionnaDirectAssetMeshRegistry::getAsset(MeshAsset asset) const {
+mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::asset(MeshAsset asset) const {
     if (auto mesh = meshes.find(asset); mesh == meshes.end()) {
-        throw omnetpp::cRuntimeError("could not access asset: path for this asset is not defined");
+        throw omnetpp::cRuntimeError("could not access mesh: path for this asset is not defined");
     } else {
         const auto& [_, suffix] = *mesh;
 
         mitsuba::Properties props("ply");
         props.set("filename", (root_ / suffix).string());
 
-        return {
-            mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props),
-            py::RadioMaterial("mat-low_poly_car")
-        };
+        return mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props);
+    }
+}
+
+py::RadioMaterial SionnaDirectAssetMeshRegistry::material(MeshAsset asset) const {
+    if (auto cached = cachedMaterials_.find(asset); cached != cachedMaterials_.end()) {
+        return cached->second;
+    }
+
+    if (auto material = materials.find(asset); material == materials.end()) {
+        throw omnetpp::cRuntimeError("could not access material: material for this asset is not defined");
+    } else {
+        const auto& [_, type] = *material;
+
+        mitsuba::Properties props("itu-radio-material");
+        props.set("type", type);
+        props.set_id(format("mat-%s", type.c_str()));
+
+        auto object = mitsuba::PluginManager::instance()->create_object(
+            props, VariantName::name, mitsuba::ObjectType::BSDF);
+
+        auto [it, _inserted] = cachedMaterials_.emplace(asset, py::RadioMaterial(nanobind::cast(object)));
+        return it->second;
     }
 }

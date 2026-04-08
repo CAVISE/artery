@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
+#include <cavise/sionna/bridge/bindings/Camera.h>
 
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
 
 #include <optional>
 #include <string>
+#include <filesystem>
 
 namespace artery::sionna {
 
@@ -26,6 +28,8 @@ namespace artery::sionna {
         void renderFrame() override;
 
     private:
+        py::Camera resolveCamera() const;
+        std::filesystem::path framePath() const;
         void scheduleNextRender();
 
     private:
@@ -33,6 +37,7 @@ namespace artery::sionna {
         omnetpp::cMessage* renderTimer_ = nullptr;
 
         std::string outputDir_;
+        std::string camera_;
         int frameIndex_ = 0;
         int spp_ = 16;
         int width_ = 1280;

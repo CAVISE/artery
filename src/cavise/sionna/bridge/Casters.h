@@ -8,6 +8,7 @@
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/map.h>
 #include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/optional.h>
 
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/capabilities/Core.h>

@@ -11,6 +11,7 @@
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -33,6 +34,80 @@ namespace {
     }
 
 } // namespace
+
+std::string TraciIdProvider::idFromTraci(const traci::BasicNodeManager::VehicleObject* vehicle) {
+    const std::string id = vehicle->getCache()->getVehicleId();
+    add(id);
+    return traciToScene_.at(id);
+}
+
+std::string TraciIdProvider::idFromTraci(const traci::BasicNodeManager::PersonObject* person) {
+    const std::string id = person->getCache()->getPersonId();
+    add(id);
+    return traciToScene_.at(id);
+}
+
+std::string TraciIdProvider::idToTraci(const std::string& id) {
+    convertSceneID(id);
+    return sceneToTraci_.at(id);
+}
+
+void TraciIdProvider::removeId(const traci::BasicNodeManager::VehicleObject* vehicle) {
+    remove(vehicle->getCache()->getVehicleId());
+}
+
+void TraciIdProvider::removeId(const traci::BasicNodeManager::PersonObject* person) {
+    remove(person->getCache()->getPersonId());
+}
+
+void TraciIdProvider::add(std::string id) {
+    if (traciToScene_.contains(id)) {
+        return;
+    }
+
+    std::string sceneId = id;
+    std::replace(sceneId.begin(), sceneId.end(), '.', '_');
+
+    if (sceneId.empty()) {
+        throw omnetpp::cRuntimeError("could not convert TraCI ID: converted ID is empty");
+    }
+
+    const std::string base = sceneId;
+    std::size_t suffix = 1;
+    for (auto it = sceneToTraci_.find(sceneId);
+         it != sceneToTraci_.end() && it->second != id;
+         it = sceneToTraci_.find(sceneId)) {
+        sceneId = base + "_" + std::to_string(suffix++);
+    }
+
+    traciToScene_.emplace(id, sceneId);
+    sceneToTraci_.emplace(sceneId, std::move(id));
+}
+
+void TraciIdProvider::remove(std::string id) {
+    convertTraciID(id);
+
+    const std::string sceneId = traciToScene_.at(id);
+    traciToScene_.erase(id);
+    sceneToTraci_.erase(sceneId);
+}
+
+void TraciIdProvider::convertTraciID(const std::string& id) {
+    if (!traciToScene_.contains(id)) {
+        add(id);
+    }
+}
+
+void TraciIdProvider::convertSceneID(const std::string& id) {
+    if (!sceneToTraci_.contains(id)) {
+        throw omnetpp::cRuntimeError("could not resolve TraCI ID for scene ID %s", id.c_str());
+    }
+}
+
+std::string TraciIdProvider::sceneId(const std::string& id) {
+    convertTraciID(id);
+    return traciToScene_.at(id);
+}
 
 template <>
 struct TraciDynamicSceneConfigProvider::EntityDispatchTraits<traci::BasicNodeManager::VehicleObject> {
@@ -149,6 +224,14 @@ void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* sour
     }
 }
 
+void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
+    if (signal == traci::BasicNodeManager::updateNodeSignal) {
+        edit();
+    } else {
+        throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
+    }
+}
+
 void TraciDynamicSceneConfigProvider::setScene(py::SionnaScene scene) {
     scene_ = std::move(scene);
 }
@@ -180,8 +263,7 @@ void TraciDynamicSceneConfigProvider::dispatchAddPerson(const char* id) {
 }
 
 void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, omnetpp::cObject* object, omnetpp::cObject* /* details */) {
-    if (signal != traci::BasicNodeManager::updatePersonSignal
-        && signal != traci::BasicNodeManager::updateVehicleSignal) {
+    if (signal != traci::BasicNodeManager::updatePersonSignal && signal != traci::BasicNodeManager::updateVehicleSignal) {
         throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
     }
 }
@@ -206,7 +288,11 @@ void TraciDynamicSceneConfigProvider::edit() {
         return;
     }
 
-    std::vector<std::string> toRemove(toRemove_.begin(), toRemove_.end());
+    std::vector<std::string> toRemove;
+    toRemove.reserve(this->toRemove_.size());
+    for (const auto& id : toRemove_) {
+        toRemove.push_back(ids_.sceneId(id));
+    }
 
     try {
         std::vector<py::SceneObject> toAdd;

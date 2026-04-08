@@ -2,10 +2,12 @@
 
 #include <nanobind/nanobind.h>
 
+#include <cavise/sionna/bridge/bindings/Camera.h>
 #include <cavise/sionna/bridge/bindings/Material.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 #include <cavise/sionna/bridge/capabilities/Calling.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -26,6 +28,24 @@ namespace artery::sionna::py {
         using SceneElement = std::variant<std::monostate, SceneObject, RadioMaterial>;
 
         void edit(const std::vector<SceneObject>& add, const std::vector<std::string>& remove);
+        void renderToFile(
+            const std::string& camera,
+            const std::string& filename,
+            int numSamples = 512,
+            int width = 655,
+            int height = 500,
+            std::optional<float> fov = std::nullopt,
+            std::optional<std::string> envmap = std::nullopt,
+            float lightingScale = 1.0f) const;
+        void renderToFile(
+            const Camera& camera,
+            const std::string& filename,
+            int numSamples = 512,
+            int width = 655,
+            int height = 500,
+            std::optional<float> fov = std::nullopt,
+            std::optional<std::string> envmap = std::nullopt,
+            float lightingScale = 1.0f) const;
         SceneElement get(const std::string& name) const;
 
         std::unordered_map<std::string, RadioMaterial> radioMaterials() const;

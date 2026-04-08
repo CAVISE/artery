@@ -38,18 +38,16 @@ namespace artery::sionna {
         LowPolyCar
     };
 
-    struct SionnaMeshAsset {
-        mitsuba::ref<mitsuba::Resolve::Mesh> mesh;
-        py::RadioMaterial material;
-    };
-
-    // Registry contract for retrieving Mitsuba meshes and defaults by logical asset id.
+    // Registry contract for retrieving Mitsuba meshes by logical asset id.
     class IMeshRegistry {
     public:
         virtual ~IMeshRegistry() = default;
 
-        // Return asset payload for a given logical asset.
-        virtual SionnaMeshAsset getAsset(MeshAsset asset) const = 0;
+        // Return mesh for a given logical asset.
+        virtual mitsuba::ref<mitsuba::Resolve::Mesh> asset(MeshAsset asset) const = 0;
+
+        // Return material for a given logical asset.
+        virtual py::RadioMaterial material(MeshAsset asset) const = 0;
     };
 
 } // namespace artery::sionna

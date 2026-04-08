@@ -7,6 +7,8 @@
 
 #include <mitsuba/core/filesystem.h>
 
+#include <unordered_map>
+
 namespace artery::sionna {
 
     // Simple mesh registry that returns meshes from static mapping.
@@ -20,10 +22,12 @@ namespace artery::sionna {
         void initialize() override;
 
         // IMeshRegistry implementation.
-        SionnaMeshAsset getAsset(MeshAsset asset) const override;
+        mitsuba::ref<mitsuba::Resolve::Mesh> asset(MeshAsset asset) const override;
+        py::RadioMaterial material(MeshAsset asset) const override;
 
     private:
         mitsuba::fs::path root_;
+        mutable std::unordered_map<MeshAsset, py::RadioMaterial> cachedMaterials_;
     };
 
 } // namespace artery::sionna

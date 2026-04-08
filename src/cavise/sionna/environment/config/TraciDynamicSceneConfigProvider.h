@@ -16,6 +16,39 @@
 
 namespace artery::sionna {
 
+    // Resolving ID's from traci to Sionna is actually not that
+    // trivial, that class does that.
+    class TraciIdProvider {
+    public:
+
+        // Query scene object ID from respective traci object.
+        std::string idFromTraci(const traci::BasicNodeManager::VehicleObject* vehicle);
+        // Query scene object ID from respective traci object.
+        std::string idFromTraci(const traci::BasicNodeManager::PersonObject* person);
+        // Query scene object ID from respective traci object.
+        std::string idToTraci(const std::string& id);
+        // Query scene-safe object ID from raw TraCI id.
+        std::string sceneId(const std::string& id);
+
+        // Remove ID associated with respective traci object.
+        void removeId(const traci::BasicNodeManager::VehicleObject* vehicle);
+        // Remove ID associated with respective traci object.
+        void removeId(const traci::BasicNodeManager::PersonObject* person);
+
+    private:
+        // Removal is for traci ids only (scene cannot delete object by itself).
+        void add(std::string id);
+        void remove(std::string id);
+
+        void convertTraciID(const std::string& id);
+        void convertSceneID(const std::string& id);
+
+    private:
+        std::unordered_map<std::string, std::string> traciToScene_;
+        std::unordered_map<std::string, std::string> sceneToTraci_;
+
+    };
+
     // Dynamic scene provider driven by TraCI node lifecycle signals.
     class TraciDynamicSceneConfigProvider
         : public IDynamicSceneConfigProvider
@@ -31,6 +64,7 @@ namespace artery::sionna {
         // omnetpp::cListener implementation.
         void receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const char* id, omnetpp::cObject* /* details */) override;
         void receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, long value, omnetpp::cObject* /* details */) override;
+        void receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long value, omnetpp::cObject* /* details */) override;
         void receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, omnetpp::cObject* object, omnetpp::cObject* /* details */) override;
 
         // IDynamicSceneConfigProvider implementation.
@@ -50,25 +84,25 @@ namespace artery::sionna {
         void dispatchUpdateEntity(TEntity* entity) {
             using Traits = EntityDispatchTraits<TEntity>;
             std::string id = Traits::id(entity);
+            const std::string sceneId = ids_.idFromTraci(entity);
 
-            // If object was added recently, we need to add it to the scene.
+            // If object was added recently, we need to attach it to the scene
+            // before Sionna allows transform updates.
             if (auto iter = toAdd_.find(id); iter != toAdd_.end()) {
                 toAdd_.extract(iter);
 
-                // Create new object and call update on it to initialize.
                 py::SceneObject object = [&]() {
                     try {
-                        auto asset = meshRegistry_->getAsset(MeshAsset::LowPolyCar);
-                        return py::SceneObject(asset.mesh, id, asset.material);
+                        auto mesh = meshRegistry_->asset(MeshAsset::LowPolyCar);
+                        auto material = meshRegistry_->material(MeshAsset::LowPolyCar);
+
+                        return py::SceneObject(mesh, sceneId, material);
                     } catch (const std::bad_cast&) {
                         throw omnetpp::cRuntimeError("failed to construct SceneObject for entity %s from mesh registry result", id.c_str());
                     }
                 }();
-                add(id, Traits::update(object, entity));
-
-                if (toAdd_.empty()) {
-                    edit();
-                }
+                add(id, object);
+                edit();
             }
 
             if (auto pending = pendingObjects_.find(id); pending != pendingObjects_.end()) {
@@ -77,7 +111,7 @@ namespace artery::sionna {
             }
 
             if (!cachedObjects_.contains(id)) {
-                auto item = scene_->get(id);
+                auto item = scene_->get(sceneId);
                 if (auto* object = std::get_if<py::SceneObject>(&item); object != nullptr) {
                     cachedObjects_.insert_or_assign(id, *object);
                 } else {
@@ -97,6 +131,7 @@ namespace artery::sionna {
     private:
         omnetpp::cComponent* traciNodeManager_ = nullptr;
         IMeshRegistry* meshRegistry_ = nullptr;
+        TraciIdProvider ids_;
 
         std::set<std::string> toAdd_;
         std::set<std::string> toRemove_;

@@ -9,6 +9,7 @@ set(SIONNA_BRIDGE_TARGET_TRIPLETS
     "scalar|float|mitsuba::Color<float,3>"
     "llvm-detached|drjit::LLVMArray<float>|mitsuba::Color<drjit::LLVMArray<float>,3>"
     "llvm-ad|drjit::LLVMDiffArray<float>|mitsuba::Color<drjit::LLVMDiffArray<float>,3>"
+    "llvm-ad-mono-polarized|drjit::LLVMDiffArray<float>|mitsuba::MuellerMatrix<mitsuba::Color<drjit::LLVMDiffArray<float>,1>>"
 )
 
 # Main target(s). There is a separate library for each compilation mode and
@@ -27,6 +28,7 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
 
     target_sources(${_target}
             PRIVATE
+                bindings/Camera.cc
                 bindings/Constants.cc
                 bindings/Material.cc
                 bindings/Scene.cc
@@ -39,6 +41,7 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
                 capabilities/Calling.h
                 capabilities/Core.h
                 capabilities/Defaulted.h
+                bindings/Camera.h
                 bindings/Constants.h
                 bindings/Material.h
                 bindings/Scene.h

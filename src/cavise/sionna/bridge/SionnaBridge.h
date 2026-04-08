@@ -33,6 +33,7 @@
 #include <cavise/sionna/bridge/capabilities/Defaulted.h>
 
 #include <cavise/sionna/bridge/bindings/Modules.h>
+#include <cavise/sionna/bridge/bindings/Camera.h>
 #include <cavise/sionna/bridge/bindings/Constants.h>
 #include <cavise/sionna/bridge/bindings/Material.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>

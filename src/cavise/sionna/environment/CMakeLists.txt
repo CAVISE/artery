@@ -36,5 +36,5 @@ set_target_properties(sionna-phy
         SIONNA_BRIDGE_COMPILATION_MODE Inet
         COMPATIBLE_INTERFACE_STRING "SIONNA_FLOAT_TYPE;SIONNA_SPECTRUM_TYPE"
 )
-target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet-llvm-ad)
+target_link_libraries(sionna-phy PUBLIC sionna-bridge-inet-llvm-ad-mono-polarized)
 target_compile_options(sionna-phy PUBLIC $<$<CONFIG:Debug>:-DNDEBUG>)
