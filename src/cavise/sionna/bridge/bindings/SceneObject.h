@@ -36,6 +36,7 @@ namespace artery::sionna::py {
 
         void setPosition(const mitsuba::Resolve::Point3f& position);
         void setOrientation(const mitsuba::Resolve::Point3f& orientation);
+        void setScaling(const mitsuba::Resolve::Vector3f& scaling);
         void setVelocity(const mitsuba::Resolve::Vector3f& velocity);
         void setMaterial(const RadioMaterial& material);
     };

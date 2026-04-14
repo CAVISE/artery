@@ -73,6 +73,10 @@ void py::SceneObject::setOrientation(const mitsuba::Resolve::Point3f& orientatio
     sionna::set(bound_, "orientation", orientation);
 }
 
+void py::SceneObject::setScaling(const mitsuba::Resolve::Vector3f& scaling) {
+    sionna::set(bound_, "scaling", scaling);
+}
+
 void py::SceneObject::setVelocity(const mitsuba::Resolve::Vector3f& velocity) {
     sionna::set(bound_, "velocity", velocity);
 }

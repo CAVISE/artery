@@ -8,8 +8,12 @@ simple TraciDynamicSceneConfigProvider like IDynamicSceneConfigProvider
 
         // Path to traci::BasicNodeManager (or compatible emitter of TraCI add/remove signals).
         string traciNodeManagerModule = default("");
-        // Optional path to module implementing artery::sionna::IMeshRegistry.
+        // Path to module implementing artery::sionna::IMeshRegistry.
         string meshRegistryModule = default("");
+        // Path to module implementing artery::sionna::ITraciIDConverter.
+        string idConverterModule = default("");
+        // Path to module implementing artery::sionna::ITraciCoordinateTransformer.
+        string coordinateTransformerModule = default("");
 
         // If true, TraCI add/remove signal reception triggers edit().
         bool autoEditOnTraCIEvents = default(true);

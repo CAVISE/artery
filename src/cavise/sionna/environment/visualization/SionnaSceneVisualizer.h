@@ -9,6 +9,8 @@
 #include <optional>
 #include <string>
 #include <filesystem>
+#include <vector>
+#include <utility>
 
 namespace artery::sionna {
 
@@ -28,8 +30,8 @@ namespace artery::sionna {
         void renderFrame() override;
 
     private:
-        py::Camera resolveCamera() const;
-        std::filesystem::path framePath() const;
+        std::vector<std::pair<std::string, py::Camera>> resolveCameras() const;
+        std::filesystem::path framePath(const std::string& cameraId) const;
         void scheduleNextRender();
 
     private:

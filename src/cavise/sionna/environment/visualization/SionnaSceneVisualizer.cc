@@ -57,28 +57,31 @@ void SionnaSceneVisualizer::renderFrame() {
         return;
     }
 
-    const auto camera = resolveCamera();
+    const auto cameras = resolveCameras();
+    for (const auto& [cameraId, camera] : cameras) {
+        const auto filename = framePath(cameraId);
+        std::filesystem::create_directories(filename.parent_path());
 
-    const auto filename = framePath();
-    std::filesystem::create_directories(filename.parent_path());
-
-    scene_->renderToFile(
-        camera,
-        filename.string(),
-        spp_,
-        width_,
-        height_);
+        scene_->renderToFile(
+            camera,
+            filename.string(),
+            spp_,
+            width_,
+            height_);
+    }
 
     ++frameIndex_;
 }
 
-py::Camera SionnaSceneVisualizer::resolveCamera() const {
+std::vector<std::pair<std::string, py::Camera>> SionnaSceneVisualizer::resolveCameras() const {
     omnetpp::cXMLElement* root = par("cameraConfig").xmlValue();
     if (root == nullptr) {
         throw omnetpp::cRuntimeError("SionnaSceneVisualizer cameraConfig does not resolve to XML; provide xmldoc(...) and select a camera id");
     }
 
     const char* selectedId = camera_.empty() ? nullptr : camera_.c_str();
+    std::vector<std::pair<std::string, py::Camera>> result;
+
     for (omnetpp::cXMLElement* child = root->getFirstChild(); child != nullptr; child = child->getNextSibling()) {
         if (std::strcmp(child->getTagName(), "camera") != 0) {
             continue;
@@ -105,18 +108,36 @@ py::Camera SionnaSceneVisualizer::resolveCamera() const {
             throw omnetpp::cRuntimeError("invalid camera orientation '%s'", orientationAttr);
         }
 
-        return py::Camera(
-            mitsuba::Resolve::Point3f(px, py, pz),
-            mitsuba::Resolve::Point3f(ox, oy, oz));
+        std::string effectiveId;
+        if (id != nullptr && std::strlen(id) > 0) {
+            effectiveId = id;
+        } else if (selectedId != nullptr) {
+            effectiveId = selectedId;
+        } else {
+            effectiveId = "camera";
+        }
+
+        result.emplace_back(
+            effectiveId,
+            py::Camera(
+                mitsuba::Resolve::Point3f(px, py, pz),
+                mitsuba::Resolve::Point3f(ox, oy, oz)));
     }
 
-    throw omnetpp::cRuntimeError("could not resolve visualizer camera '%s' from cameraConfig", camera_.c_str());
+    if (result.empty()) {
+        if (selectedId != nullptr) {
+            throw omnetpp::cRuntimeError("could not resolve visualizer camera '%s' from cameraConfig", camera_.c_str());
+        }
+        throw omnetpp::cRuntimeError("could not resolve any visualizer camera from cameraConfig");
+    }
+
+    return result;
 }
 
-std::filesystem::path SionnaSceneVisualizer::framePath() const {
+std::filesystem::path SionnaSceneVisualizer::framePath(const std::string& cameraId) const {
     std::ostringstream name;
     name << "frame-" << std::setw(6) << std::setfill('0') << frameIndex_ << ".png";
-    return std::filesystem::path(outputDir_) / name.str();
+    return std::filesystem::path(outputDir_) / cameraId / name.str();
 }
 
 void SionnaSceneVisualizer::scheduleNextRender() {

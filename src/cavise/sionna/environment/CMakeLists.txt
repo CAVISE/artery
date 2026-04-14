@@ -12,6 +12,8 @@ target_sources(sionna-phy
         config/scenes/FileSceneConfigProvider.cc
         config/meshes/SionnaAssetMeshRegistry.cc
         config/TraciDynamicSceneConfigProvider.cc
+        config/TraciIDConverter.cc
+        config/TraciCoordinateTransformer.cc
         visualization/SionnaSceneVisualizer.cc
     PUBLIC
         Compat.h
@@ -27,6 +29,8 @@ target_sources(sionna-phy
         config/scenes/FileSceneConfigProvider.h
         config/meshes/SionnaAssetMeshRegistry.h
         config/TraciDynamicSceneConfigProvider.h
+        config/TraciIDConverter.h
+        config/TraciCoordinateTransformer.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
 )

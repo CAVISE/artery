@@ -4,6 +4,8 @@ import inet.environment.common.PhysicalEnvironment;
 import cavise.sionna.environment.config.IDynamicSceneConfigProvider;
 import cavise.sionna.environment.config.IBootstrapSceneConfigProvider;
 import cavise.sionna.environment.config.IMeshRegistry;
+import cavise.sionna.environment.config.ITraciIDConverter;
+import cavise.sionna.environment.config.ITraciCoordinateTransformer;
 import cavise.sionna.environment.visualization.ISceneVisualizer;
 
 //
@@ -25,6 +27,8 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
         string sceneConfigProviderType = default("cavise.sionna.environment.config.scenes.FileSceneConfigProvider");
         string dynamicSceneConfigProviderType = default("");
         string meshRegistryType = default("");
+        string idConverterType = default("");
+        string coordinateTransformerType = default("");
         string sceneVisualizerType = default("");
 
     submodules:
@@ -40,7 +44,15 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
             @display("p=140,140");
         }
 
+        idConverter: <idConverterType> like ITraciIDConverter if idConverterType != "" {
+            @display("p=140,170");
+        }
+
+        coordinateTransformer: <coordinateTransformerType> like ITraciCoordinateTransformer if coordinateTransformerType != "" {
+            @display("p=140,190");
+        }
+
         sceneVisualizer: <sceneVisualizerType> like ISceneVisualizer if sceneVisualizerType != "" {
-            @display("p=140,180");
+            @display("p=140,220");
         }
 }

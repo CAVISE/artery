@@ -20,3 +20,17 @@ moduleinterface IBootstrapSceneConfigProvider
 moduleinterface IMeshRegistry
 {
 }
+
+//
+// Provider for TraCI<->scene id mapping.
+//
+moduleinterface ITraciIDConverter
+{
+}
+
+//
+// Provider for SUMO<->scene coordinate transforms.
+//
+moduleinterface ITraciCoordinateTransformer
+{
+}

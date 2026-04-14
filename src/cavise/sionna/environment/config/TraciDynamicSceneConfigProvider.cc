@@ -11,9 +11,7 @@
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
 
-#include <algorithm>
 #include <cmath>
-#include <cstring>
 
 using namespace artery::sionna;
 
@@ -21,142 +19,35 @@ Define_Module(TraciDynamicSceneConfigProvider);
 
 namespace {
 
+    template <typename T>
+    T* resolveModule(omnetpp::cSimpleModule* owner, const char* moduleName) {
+        if (auto path = owner->par(moduleName).stdstringValue(); path.size() == 0) {
+            throw omnetpp::cRuntimeError("%s was not specified: cannot continue", moduleName);
+        } else if (auto* module = owner->getModuleByPath(path.c_str()); module == nullptr) {
+            throw omnetpp::cRuntimeError("No module found for %s at path %s", moduleName, path);
+        } else if (auto* typed = dynamic_cast<T*>(module); typed == nullptr) {
+            throw omnetpp::cRuntimeError("Module at path %s for %s does not implement required type", path, moduleName);
+        } else {
+            return typed;
+        }
+    }
+
     mitsuba::Resolve::Vector3f velocityFromTraCI(double speed, traci::TraCIAngle heading) {
         const double yaw = (90.0 - heading.degree) * M_PI / 180.0;
 
         const double vx = speed * std::cos(yaw);
         const double vy = speed * -std::sin(yaw);
 
-        return mitsuba::Resolve::Vector3f(
-            fromScalar<mitsuba::Resolve::Float>(vx),
-            fromScalar<mitsuba::Resolve::Float>(vy),
-            fromScalar<mitsuba::Resolve::Float>(0.0));
+        return mitsuba::Resolve::Vector3f(vx, vy, 0.0);
     }
 
 } // namespace
 
-std::string TraciIdProvider::idFromTraci(const traci::BasicNodeManager::VehicleObject* vehicle) {
-    const std::string id = vehicle->getCache()->getVehicleId();
-    add(id);
-    return traciToScene_.at(id);
-}
-
-std::string TraciIdProvider::idFromTraci(const traci::BasicNodeManager::PersonObject* person) {
-    const std::string id = person->getCache()->getPersonId();
-    add(id);
-    return traciToScene_.at(id);
-}
-
-std::string TraciIdProvider::idToTraci(const std::string& id) {
-    convertSceneID(id);
-    return sceneToTraci_.at(id);
-}
-
-void TraciIdProvider::removeId(const traci::BasicNodeManager::VehicleObject* vehicle) {
-    remove(vehicle->getCache()->getVehicleId());
-}
-
-void TraciIdProvider::removeId(const traci::BasicNodeManager::PersonObject* person) {
-    remove(person->getCache()->getPersonId());
-}
-
-void TraciIdProvider::add(std::string id) {
-    if (traciToScene_.contains(id)) {
-        return;
-    }
-
-    std::string sceneId = id;
-    std::replace(sceneId.begin(), sceneId.end(), '.', '_');
-
-    if (sceneId.empty()) {
-        throw omnetpp::cRuntimeError("could not convert TraCI ID: converted ID is empty");
-    }
-
-    const std::string base = sceneId;
-    std::size_t suffix = 1;
-    for (auto it = sceneToTraci_.find(sceneId);
-         it != sceneToTraci_.end() && it->second != id;
-         it = sceneToTraci_.find(sceneId)) {
-        sceneId = base + "_" + std::to_string(suffix++);
-    }
-
-    traciToScene_.emplace(id, sceneId);
-    sceneToTraci_.emplace(sceneId, std::move(id));
-}
-
-void TraciIdProvider::remove(std::string id) {
-    convertTraciID(id);
-
-    const std::string sceneId = traciToScene_.at(id);
-    traciToScene_.erase(id);
-    sceneToTraci_.erase(sceneId);
-}
-
-void TraciIdProvider::convertTraciID(const std::string& id) {
-    if (!traciToScene_.contains(id)) {
-        add(id);
-    }
-}
-
-void TraciIdProvider::convertSceneID(const std::string& id) {
-    if (!sceneToTraci_.contains(id)) {
-        throw omnetpp::cRuntimeError("could not resolve TraCI ID for scene ID %s", id.c_str());
-    }
-}
-
-std::string TraciIdProvider::sceneId(const std::string& id) {
-    convertTraciID(id);
-    return traciToScene_.at(id);
-}
-
-template <>
-struct TraciDynamicSceneConfigProvider::EntityDispatchTraits<traci::BasicNodeManager::VehicleObject> {
-    static std::string id(const traci::BasicNodeManager::VehicleObject* entity) {
-        return entity->getCache()->getVehicleId();
-    }
-
-    static py::SceneObject& update(py::SceneObject& object, traci::BasicNodeManager::VehicleObject* entity) {
-        object.setOrientation(convert<mitsuba::Resolve::Point3f>(entity->getHeading()));
-        object.setPosition(convert<mitsuba::Resolve::Point3f>(entity->getPosition()));
-        object.setVelocity(velocityFromTraCI(entity->getSpeed(), entity->getHeading()));
-        return object;
-    }
-};
-
-template <>
-struct TraciDynamicSceneConfigProvider::EntityDispatchTraits<traci::BasicNodeManager::PersonObject> {
-    static std::string id(const traci::BasicNodeManager::PersonObject* entity) {
-        return entity->getCache()->getPersonId();
-    }
-
-    static py::SceneObject& update(py::SceneObject& object, traci::BasicNodeManager::PersonObject* entity) {
-        object.setOrientation(convert<mitsuba::Resolve::Point3f>(entity->getHeading()));
-        object.setPosition(convert<mitsuba::Resolve::Point3f>(entity->getPosition()));
-        object.setVelocity(velocityFromTraCI(entity->getSpeed(), entity->getHeading()));
-        return object;
-    }
-};
-
 void TraciDynamicSceneConfigProvider::initialize() {
-    if (const char* registryPath = par("meshRegistryModule").stringValue(); std::strlen(registryPath) > 0) {
-        if (auto* registryModule = getModuleByPath(registryPath); registryModule == nullptr) {
-            throw omnetpp::cRuntimeError("No mesh registry module found at path %s", registryPath);
-        } else if (meshRegistry_ = dynamic_cast<IMeshRegistry*>(registryModule); meshRegistry_ == nullptr) {
-            throw omnetpp::cRuntimeError("Module at path %s does not implement IMeshRegistry", registryPath);
-        }
-    }
-
-    if (const char* managerPath = par("traciNodeManagerModule").stringValue(); std::strlen(managerPath) == 0) {
-        throw omnetpp::cRuntimeError("traciNodeManagerModule was not specified: cannot continue");
-    } else {
-        if (traciNodeManager_ = getModuleByPath(managerPath); traciNodeManager_ == nullptr) {
-            throw omnetpp::cRuntimeError("No TraCI node manager found at path %s", managerPath);
-        }
-    }
-
-    if (meshRegistry_ == nullptr) {
-        throw omnetpp::cRuntimeError("meshRegistryModule was not specified: cannot continue");
-    }
+    meshRegistry_ = resolveModule<IMeshRegistry>(this, "meshRegistryModule");
+    traciNodeManager_ = resolveModule<traci::BasicNodeManager>(this, "traciNodeManagerModule");
+    IDConverter_ = resolveModule<ITraciIDConverter>(this, "idConverterModule");
+    coordinateTransformer_ = resolveModule<ITraciCoordinateTransformer>(this, "coordinateTransformerModule");
 
     traciNodeManager_->subscribe(traci::BasicNodeManager::addVehicleSignal, this);
     traciNodeManager_->subscribe(traci::BasicNodeManager::removeVehicleSignal, this);
@@ -168,13 +59,6 @@ void TraciDynamicSceneConfigProvider::initialize() {
 }
 
 void TraciDynamicSceneConfigProvider::finish() {
-    // Flush any remaining changes.
-    edit();
-
-    if (traciNodeManager_ == nullptr) {
-        return;
-    }
-
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::addVehicleSignal, this);
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::removeVehicleSignal, this);
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::updateVehicleSignal, this);
@@ -183,11 +67,7 @@ void TraciDynamicSceneConfigProvider::finish() {
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::removePersonSignal, this);
     traciNodeManager_->unsubscribe(traci::BasicNodeManager::updateNodeSignal, this);
 
-    scene_.reset();
-    pendingObjects_.clear();
-    cachedObjects_.clear();
-    toAdd_.clear();
-    toRemove_.clear();
+    state_.clear();
 }
 
 void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const char* id, omnetpp::cObject* details) {
@@ -216,15 +96,8 @@ void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* sour
     }
 }
 
-void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, long /* value */, omnetpp::cObject* /* details */) {
-    if (signal == traci::BasicNodeManager::updateNodeSignal) {
-        edit();
-    } else {
-        throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
-    }
-}
-
 void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
+    // This signals end-of-step, so scene is flushed here.
     if (signal == traci::BasicNodeManager::updateNodeSignal) {
         edit();
     } else {
@@ -233,86 +106,171 @@ void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* sour
 }
 
 void TraciDynamicSceneConfigProvider::setScene(py::SionnaScene scene) {
-    scene_ = std::move(scene);
+    state_.scene = std::move(scene);
+}
+
+void TraciDynamicSceneConfigProvider::State::clear() {
+    toRemove.clear();
+    scene.reset();
+    pendingObjects.clear();
+    cachedObjects.clear();
+    stagedUpdates.clear();
 }
 
 void TraciDynamicSceneConfigProvider::dispatchUpdateVehicle(traci::BasicNodeManager::VehicleObject* vehicle) {
-    dispatchUpdateEntity(vehicle);
+    auto id = vehicle->getCache()->getVehicleId();
+
+    if (!state_.pendingObjects.contains(id) && !state_.cachedObjects.contains(id)) {
+        // Have to create a new scene object.
+        auto mesh = meshRegistry_->asset(MeshAsset::LowPolyCar);
+        auto material = meshRegistry_->material(MeshAsset::LowPolyCar);
+        auto sceneId = IDConverter_->sceneId(id);
+        add(id, py::SceneObject(mesh, sceneId, material));
+    }
+
+    const auto orientation = convert<mitsuba::Resolve::Point3f>(vehicle->getHeading());
+    const auto& p = vehicle->getPosition();
+    const auto pos = coordinateTransformer_->fromSumo(mitsuba::Resolve::Vector3f(p.x, p.y, p.z));
+    const auto position = mitsuba::Resolve::Point3f(pos.x(), pos.y(), pos.z());
+    const auto velocity = coordinateTransformer_->fromSumo(
+        velocityFromTraCI(vehicle->getSpeed(), vehicle->getHeading()));
+    const auto scaling = mitsuba::Resolve::Vector3f(5.0, 5.0, 5.0);
+
+    auto callback = [orientation, position, velocity, scaling](py::SceneObject& object) {
+        object.setOrientation(orientation);
+        object.setPosition(position);
+        object.setScaling(scaling);
+        object.setVelocity(velocity);
+    };
+    state_.stagedUpdates.insert_or_assign(id, callback);
+
+    if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
+        if (auto locked = cached->second; locked) {
+            callback(*locked);
+        } else {
+            throw omnetpp::cRuntimeError("failed to lock cached object: possibly wrong cached objects view");
+        }
+    }
 }
 
 void TraciDynamicSceneConfigProvider::dispatchUpdatePerson(traci::BasicNodeManager::PersonObject* person) {
-    dispatchUpdateEntity(person);
+    auto id = person->getCache()->getPersonId();
+
+    if (!state_.pendingObjects.contains(id) && !state_.cachedObjects.contains(id)) {
+        // Have to create a new scene object.
+        auto mesh = meshRegistry_->asset(MeshAsset::LowPolyCar);
+        auto material = meshRegistry_->material(MeshAsset::LowPolyCar);
+
+        EV_WARN << "Persons right now are depicted as cars, mind that";
+        auto sceneId = IDConverter_->sceneId(id);
+        add(id, py::SceneObject(mesh, sceneId, material));
+    }
+
+    const auto orientation = convert<mitsuba::Resolve::Point3f>(person->getHeading());
+    const auto& p = person->getPosition();
+    const auto pos = coordinateTransformer_->fromSumo(mitsuba::Resolve::Vector3f(p.x, p.y, p.z));
+    const auto position = mitsuba::Resolve::Point3f(pos.x(), pos.y(), pos.z());
+    const auto velocity = coordinateTransformer_->fromSumo(
+        velocityFromTraCI(person->getSpeed(), person->getHeading()));
+    const auto scaling = mitsuba::Resolve::Vector3f(5.0, 5.0, 5.0);
+
+    auto callback = [orientation, position, velocity, scaling](py::SceneObject& object) {
+        object.setOrientation(orientation);
+        object.setPosition(position);
+        object.setScaling(scaling);
+        object.setVelocity(velocity);
+    };
+    state_.stagedUpdates.insert_or_assign(id, callback);
+
+    if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
+        if (auto locked = cached->second; locked) {
+            callback(*locked);
+        } else {
+            throw omnetpp::cRuntimeError("failed to lock cached object: possibly wrong cached objects view");
+        }
+    }
 }
 
 void TraciDynamicSceneConfigProvider::dispatchRemoveVehicle(const char* id) {
+    EV_INFO << "Preparing to remove vehicle from the scene " << id;
     remove(id);
 }
 
 void TraciDynamicSceneConfigProvider::dispatchRemovePerson(const char* id) {
+    EV_INFO << "Preparing to remove person from the scene " << id;
     remove(id);
 }
 
 void TraciDynamicSceneConfigProvider::dispatchAddVehicle(const char* id) {
-    // NOTE: Update signal follows add signal. We may save vehicle to be added later.
-    toAdd_.emplace(id);
+    EV_INFO << "Adding new vehicle to the scene " << id;
 }
 
 void TraciDynamicSceneConfigProvider::dispatchAddPerson(const char* id) {
-    // NOTE: Update signal follows add signal. We may save person to be added later.
-    toAdd_.emplace(id);
-}
-
-void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, omnetpp::cObject* object, omnetpp::cObject* /* details */) {
-    if (signal != traci::BasicNodeManager::updatePersonSignal && signal != traci::BasicNodeManager::updateVehicleSignal) {
-        throw omnetpp::cRuntimeError("could not dispatch signal: unknown signal received");
-    }
+    EV_INFO << "Adding new person to the scene " << id;
 }
 
 IDynamicSceneConfigProvider& TraciDynamicSceneConfigProvider::add(const std::string& id, py::SceneObject object) {
-    pendingObjects_.emplace(std::make_pair(id, object));
+    state_.pendingObjects.emplace(std::make_pair(id, std::make_shared<py::SceneObject>(object)));
     return *this;
 }
 
 IDynamicSceneConfigProvider& TraciDynamicSceneConfigProvider::remove(const std::string& id) {
-    if (cachedObjects_.contains(id)) {
-        toRemove_.insert(id);
-    } else if (pendingObjects_.contains(id)) {
-        pendingObjects_.extract(id);
+    if (state_.pendingObjects.contains(id)) {
+        state_.pendingObjects.extract(id);
+    } else if (state_.cachedObjects.contains(id)) {
+        state_.toRemove.emplace_back(id);
     }
+    state_.stagedUpdates.erase(id);
 
     return *this;
 }
 
+std::weak_ptr<py::SceneObject> TraciDynamicSceneConfigProvider::fetch(const std::string& id) {
+    if (auto pending = state_.pendingObjects.find(id); pending != state_.pendingObjects.end()) {
+        return pending->second;
+    } else if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
+        return cached->second;
+    } else {
+        return {};
+    }
+}
+
 void TraciDynamicSceneConfigProvider::edit() {
-    if (pendingObjects_.empty() && toRemove_.empty()) {
+    if (state_.pendingObjects.empty() && state_.toRemove.empty()) {
         return;
     }
 
     std::vector<std::string> toRemove;
-    toRemove.reserve(this->toRemove_.size());
-    for (const auto& id : toRemove_) {
-        toRemove.push_back(ids_.sceneId(id));
+    toRemove.reserve(state_.toRemove.size());
+    for (const auto& id : state_.toRemove) {
+        toRemove.push_back(IDConverter_->sceneId(id));
     }
 
-    try {
-        std::vector<py::SceneObject> toAdd;
-        toAdd.reserve(pendingObjects_.size());
-        for (const auto& [_, object] : pendingObjects_) {
-            toAdd.push_back(object);
+    std::vector<py::SceneObject> toAdd;
+    toAdd.reserve(state_.pendingObjects.size());
+    for (const auto& [_, object] : state_.pendingObjects) {
+        toAdd.push_back(*object);
+    }
+
+    state_.scene->edit(toAdd, toRemove);
+
+    for (auto& [addedId, added] : state_.pendingObjects) {
+        state_.cachedObjects.insert_or_assign(addedId, added);
+    }
+    for (auto& [id, callback] : state_.stagedUpdates) {
+        if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
+            if (auto locked = cached->second; locked) {
+                callback(*locked);
+            }
         }
-
-        scene_->edit(toAdd, toRemove);
-    } catch (const std::bad_cast&) {
-        throw omnetpp::cRuntimeError(
-            "failed to convert queued scene edit to python objects: add=%zu remove=%zu",
-            pendingObjects_.size(),
-            toRemove.size());
     }
 
-    for (auto& [addedId, added] : pendingObjects_) {
-        cachedObjects_.insert_or_assign(addedId, added);
+    for (const auto& removedId : state_.toRemove) {
+        state_.cachedObjects.erase(removedId);
+        IDConverter_->removeByTraciId(removedId);
     }
 
-    toRemove_.clear();
-    pendingObjects_.clear();
+    state_.toRemove.clear();
+    state_.pendingObjects.clear();
+    state_.stagedUpdates.clear();
 }
