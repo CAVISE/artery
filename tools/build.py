@@ -161,14 +161,21 @@ class Routines:
         if not self.__params.build_directory.is_dir():
             self.__params.build_directory.mkdir()
 
+<<<<<<< current
         use_custom_presets = Path.cwd().joinpath("CMakeUserPresets.json").is_file()
         if use_custom_presets:
             logger.info("found CMake presets")
+=======
+        use_custom_presets = Path.cwd().joinpath('CMakeUserPresets.json').is_file()
+        if use_custom_presets:
+            logger.info('found CMake presets')
+>>>>>>> incoming
 
         logger.info("configuring for CMake build configs: " + ", ".join(self.__params.build_configs))
         for config in self.__params.build_configs:
             source = Path.cwd()
             binary = self.__params.build_directory.joinpath(config)
+<<<<<<< current
             if self.__params.preset is not None:
                 binary = binary.joinpath(self.__params.preset)
             command = (
@@ -206,6 +213,29 @@ class Routines:
                     self._decorate_cmake_variable("CMAKE_BUILD_TYPE", config),
                 ]
             )
+=======
+            command = [
+                'cmake',
+                '--preset', f'conan-{config.lower()}',
+                '-B', str(binary),
+                '-S', str(source),
+                self._decorate_cmake_variable('CMAKE_EXPORT_COMPILE_COMMANDS', 'ON', 'BOOL'),
+                self._decorate_cmake_variable('CMAKE_BUILD_TYPE', config)
+            ] if use_custom_presets else [
+                'cmake',
+                '--preset', f'{self.__params.preset}',
+                '-B', str(binary),
+                '-S', str(source),
+                self._decorate_cmake_variable('CMAKE_EXPORT_COMPILE_COMMANDS', 'ON', 'BOOL'),
+                self._decorate_cmake_variable('CMAKE_BUILD_TYPE', config)
+            ] if self.__params.preset else [
+                'cmake',
+                '-B', str(binary),
+                '-S', str(source),
+                self._decorate_cmake_variable('CMAKE_EXPORT_COMPILE_COMMANDS', 'ON', 'BOOL'),
+                self._decorate_cmake_variable('CMAKE_BUILD_TYPE', config)
+            ]
+>>>>>>> incoming
 
             if self.__params.generator is not None:
                 command.extend(["-G", self.__params.generator])
@@ -311,9 +341,14 @@ class Routines:
 
     def _decorate_cmake_variable(self: "Routines", var: str, value: str, var_type: Union[str, None] = None) -> str:
         if var_type is not None:
+<<<<<<< current
             return f"-D{var.upper()}:{var_type}={value}"
         return f"-D{var.upper()}={value}"
 
+=======
+            return f'-D{var.upper()}:{var_type}={value}'
+        return f'-D{var.upper()}={value}'
+>>>>>>> incoming
 
 def resolve_profiles(config: Config, args: argparse.Namespace):
     if args.profile_all is not None:
@@ -349,10 +384,17 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument("-r", "--remove", action="store_true", dest="remove")
     parser.add_argument("-l", "--symlink-compile-commands", action="store_true", dest="symlink_compile_commands")
     # Environment
+<<<<<<< current
     parser.add_argument("--build-dir", action="store", dest="build_directory")
     parser.add_argument("--local-cache", action="store_true", dest="local_cache", default=False)
     # Presets
     parser.add_argument("--preset", action="store", dest="preset")
+=======
+    parser.add_argument('--build-dir', action='store', dest='build_directory')
+    parser.add_argument('--local-cache', action='store_true', dest='local_cache', default=False)
+    # Presets
+    parser.add_argument('--preset', action='store', dest='preset')
+>>>>>>> incoming
     # TODO: allow more configs
     parser.add_argument("--config", action="append", dest="configs", choices=["Debug", "Release", "RelWithDebInfo"])
     parser.add_argument("--parallel", action="store", dest="cores")
@@ -394,7 +436,11 @@ def main():
     if getattr(args, "generator") is not None:
         params.generator = args.generator
         logger.info(f'config: user-provided generator: "{params.generator}"')
+<<<<<<< current
     if getattr(args, "preset") is not None:
+=======
+    if getattr(args, 'preset') is not None:
+>>>>>>> incoming
         params.preset = args.preset
         logger.info(f'config: user-provided preset: "{params.preset}"')
     params.local_cache = args.local_cache
