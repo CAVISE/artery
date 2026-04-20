@@ -7,10 +7,10 @@
 
 #include <cavise/sionna/bridge/bindings/Scene.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
-#include <cavise/sionna/environment/config/IConfigProvider.h>
+#include <cavise/sionna/environment/config/dynamic/IDynamicSceneConfigProvider.h>
+#include <cavise/sionna/environment/config/dynamic/TraciCoordinateTransformer.h>
+#include <cavise/sionna/environment/config/dynamic/TraciIDConverter.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
-#include <cavise/sionna/environment/config/TraciIDConverter.h>
-#include <cavise/sionna/environment/config/TraciCoordinateTransformer.h>
 
 #include <optional>
 #include <memory>
@@ -36,7 +36,7 @@ namespace artery::sionna {
         void receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long value, omnetpp::cObject* /* details */) override;
 
         // IDynamicSceneConfigProvider implementation.
-        void setScene(py::SionnaScene scene) override;
+        void bindScene(py::SionnaScene scene) override;
         IDynamicSceneConfigProvider& add(const std::string& id, py::SceneObject object) override;
         IDynamicSceneConfigProvider& remove(const std::string& id) override;
         std::weak_ptr<py::SceneObject> fetch(const std::string& id) override;
@@ -49,6 +49,10 @@ namespace artery::sionna {
         void dispatchRemovePerson(const char* id);
         void dispatchAddVehicle(const char* id);
         void dispatchAddPerson(const char* id);
+
+        // Because we cache changes to scene objects, use this helper to
+        // apply transforms safely.
+        void applyTransform(const std::string& id, std::function<void(py::SceneObject&)> f);
 
     private:
         struct State {
@@ -70,7 +74,7 @@ namespace artery::sionna {
             std::unordered_map<std::string, std::shared_ptr<py::SceneObject>> cachedObjects;
 
             // Latest staged update callbacks by TraCI id.
-            std::unordered_map<std::string, std::function<void(py::SceneObject&)>> stagedUpdates;
+            std::unordered_map<std::string, std::function<void(py::SceneObject&)>> cachedTransforms;
         } state_;
 
         traci::BasicNodeManager* traciNodeManager_ = nullptr;

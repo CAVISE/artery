@@ -1,4 +1,11 @@
-package cavise.sionna.environment.config;
+package cavise.sionna.environment.config.dynamic;
+
+//
+// Provider for TraCI<->scene id mapping.
+//
+moduleinterface ITraciIDConverter
+{
+}
 
 //
 // Converter for TraCI IDs into scene-compatible IDs.

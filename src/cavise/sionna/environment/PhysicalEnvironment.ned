@@ -1,11 +1,11 @@
 package cavise.sionna.environment;
 
 import inet.environment.common.PhysicalEnvironment;
-import cavise.sionna.environment.config.IDynamicSceneConfigProvider;
-import cavise.sionna.environment.config.IBootstrapSceneConfigProvider;
-import cavise.sionna.environment.config.IMeshRegistry;
-import cavise.sionna.environment.config.ITraciIDConverter;
-import cavise.sionna.environment.config.ITraciCoordinateTransformer;
+import cavise.sionna.environment.config.dynamic.IDynamicSceneConfigProvider;
+import cavise.sionna.environment.config.dynamic.ITraciCoordinateTransformer;
+import cavise.sionna.environment.config.dynamic.ITraciIDConverter;
+import cavise.sionna.environment.config.meshes.IMeshRegistry;
+import cavise.sionna.environment.config.scenes.IStaticSceneProvider;
 import cavise.sionna.environment.visualization.ISceneVisualizer;
 
 //
@@ -25,14 +25,14 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
 
         // Scene providers. Keep source selection out of the environment itself.
         string sceneConfigProviderType = default("cavise.sionna.environment.config.scenes.FileSceneConfigProvider");
-        string dynamicSceneConfigProviderType = default("");
-        string meshRegistryType = default("");
-        string idConverterType = default("");
-        string coordinateTransformerType = default("");
-        string sceneVisualizerType = default("");
+        string dynamicSceneConfigProviderType = default("cavise.sionna.environment.config.dynamic.TraciDynamicSceneConfigProvider");
+        string meshRegistryType = default("cavise.sionna.environment.config.meshes.SionnaDirectAssetMeshRegistry");
+        string idConverterType = default("cavise.sionna.environment.config.dynamic.TraciIDConverter");
+        string coordinateTransformerType = default("cavise.sionna.environment.config.dynamic.TraciCoordinateTransformer");
+        string sceneVisualizerType = default("cavise.sionna.environment.visualization.SionnaSceneVisualizer");
 
     submodules:
-        sceneConfigProvider: <sceneConfigProviderType> like IBootstrapSceneConfigProvider {
+        sceneConfigProvider: <sceneConfigProviderType> like IStaticSceneProvider {
             @display("p=140,60");
         }
 

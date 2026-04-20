@@ -1,8 +1,6 @@
 package cavise.sionna.environment.config.scenes;
 
-import cavise.sionna.environment.config.IBootstrapSceneConfigProvider;
-
-simple SionnaBuiltinSceneConfigProvider like IBootstrapSceneConfigProvider
+simple SionnaBuiltinSceneConfigProvider like IStaticSceneProvider
 {
     parameters:
         @class(SionnaBuiltinSceneConfigProvider);

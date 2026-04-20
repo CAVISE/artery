@@ -4,8 +4,6 @@
 
 namespace artery::sionna::py {
 
-    class Scene;
-
     class SionnaRtModule
         : public virtual IPythonModuleIdentityCapability {
     public:
@@ -29,7 +27,5 @@ namespace artery::sionna::py {
             return "sionna.rt.scenes";
         }
     };
-
-    class Scene;
 
 } // namespace artery::sionna::py

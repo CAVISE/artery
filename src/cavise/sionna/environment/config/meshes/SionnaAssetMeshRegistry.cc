@@ -92,3 +92,13 @@ py::RadioMaterial SionnaDirectAssetMeshRegistry::material(MeshAsset asset) const
         return it->second;
     }
 }
+
+mitsuba::Resolve::Vector3f SionnaDirectAssetMeshRegistry::scaling(MeshAsset asset) const {
+    // Do not cache the vectors, they may be only allowed to be created after proper setup.
+    switch (asset) {
+        case MeshAsset::LowPolyCar:
+            return {0.5, 0.5, 0.5};
+    }
+
+    throw omnetpp::cRuntimeError("could not access scaling: scaling for this asset is not defined");
+}

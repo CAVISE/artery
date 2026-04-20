@@ -48,6 +48,9 @@ namespace artery::sionna {
 
         // Return material for a given logical asset.
         virtual py::RadioMaterial material(MeshAsset asset) const = 0;
+
+        // Return scaling vector for asset.
+        virtual mitsuba::Resolve::Vector3f scaling(MeshAsset asset) const = 0;
     };
 
 } // namespace artery::sionna

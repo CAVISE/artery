@@ -12,41 +12,23 @@ using namespace artery;
 
 Define_Module(sionna::PhysicalEnvironment);
 
-namespace {
-    constexpr int NUM_INIT_STAGES = 4;
-
-    enum class InitStage : std::uint8_t { INITIALIZE_PYTHON_RUNTIME,
-                                          LOAD_STATIC_SCENE,
-                                          LOAD_DYNAMIC_SCENE,
-                                          POST_SCENE_LOAD_CONFIGURATION
-    };
-
-} // namespace
-
 int sionna::PhysicalEnvironment::numInitStages() const {
-    return NUM_INIT_STAGES;
+    return inet::NUM_INIT_STAGES;
 }
 
 void sionna::PhysicalEnvironment::initialize(int stage) {
-    InitStage initStage = static_cast<InitStage>(stage);
-
-    switch (initStage) {
-        // First, load python runtime with mitsuba library.
-        case InitStage::INITIALIZE_PYTHON_RUNTIME:
+    switch (stage) {
+        case inet::InitStages::INITSTAGE_LOCAL:
             initializePythonRuntime();
             break;
-        // Second, load static scene.
-        case InitStage::LOAD_STATIC_SCENE:
+        case inet::InitStages::INITSTAGE_PHYSICAL_ENVIRONMENT:
             initializeScene();
-            break;
-        // Third, load dynamic scene provider to manage scene objects
-        // in simulation.
-        case InitStage::LOAD_DYNAMIC_SCENE:
             initializeDynamicConfigProvider();
             break;
-        // Load anything else. At this point, scene is fully ready.
-        case InitStage::POST_SCENE_LOAD_CONFIGURATION:
+        case inet::InitStages::INITSTAGE_LAST:
             initializeSceneVisualizer();
+            break;
+        default:
             break;
     }
 }
@@ -89,7 +71,7 @@ void sionna::PhysicalEnvironment::initializeScene() {
 
 void sionna::PhysicalEnvironment::initializeDynamicConfigProvider() {
     auto* provider = getSubmoduleAsType<IDynamicSceneConfigProvider>("dynamicSceneConfigProvider");
-    provider->setScene(*scene_);
+    provider->bindScene(*scene_);
 }
 
 void sionna::PhysicalEnvironment::initializeSceneVisualizer() {

@@ -22,7 +22,7 @@ namespace artery::sionna {
         void initialize() override;
         void initializeFromPathAndConfig(const mitsuba::fs::path& path, mitsuba::parser::ParserConfig cfg);
 
-        // IBootstrapSceneConfigProvider implementation.
+        // IStaticSceneProvider implementation.
         mitsuba::ref<mitsuba::Resolve::Scene> getSceneConfig() override;
 
     private:

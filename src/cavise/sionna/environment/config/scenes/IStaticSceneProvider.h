@@ -3,8 +3,8 @@
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/bindings/Scene.h>
 
-#include <mitsuba/render/scene.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/render/scene.h>
 
 namespace artery::sionna {
 
@@ -18,7 +18,7 @@ namespace artery::sionna {
     };
 
     // Simple RAII file resolver, used to set file resolver root for loading
-    // scene-local meshes. Most of all compex scenes use this to resolve mesh paths.
+    // scene-local meshes. Most complex scenes use this to resolve mesh paths.
     class ScopedFileResolver {
     public:
 

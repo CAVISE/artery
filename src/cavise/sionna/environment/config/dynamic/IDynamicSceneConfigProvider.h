@@ -4,23 +4,12 @@
 #include <cavise/sionna/bridge/bindings/Scene.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 
-#include <mitsuba/render/scene.h>
-
 namespace artery::sionna {
-
-    // Provides initial scene config.
-    class IStaticSceneProvider {
-    public:
-        // Return Mitsuba scene that will bootstrap the scene for Sionna.
-        virtual mitsuba::ref<mitsuba::Resolve::Scene> getSceneConfig() = 0;
-
-        virtual ~IStaticSceneProvider() = default;
-    };
 
     // Provides dynamic scene configuration, allows to create and remove objects dynamically.
     class IDynamicSceneConfigProvider {
     public:
-        virtual void setScene(py::SionnaScene scene) = 0;
+        virtual void bindScene(py::SionnaScene scene) = 0;
 
         // Add object to the scene. This should cache the scene editing until edit() is called.
         virtual IDynamicSceneConfigProvider& add(const std::string& id, py::SceneObject object) = 0;

@@ -11,9 +11,10 @@ target_sources(sionna-phy
         PhysicalEnvironment.cc
         config/scenes/FileSceneConfigProvider.cc
         config/meshes/SionnaAssetMeshRegistry.cc
-        config/TraciDynamicSceneConfigProvider.cc
-        config/TraciIDConverter.cc
-        config/TraciCoordinateTransformer.cc
+        config/dynamic/TraciDynamicSceneConfigProvider.cc
+        config/dynamic/TraciIDConverter.cc
+        config/dynamic/TraciCoordinateTransformer.cc
+        config/dynamic/TraciRelaxedCoordinateTransformer.cc
         visualization/SionnaSceneVisualizer.cc
     PUBLIC
         Compat.h
@@ -24,13 +25,15 @@ target_sources(sionna-phy
         Material.h
         PathLoss.h
         PhysicalEnvironment.h
-        config/IConfigProvider.h
+        config/dynamic/IDynamicSceneConfigProvider.h
         config/meshes/IMeshRegistry.h
+        config/scenes/IStaticSceneProvider.h
         config/scenes/FileSceneConfigProvider.h
         config/meshes/SionnaAssetMeshRegistry.h
-        config/TraciDynamicSceneConfigProvider.h
-        config/TraciIDConverter.h
-        config/TraciCoordinateTransformer.h
+        config/dynamic/TraciDynamicSceneConfigProvider.h
+        config/dynamic/TraciIDConverter.h
+        config/dynamic/TraciCoordinateTransformer.h
+        config/dynamic/TraciRelaxedCoordinateTransformer.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
 )

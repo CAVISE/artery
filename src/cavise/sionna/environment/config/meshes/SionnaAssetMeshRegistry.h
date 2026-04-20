@@ -24,6 +24,7 @@ namespace artery::sionna {
         // IMeshRegistry implementation.
         mitsuba::ref<mitsuba::Resolve::Mesh> asset(MeshAsset asset) const override;
         py::RadioMaterial material(MeshAsset asset) const override;
+        mitsuba::Resolve::Vector3f scaling(MeshAsset asset) const override;
 
     private:
         mitsuba::fs::path root_;

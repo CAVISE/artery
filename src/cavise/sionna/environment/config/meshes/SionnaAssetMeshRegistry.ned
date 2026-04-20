@@ -1,6 +1,11 @@
 package cavise.sionna.environment.config.meshes;
 
-import cavise.sionna.environment.config.IMeshRegistry;
+//
+// Provider for runtime mesh lookup by logical asset id.
+//
+moduleinterface IMeshRegistry
+{
+}
 
 simple SionnaDirectAssetMeshRegistry like IMeshRegistry
 {

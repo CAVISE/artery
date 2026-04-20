@@ -12,6 +12,11 @@
 
 namespace artery::sionna {
 
+    struct TraCIVelocity {
+        double speed;
+        traci::TraCIAngle heading;
+    };
+
     template <typename Value>
     struct impl<inet::Coord, mitsuba::Point<Value, 3>, void> {
         static inet::Coord convert(const mitsuba::Point<Value, 3>& value) {
@@ -68,6 +73,16 @@ namespace artery::sionna {
     };
 
     template <>
+    struct impl<mitsuba::Resolve::Vector3f, traci::TraCIPosition, void> {
+        static mitsuba::Resolve::Vector3f convert(const traci::TraCIPosition& value) {
+            return mitsuba::Resolve::Vector3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x),
+                fromScalar<mitsuba::Resolve::Float>(value.y),
+                fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
     struct impl<mitsuba::Resolve::Point3f, traci::TraCIAngle, void> {
         static mitsuba::Resolve::Point3f convert(const traci::TraCIAngle& value) {
             const double yaw = (90.0 - value.degree) * std::numbers::pi_v<double> / 180.0;
@@ -75,6 +90,17 @@ namespace artery::sionna {
                 fromScalar<mitsuba::Resolve::Float>(0.0),
                 fromScalar<mitsuba::Resolve::Float>(0.0),
                 fromScalar<mitsuba::Resolve::Float>(yaw));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Vector3f, TraCIVelocity, void> {
+        static mitsuba::Resolve::Vector3f convert(const TraCIVelocity& value) {
+            const double yaw = (90.0 - value.heading.degree) * std::numbers::pi_v<double> / 180.0;
+            return mitsuba::Resolve::Vector3f(
+                fromScalar<mitsuba::Resolve::Float>(value.speed * std::cos(yaw)),
+                fromScalar<mitsuba::Resolve::Float>(value.speed * -std::sin(yaw)),
+                fromScalar<mitsuba::Resolve::Float>(0.0));
         }
     };
 

@@ -10,8 +10,7 @@
 #include <cavise/sionna/environment/Compat.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 #include <cavise/sionna/environment/config/meshes/IMeshRegistry.h>
-
-#include <cmath>
+#include <cavise/sionna/environment/config/dynamic/TraciRelaxedCoordinateTransformer.h>
 
 using namespace artery::sionna;
 
@@ -24,21 +23,63 @@ namespace {
         if (auto path = owner->par(moduleName).stdstringValue(); path.size() == 0) {
             throw omnetpp::cRuntimeError("%s was not specified: cannot continue", moduleName);
         } else if (auto* module = owner->getModuleByPath(path.c_str()); module == nullptr) {
-            throw omnetpp::cRuntimeError("No module found for %s at path %s", moduleName, path);
+            throw omnetpp::cRuntimeError("No module found for %s at path %s", moduleName, path.c_str());
         } else if (auto* typed = dynamic_cast<T*>(module); typed == nullptr) {
-            throw omnetpp::cRuntimeError("Module at path %s for %s does not implement required type", path, moduleName);
+            throw omnetpp::cRuntimeError("Module at path %s for %s does not implement required type", path.c_str(), moduleName);
         } else {
             return typed;
         }
     }
 
-    mitsuba::Resolve::Vector3f velocityFromTraCI(double speed, traci::TraCIAngle heading) {
-        const double yaw = (90.0 - heading.degree) * M_PI / 180.0;
+    void logEntityTransform(
+        const char* entityType,
+        const std::string& id,
+        const traci::TraCIPosition& traciPosition,
+        traci::TraCIAngle heading,
+        double speed,
+        const mitsuba::Resolve::Vector3f& canonicalPosition,
+        const mitsuba::Resolve::Vector3f& localPosition,
+        const mitsuba::Resolve::Vector3f& canonicalVelocity,
+        const mitsuba::Resolve::Vector3f& localVelocity) {
+        EV_INFO
+            << "TraCI " << entityType << " " << id
+            << " transform: traciPosition=("
+            << traciPosition.x << ", " << traciPosition.y << ", " << traciPosition.z
+            << "), heading=" << heading.degree
+            << ", speed=" << speed
+            << ", canonicalPosition=("
+            << toScalar<double>(canonicalPosition.x()) << ", "
+            << toScalar<double>(canonicalPosition.y()) << ", "
+            << toScalar<double>(canonicalPosition.z())
+            << "), localPosition=("
+            << toScalar<double>(localPosition.x()) << ", "
+            << toScalar<double>(localPosition.y()) << ", "
+            << toScalar<double>(localPosition.z())
+            << "), canonicalVelocity=("
+            << toScalar<double>(canonicalVelocity.x()) << ", "
+            << toScalar<double>(canonicalVelocity.y()) << ", "
+            << toScalar<double>(canonicalVelocity.z())
+            << "), localVelocity=("
+            << toScalar<double>(localVelocity.x()) << ", "
+            << toScalar<double>(localVelocity.y()) << ", "
+            << toScalar<double>(localVelocity.z()) << ")\n";
+    }
 
-        const double vx = speed * std::cos(yaw);
-        const double vy = speed * -std::sin(yaw);
-
-        return mitsuba::Resolve::Vector3f(vx, vy, 0.0);
+    void logRelaxedAdjustment(
+        const char* entityType,
+        const std::string& id,
+        const mitsuba::Resolve::Point3f& before,
+        const mitsuba::Resolve::Vector3f& after) {
+        EV_INFO
+            << "TraCI " << entityType << " " << id
+            << " relaxed scene position: before=("
+            << toScalar<double>(before.x()) << ", "
+            << toScalar<double>(before.y()) << ", "
+            << toScalar<double>(before.z())
+            << "), after=("
+            << toScalar<double>(after.x()) << ", "
+            << toScalar<double>(after.y()) << ", "
+            << toScalar<double>(after.z()) << ")\n";
     }
 
 } // namespace
@@ -105,8 +146,11 @@ void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* sour
     }
 }
 
-void TraciDynamicSceneConfigProvider::setScene(py::SionnaScene scene) {
+void TraciDynamicSceneConfigProvider::bindScene(py::SionnaScene scene) {
     state_.scene = std::move(scene);
+    if (auto* relaxedTransformer = dynamic_cast<TraciRelaxedCoordinateTransformer*>(coordinateTransformer_); relaxedTransformer) {
+        relaxedTransformer->bindScene(*state_.scene);
+    }
 }
 
 void TraciDynamicSceneConfigProvider::State::clear() {
@@ -114,7 +158,7 @@ void TraciDynamicSceneConfigProvider::State::clear() {
     scene.reset();
     pendingObjects.clear();
     cachedObjects.clear();
-    stagedUpdates.clear();
+    cachedTransforms.clear();
 }
 
 void TraciDynamicSceneConfigProvider::dispatchUpdateVehicle(traci::BasicNodeManager::VehicleObject* vehicle) {
@@ -128,29 +172,31 @@ void TraciDynamicSceneConfigProvider::dispatchUpdateVehicle(traci::BasicNodeMana
         add(id, py::SceneObject(mesh, sceneId, material));
     }
 
-    const auto orientation = convert<mitsuba::Resolve::Point3f>(vehicle->getHeading());
-    const auto& p = vehicle->getPosition();
-    const auto pos = coordinateTransformer_->fromSumo(mitsuba::Resolve::Vector3f(p.x, p.y, p.z));
-    const auto position = mitsuba::Resolve::Point3f(pos.x(), pos.y(), pos.z());
-    const auto velocity = coordinateTransformer_->fromSumo(
-        velocityFromTraCI(vehicle->getSpeed(), vehicle->getHeading()));
-    const auto scaling = mitsuba::Resolve::Vector3f(5.0, 5.0, 5.0);
+    const auto traciPosition = vehicle->getPosition();
+    const auto heading = vehicle->getHeading();
+    const auto speed = vehicle->getSpeed();
+    const auto orientation = convert<mitsuba::Resolve::Point3f>(heading);
+    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(traciPosition));
+    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
+    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(
+        TraCIVelocity{speed, heading}));
+    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    const auto scaling = meshRegistry_->scaling(MeshAsset::LowPolyCar);
 
-    auto callback = [orientation, position, velocity, scaling](py::SceneObject& object) {
-        object.setOrientation(orientation);
-        object.setPosition(position);
-        object.setScaling(scaling);
-        object.setVelocity(velocity);
-    };
-    state_.stagedUpdates.insert_or_assign(id, callback);
+    logEntityTransform("vehicle", id, traciPosition, heading, speed, canonicalPosition, localPosition, canonicalVelocity, localVelocity);
 
-    if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
-        if (auto locked = cached->second; locked) {
-            callback(*locked);
-        } else {
-            throw omnetpp::cRuntimeError("failed to lock cached object: possibly wrong cached objects view");
+    applyTransform(id, [this, id, orientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
+        obj.setOrientation(orientation);
+        obj.setPosition(localPosition);
+        obj.setScaling(scaling);
+        obj.setVelocity(localVelocity);
+
+        if (auto* relaxedTransformer = dynamic_cast<TraciRelaxedCoordinateTransformer*>(coordinateTransformer_); relaxedTransformer) {
+            const auto before = obj.position();
+            relaxedTransformer->adjust(obj);
+            logRelaxedAdjustment("vehicle", id, before, obj.position());
         }
-    }
+    });
 }
 
 void TraciDynamicSceneConfigProvider::dispatchUpdatePerson(traci::BasicNodeManager::PersonObject* person) {
@@ -166,28 +212,44 @@ void TraciDynamicSceneConfigProvider::dispatchUpdatePerson(traci::BasicNodeManag
         add(id, py::SceneObject(mesh, sceneId, material));
     }
 
-    const auto orientation = convert<mitsuba::Resolve::Point3f>(person->getHeading());
-    const auto& p = person->getPosition();
-    const auto pos = coordinateTransformer_->fromSumo(mitsuba::Resolve::Vector3f(p.x, p.y, p.z));
-    const auto position = mitsuba::Resolve::Point3f(pos.x(), pos.y(), pos.z());
-    const auto velocity = coordinateTransformer_->fromSumo(
-        velocityFromTraCI(person->getSpeed(), person->getHeading()));
-    const auto scaling = mitsuba::Resolve::Vector3f(5.0, 5.0, 5.0);
+    const auto traciPosition = person->getPosition();
+    const auto heading = person->getHeading();
+    const auto speed = person->getSpeed();
+    const auto orientation = convert<mitsuba::Resolve::Point3f>(heading);
+    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(traciPosition));
+    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
+    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(
+        TraCIVelocity{speed, heading}));
+    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    const auto scaling = meshRegistry_->scaling(MeshAsset::LowPolyCar);
 
-    auto callback = [orientation, position, velocity, scaling](py::SceneObject& object) {
-        object.setOrientation(orientation);
-        object.setPosition(position);
-        object.setScaling(scaling);
-        object.setVelocity(velocity);
-    };
-    state_.stagedUpdates.insert_or_assign(id, callback);
+    logEntityTransform("person", id, traciPosition, heading, speed, canonicalPosition, localPosition, canonicalVelocity, localVelocity);
 
+    applyTransform(id, [this, id, orientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
+        obj.setOrientation(orientation);
+        obj.setPosition(localPosition);
+        obj.setScaling(scaling);
+        obj.setVelocity(localVelocity);
+
+        if (auto* relaxedTransformer = dynamic_cast<TraciRelaxedCoordinateTransformer*>(coordinateTransformer_); relaxedTransformer) {
+            const auto before = obj.position();
+            relaxedTransformer->adjust(obj);
+            logRelaxedAdjustment("person", id, before, obj.position());
+        }
+    });
+}
+
+void TraciDynamicSceneConfigProvider::applyTransform(const std::string& id, std::function<void(py::SceneObject&)> f) {
     if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
         if (auto locked = cached->second; locked) {
-            callback(*locked);
+            f(*locked);
         } else {
             throw omnetpp::cRuntimeError("failed to lock cached object: possibly wrong cached objects view");
         }
+    } else if (auto existing = state_.cachedTransforms.find(id); existing != state_.cachedTransforms.end()) {
+        EV_WARN << "resetting transform: this is strange, scene updates may not be applied on time?";
+    } else {
+        state_.cachedTransforms.emplace(std::make_pair(id, std::move(f)));
     }
 }
 
@@ -202,11 +264,11 @@ void TraciDynamicSceneConfigProvider::dispatchRemovePerson(const char* id) {
 }
 
 void TraciDynamicSceneConfigProvider::dispatchAddVehicle(const char* id) {
-    EV_INFO << "Adding new vehicle to the scene " << id;
+    EV_INFO << "Adding new vehicle to the scene " << id << "\n";
 }
 
 void TraciDynamicSceneConfigProvider::dispatchAddPerson(const char* id) {
-    EV_INFO << "Adding new person to the scene " << id;
+    EV_INFO << "Adding new person to the scene " << id << "\n";
 }
 
 IDynamicSceneConfigProvider& TraciDynamicSceneConfigProvider::add(const std::string& id, py::SceneObject object) {
@@ -220,7 +282,7 @@ IDynamicSceneConfigProvider& TraciDynamicSceneConfigProvider::remove(const std::
     } else if (state_.cachedObjects.contains(id)) {
         state_.toRemove.emplace_back(id);
     }
-    state_.stagedUpdates.erase(id);
+    state_.cachedTransforms.erase(id);
 
     return *this;
 }
@@ -257,7 +319,7 @@ void TraciDynamicSceneConfigProvider::edit() {
     for (auto& [addedId, added] : state_.pendingObjects) {
         state_.cachedObjects.insert_or_assign(addedId, added);
     }
-    for (auto& [id, callback] : state_.stagedUpdates) {
+    for (auto& [id, callback] : state_.cachedTransforms) {
         if (auto cached = state_.cachedObjects.find(id); cached != state_.cachedObjects.end()) {
             if (auto locked = cached->second; locked) {
                 callback(*locked);
@@ -272,5 +334,5 @@ void TraciDynamicSceneConfigProvider::edit() {
 
     state_.toRemove.clear();
     state_.pendingObjects.clear();
-    state_.stagedUpdates.clear();
+    state_.cachedTransforms.clear();
 }
