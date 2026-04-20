@@ -31,11 +31,16 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
                 bindings/Material.cc
                 bindings/Scene.cc
                 bindings/SceneObject.cc
+                meshes/CubeMesh.cc
+                meshes/SphereMesh.cc
+                meshes/PrismMesh.cc
+                meshes/PolyhedronMesh.cc
             PUBLIC
                 Fwd.h
                 Helpers.h
                 Compat.h
                 Defaulted.h
+                EnvironmentMeshGenerator.h
                 capabilities/Calling.h
                 capabilities/Core.h
                 capabilities/Defaulted.h

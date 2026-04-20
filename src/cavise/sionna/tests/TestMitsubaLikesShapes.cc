@@ -26,6 +26,8 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/bind_vector.h>
 
+#include <cavise/sionna/bridge/EnvironmentMeshGenerator.h>
+
 namespace nb = nanobind;
 
 static std::function<void()> develop_callback_fn = nullptr;
@@ -34,7 +36,123 @@ static void develop_callback() {
         develop_callback_fn();
 }
 
-TEST(SceneTest, Scalar_RGB) {
+class SceneTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        std::filesystem::create_directories("meshes");
+    }
+
+    static void SaveObjToFile(const std::string& obj_content, const std::string& filename) {
+        std::filesystem::path filepath = std::filesystem::path("meshes") / filename;
+        
+        std::ofstream out(filepath, std::ios::trunc);
+        ASSERT_TRUE(out.is_open()) << "Failed to open file: " << filepath;
+        
+        out << obj_content;
+        out.close();
+        
+        EXPECT_TRUE(std::filesystem::exists(filepath)) << "Output file was not created: " << filepath;
+        EXPECT_GT(std::filesystem::file_size(filepath), 0) << "Output file is empty: " << filepath;
+        
+        std::cout << "Saved: " << filepath << " (" << std::filesystem::file_size(filepath) << " bytes)\n";
+    }
+};
+
+// ============================================================================
+// CUBE TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Cube_Unit) {
+    std::string obj = artery::sionna::meshes::generateObjCube(1.0f, 1.0f, 1.0f);
+    SaveObjToFile(obj, "cube_unit.obj");
+}
+
+TEST_F(SceneTest, Cube_Rectangular) {
+    std::string obj = artery::sionna::meshes::generateObjCube(10.0f, 5.0f, 2.0f);
+    SaveObjToFile(obj, "cube_rect.obj");
+}
+
+// ============================================================================
+// SPHERE TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Sphere_Radius1) {
+    std::string obj = artery::sionna::meshes::generateObjSphere(1.0f);
+    SaveObjToFile(obj, "sphere_r1.obj");
+}
+
+TEST_F(SceneTest, Sphere_Radius10) {
+    std::string obj = artery::sionna::meshes::generateObjSphere(10.0f);
+    SaveObjToFile(obj, "sphere_r10.obj");
+}
+
+// ============================================================================
+// PRISM TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Prism_Hexagon) {
+    // INET: shape="prism 100 -86.6 -50 0 -100 86.6 -50 86.6 50 0 100 -86.6 50"
+    float height = 100.0f;
+    std::vector<float> base = {
+        -86.6f, -50.0f,  0.0f, -100.0f,  86.6f, -50.0f,
+         86.6f,  50.0f,  0.0f,  100.0f, -86.6f,  50.0f
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_hex.obj");
+}
+
+TEST_F(SceneTest, Prism_Triangle) {
+    // INET: shape="prism 100 0 0 150 0 75 129.9"
+    float height = 100.0f;
+    std::vector<float> base = {0.0f, 0.0f, 150.0f, 0.0f, 75.0f, 129.9f};
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_tri.obj");
+}
+
+TEST_F(SceneTest, Prism_Quad) {
+    // Прямоугольная призма (кубоид через prism)
+    float height = 10.0f;
+    std::vector<float> base = {-5, -5, 5, -5, 5, 5, -5, 5};
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_quad.obj");
+}
+
+// ============================================================================
+// POLYHEDRON TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Polyhedron_Cube8Vertices) {
+    std::vector<float> verts = {
+        0,0,0, 100,0,0, 0,0,100, 100,0,100,
+        0,100,0, 100,100,0, 0,100,100, 100,100,100
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_cube.obj");
+}
+
+TEST_F(SceneTest, Polyhedron_Tetrahedron) {
+    std::vector<float> verts = {
+        0,100,100, 100,100,0, 0,0,0, 100,0,100
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_tetra.obj");
+}
+
+TEST_F(SceneTest, Polyhedron_Pyramid) {
+    std::vector<float> verts = {
+        0,0,0, 100,0,0, 0,0,100, 100,0,100, 50,250,50
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_pyramid.obj");
+}
+
+TEST_F(SceneTest, Render_Simple_xml) {
     using Float = float;
     using Spectrum = mitsuba::Color<Float, 3>;
 
