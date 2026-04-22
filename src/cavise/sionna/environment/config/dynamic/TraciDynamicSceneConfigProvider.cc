@@ -31,57 +31,6 @@ namespace {
         }
     }
 
-    void logEntityTransform(
-        const char* entityType,
-        const std::string& id,
-        const traci::TraCIPosition& traciPosition,
-        traci::TraCIAngle heading,
-        double speed,
-        const mitsuba::Resolve::Vector3f& canonicalPosition,
-        const mitsuba::Resolve::Vector3f& localPosition,
-        const mitsuba::Resolve::Vector3f& canonicalVelocity,
-        const mitsuba::Resolve::Vector3f& localVelocity) {
-        EV_INFO
-            << "TraCI " << entityType << " " << id
-            << " transform: traciPosition=("
-            << traciPosition.x << ", " << traciPosition.y << ", " << traciPosition.z
-            << "), heading=" << heading.degree
-            << ", speed=" << speed
-            << ", canonicalPosition=("
-            << toScalar<double>(canonicalPosition.x()) << ", "
-            << toScalar<double>(canonicalPosition.y()) << ", "
-            << toScalar<double>(canonicalPosition.z())
-            << "), localPosition=("
-            << toScalar<double>(localPosition.x()) << ", "
-            << toScalar<double>(localPosition.y()) << ", "
-            << toScalar<double>(localPosition.z())
-            << "), canonicalVelocity=("
-            << toScalar<double>(canonicalVelocity.x()) << ", "
-            << toScalar<double>(canonicalVelocity.y()) << ", "
-            << toScalar<double>(canonicalVelocity.z())
-            << "), localVelocity=("
-            << toScalar<double>(localVelocity.x()) << ", "
-            << toScalar<double>(localVelocity.y()) << ", "
-            << toScalar<double>(localVelocity.z()) << ")\n";
-    }
-
-    void logRelaxedAdjustment(
-        const char* entityType,
-        const std::string& id,
-        const mitsuba::Resolve::Point3f& before,
-        const mitsuba::Resolve::Vector3f& after) {
-        EV_INFO
-            << "TraCI " << entityType << " " << id
-            << " relaxed scene position: before=("
-            << toScalar<double>(before.x()) << ", "
-            << toScalar<double>(before.y()) << ", "
-            << toScalar<double>(before.z())
-            << "), after=("
-            << toScalar<double>(after.x()) << ", "
-            << toScalar<double>(after.y()) << ", "
-            << toScalar<double>(after.z()) << ")\n";
-    }
-
 } // namespace
 
 void TraciDynamicSceneConfigProvider::initialize() {
@@ -172,29 +121,34 @@ void TraciDynamicSceneConfigProvider::dispatchUpdateVehicle(traci::BasicNodeMana
         add(id, py::SceneObject(mesh, sceneId, material));
     }
 
-    const auto traciPosition = vehicle->getPosition();
-    const auto heading = vehicle->getHeading();
-    const auto speed = vehicle->getSpeed();
-    const auto orientation = convert<mitsuba::Resolve::Point3f>(heading);
-    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(traciPosition));
-    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
-    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(
-        TraCIVelocity{speed, heading}));
-    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    TraCIVelocity velocity{
+        .speed = vehicle->getSpeed(),
+        .heading = vehicle->getHeading(),
+    };
+
+    const auto canonicalOrientation = convert<mitsuba::Resolve::Point3f>(vehicle->getHeading());
+    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(vehicle->getPosition()));
+    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(velocity));
+
     const auto scaling = meshRegistry_->scaling(MeshAsset::LowPolyCar);
+    const auto localOrientation = coordinateTransformer_->toLocalScene(canonicalOrientation);
+    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
 
-    logEntityTransform("vehicle", id, traciPosition, heading, speed, canonicalPosition, localPosition, canonicalVelocity, localVelocity);
+    applyTransform(id, [this, localOrientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
+        EV_DEBUG
+            << "Updating SUMO-controlled vehicle: "
+            << "orientation: " << localOrientation << " "
+            << "position: " << localPosition << " "
+            << "velocity: " << localVelocity << "\n";
 
-    applyTransform(id, [this, id, orientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
-        obj.setOrientation(orientation);
+        obj.setOrientation(localOrientation);
         obj.setPosition(localPosition);
         obj.setScaling(scaling);
         obj.setVelocity(localVelocity);
 
         if (auto* relaxedTransformer = dynamic_cast<TraciRelaxedCoordinateTransformer*>(coordinateTransformer_); relaxedTransformer) {
-            const auto before = obj.position();
             relaxedTransformer->adjust(obj);
-            logRelaxedAdjustment("vehicle", id, before, obj.position());
         }
     });
 }
@@ -212,29 +166,34 @@ void TraciDynamicSceneConfigProvider::dispatchUpdatePerson(traci::BasicNodeManag
         add(id, py::SceneObject(mesh, sceneId, material));
     }
 
-    const auto traciPosition = person->getPosition();
-    const auto heading = person->getHeading();
-    const auto speed = person->getSpeed();
-    const auto orientation = convert<mitsuba::Resolve::Point3f>(heading);
-    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(traciPosition));
-    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
-    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(
-        TraCIVelocity{speed, heading}));
-    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    TraCIVelocity velocity{
+        .speed = person->getSpeed(),
+        .heading = person->getHeading(),
+    };
+
+    const auto canonicalOrientation = convert<mitsuba::Resolve::Point3f>(person->getHeading());
+    const auto canonicalPosition = coordinateTransformer_->fromSumo(convert<mitsuba::Resolve::Vector3f>(person->getPosition()));
+    const auto canonicalVelocity = coordinateTransformer_->vectorFromSumo(convert<mitsuba::Resolve::Vector3f>(velocity));
+
     const auto scaling = meshRegistry_->scaling(MeshAsset::LowPolyCar);
+    const auto localOrientation = coordinateTransformer_->toLocalScene(canonicalOrientation);
+    const auto localVelocity = coordinateTransformer_->toLocalScene(canonicalVelocity);
+    const auto localPosition = coordinateTransformer_->toLocalScene(canonicalPosition);
 
-    logEntityTransform("person", id, traciPosition, heading, speed, canonicalPosition, localPosition, canonicalVelocity, localVelocity);
+    applyTransform(id, [this, localOrientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
+        EV_DEBUG
+            << "Updating SUMO-controlled person: "
+            << "orientation: " << localOrientation << " "
+            << "position: " << localPosition << " "
+            << "velocity: " << localVelocity << "\n";
 
-    applyTransform(id, [this, id, orientation, localPosition, localVelocity, scaling](py::SceneObject& obj) {
-        obj.setOrientation(orientation);
+        obj.setOrientation(localOrientation);
         obj.setPosition(localPosition);
         obj.setScaling(scaling);
         obj.setVelocity(localVelocity);
 
         if (auto* relaxedTransformer = dynamic_cast<TraciRelaxedCoordinateTransformer*>(coordinateTransformer_); relaxedTransformer) {
-            const auto before = obj.position();
             relaxedTransformer->adjust(obj);
-            logRelaxedAdjustment("person", id, before, obj.position());
         }
     });
 }

@@ -30,6 +30,7 @@ namespace artery::sionna::py {
         std::string name() const;
         mitsuba::Resolve::Point3f position() const;
         mitsuba::Resolve::Point3f orientation() const;
+        mitsuba::Resolve::Vector3f scaling() const;
         mitsuba::Resolve::Vector3f velocity() const;
         mitsuba::ref<mitsuba::Resolve::Mesh> mesh() const;
         RadioMaterial material() const;

@@ -4,16 +4,19 @@
 #include <cavise/sionna/bridge/Compat.h>
 #include <cavise/sionna/environment/config/scenes/IStaticSceneProvider.h>
 
+#include <drjit/array.h>
+#include <drjit/array_router.h>
+#include <drjit/dynamic.h>
 #include <drjit/matrix.h>
+#include <drjit/tensor.h>
+#include <omnetpp/cexception.h>
 #include <inet/common/InitStages.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <optional>
-#include <variant>
 
 using namespace artery::sionna;
 
@@ -21,119 +24,123 @@ Define_Module(TraciRelaxedCoordinateTransformer);
 
 namespace {
 
-    struct RoadHit {
-        mitsuba::Resolve::Point3f point;
-        mitsuba::Resolve::Vector3f normal;
-        double distance = std::numeric_limits<double>::infinity();
+    class PlaneTransformer {
+    public:
+        static mitsuba::Resolve::Matrix4f fromHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
+            if (hits.size() >= 3) {
+                return threeHits(hits);
+            } else if (hits.size() == 2) {
+                return twoHits(hits);
+            } else if (hits.size() == 1) {
+                return oneHit(hits);
+            }
+
+            throw omnetpp::cRuntimeError("expected at least 1 hit, got %zu", hits.size());
+        }
+
+        static mitsuba::Resolve::Matrix4f threeHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
+            const mitsuba::Resolve::Point3f& p0 = hits[0];
+            const mitsuba::Resolve::Point3f& p1 = hits[1];
+            const mitsuba::Resolve::Point3f& p2 = hits[2];
+
+            auto normal = drjit::normalize(drjit::cross(p1 - p0, p2 - p0));
+            const mitsuba::Resolve::Vector3f up(0.0, 0.0, 1.0);
+
+            if (toScalar<double>(drjit::dot(normal, up)) < 0.0) {
+                normal = -normal;
+            }
+
+            if (std::abs(toScalar<double>(drjit::dot(normal, up))) < 1e-9) {
+                std::vector<mitsuba::Resolve::Point3f> reduced{p0, p1};
+                return twoHits(reduced);
+            }
+
+            auto support = drjit::dot(normal, p0);
+            for (const auto& hit : hits) {
+                support = drjit::maximum(support, drjit::dot(normal, hit));
+            }
+
+            auto plane = drjit::zeros<mitsuba::Resolve::Matrix4f>();
+            for (std::size_t i = 0; i < 3; ++i) {
+                auto hit = hits[i];
+                hit.z() = (support - normal.x() * hit.x() - normal.y() * hit.y()) / normal.z();
+
+                plane[i][0] = hit.x();
+                plane[i][1] = hit.y();
+                plane[i][2] = hit.z();
+            }
+
+            // Keep a valid 4th row so callers can safely read all rows.
+            plane[3] = plane[2];
+
+            return plane;
+        }
+
+        static mitsuba::Resolve::Matrix4f twoHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
+            const mitsuba::Resolve::Point3f& p0 = hits[0];
+            const mitsuba::Resolve::Point3f& p1 = hits[1];
+            const mitsuba::Resolve::Vector3f up(0.0, 0.0, 1.0);
+
+            auto tangent = p1 - p0;
+            if (toScalar<double>(drjit::norm(tangent)) < 1e-9) {
+                std::vector<mitsuba::Resolve::Point3f> reduced{p0};
+                return oneHit(reduced);
+            }
+
+            tangent = drjit::normalize(tangent);
+            auto side = drjit::cross(up, tangent);
+
+            if (toScalar<double>(drjit::norm(side)) < 1e-9) {
+                side = mitsuba::Resolve::Vector3f(1.0, 0.0, 0.0);
+            } else {
+                side = drjit::normalize(side);
+            }
+
+            auto normal = drjit::normalize(drjit::cross(tangent, side));
+            if (toScalar<double>(drjit::dot(normal, up)) < 0.0) {
+                normal = -normal;
+            }
+
+            if (std::abs(toScalar<double>(drjit::dot(normal, up))) < 1e-9) {
+                std::vector<mitsuba::Resolve::Point3f> reduced{p0};
+                return oneHit(reduced);
+            }
+
+            auto support = drjit::maximum(drjit::dot(normal, p0), drjit::dot(normal, p1));
+
+            auto plane = drjit::zeros<mitsuba::Resolve::Matrix4f>();
+            for (std::size_t i = 0; i < 2; ++i) {
+                auto hit = hits[i];
+                hit.z() = (support - normal.x() * hit.x() - normal.y() * hit.y()) / normal.z();
+
+                plane[i][0] = hit.x();
+                plane[i][1] = hit.y();
+                plane[i][2] = hit.z();
+            }
+
+            // Keep valid padded rows for callers that iterate 4 rows.
+            plane[2] = plane[1];
+            plane[3] = plane[1];
+
+            return plane;
+        }
+
+        static mitsuba::Resolve::Matrix4f oneHit(const std::vector<mitsuba::Resolve::Point3f>& hits) {
+            auto plane = drjit::zeros<mitsuba::Resolve::Matrix4f>();
+            const auto& hit = hits[0];
+
+            plane[0][0] = hit.x();
+            plane[0][1] = hit.y();
+            plane[0][2] = hit.z();
+
+            // Keep valid padded rows for callers that iterate 4 rows.
+            plane[1] = plane[0];
+            plane[2] = plane[0];
+            plane[3] = plane[0];
+
+            return plane;
+        }
     };
-
-    struct Vector3d {
-        double x = 0.0;
-        double y = 0.0;
-        double z = 0.0;
-    };
-
-    Vector3d vector(const mitsuba::Resolve::Vector3f& v) {
-        return {
-            toScalar<double>(v.x()),
-            toScalar<double>(v.y()),
-            toScalar<double>(v.z())};
-    }
-
-    Vector3d normal(const mitsuba::Resolve::Normal3f& n) {
-        return {
-            toScalar<double>(n.x()),
-            toScalar<double>(n.y()),
-            toScalar<double>(n.z())};
-    }
-
-    Vector3d vector(const mitsuba::Resolve::Normal3f& n) {
-        return normal(n);
-    }
-
-    double dot(const Vector3d& a, const Vector3d& b) {
-        return a.x * b.x + a.y * b.y + a.z * b.z;
-    }
-
-    Vector3d cross(const Vector3d& a, const Vector3d& b) {
-        return {
-            a.y * b.z - a.z * b.y,
-            a.z * b.x - a.x * b.z,
-            a.x * b.y - a.y * b.x};
-    }
-
-    Vector3d operator-(const Vector3d& a, const Vector3d& b) {
-        return {a.x - b.x, a.y - b.y, a.z - b.z};
-    }
-
-    Vector3d operator*(double s, const Vector3d& v) {
-        return {s * v.x, s * v.y, s * v.z};
-    }
-
-    double norm(const Vector3d& v) {
-        return std::sqrt(dot(v, v));
-    }
-
-    std::optional<Vector3d> normalized(const Vector3d& v) {
-        const double n = norm(v);
-        if (n < 1e-9) {
-            return std::nullopt;
-        }
-
-        return Vector3d{v.x / n, v.y / n, v.z / n};
-    }
-
-    mitsuba::Resolve::Point3f orientationFromBasis(const Vector3d& forward, const Vector3d& side, const Vector3d& up) {
-        const double r11 = forward.x;
-        const double r21 = forward.y;
-        const double r31 = forward.z;
-        const double r32 = side.z;
-        const double r33 = up.z;
-
-        const double beta = std::asin(std::clamp(-r31, -1.0, 1.0));
-        const double alpha = std::atan2(r21, r11);
-        const double gamma = std::atan2(r32, r33);
-
-        return {alpha, beta, gamma};
-    }
-
-    std::optional<RoadHit> selectClosest(std::optional<RoadHit> a, std::optional<RoadHit> b) {
-        if (!a) {
-            return b;
-        }
-        if (!b) {
-            return a;
-        }
-        return a->distance <= b->distance ? a : b;
-    }
-
-    template <typename Intersect>
-    std::optional<RoadHit> intersectVertical(
-        const mitsuba::Resolve::Point3f& origin,
-        const mitsuba::Resolve::Vector3f& direction,
-        Intersect&& intersect) {
-        mitsuba::Resolve::Ray3f ray;
-        ray.o = origin;
-        ray.d = direction;
-
-        const auto hit = intersect(ray);
-        if (!drjit::all_nested(hit.is_valid())) {
-            return std::nullopt;
-        }
-
-        auto n = hit.n;
-        const Vector3d up{0.0, 1.0, 0.0};
-        auto nd = normal(n);
-        if (dot(nd, up) < 0.0) {
-            n = -n;
-            nd = {-nd.x, -nd.y, -nd.z};
-        }
-
-        return RoadHit{
-            hit.p,
-            mitsuba::Resolve::Vector3f(n.x(), n.y(), n.z()),
-            std::abs(toScalar<double>(hit.p.y()) - toScalar<double>(origin.y()))};
-    }
 
 } // namespace
 
@@ -156,78 +163,165 @@ void TraciRelaxedCoordinateTransformer::bindScene(py::SionnaScene scene) {
     scene_.emplace(std::move(scene));
 }
 
-void TraciRelaxedCoordinateTransformer::adjust(py::SceneObject object) const {
-    if (!scene_) {
-        throw omnetpp::cRuntimeError("TraciRelaxedCoordinateTransformer cannot adjust object before scene is bound");
+std::vector<mitsuba::Resolve::Point3f> TraciRelaxedCoordinateTransformer::discoverRoadHits(const mitsuba::Resolve::Matrix4f& upperPoints) const {
+    if (!scene_.has_value()) {
+        throw omnetpp::cRuntimeError("cannot discover road hits before scene is bound");
     }
 
-    const auto basePoint = object.position();
-    mitsuba::Resolve::Vector3f base{basePoint.x(), basePoint.y(), basePoint.z()};
+    // NOTE: The idea here is to discover actual physical anchor points under vehicle. SUMO cars
+    // have no Z coordinate, and our sim may run with uneven terrain, making vehicles fly or submerge under
+    // roads. Here, we take the most likely 4 valid points from upper bbox rect and casting rays down finding actual terrain.
+    std::vector<mitsuba::Resolve::Point3f> hits;
 
-    // The imported scene is Y-up in Sionna-local coordinates.
-    const mitsuba::Resolve::Vector3f up{0.0, 1.0, 0.0};
-    const mitsuba::Resolve::Vector3f down{0.0, -1.0, 0.0};
+    // NOTE: We expect at most 4 points.
+    hits.reserve(upperPoints.size());
 
-    // Compute bounding box and take lower global Y coordinate.
-    const auto mesh = object.mesh();
-    const auto lower = toScalar<double>(mesh->bbox().min.y());
+    mitsuba::Resolve::Ray3f down;
+    mitsuba::Resolve::Ray3f up;
+    down.d = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, -1.0));
+    up.d = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, 1.0));
 
-    // Preserve the current object anchor point above its lowest mesh point.
-    const auto offset = toScalar<double>(base.y()) - lower;
-    ASSERT(offset >= 0);
+    auto miScene = scene_->miScene();
+    for (std::size_t i = 0; i < upperPoints.size(); ++i) {
+        // We have forth coordinate here, reduce it.
+        const auto& upper = upperPoints[i];
+        const auto origin = toLocalScene(mitsuba::Resolve::Point3f(upper.x(), upper.y(), upper.z()));
 
-    const mitsuba::Resolve::Point3f rayOrigin{base.x(), lower, base.z()};
-    std::optional<RoadHit> hit;
-    if (!roadMeshName_.empty()) {
-        const auto roadObject = scene_->get(roadMeshName_);
-        if (const auto* road = std::get_if<py::SceneObject>(&roadObject); road) {
-            auto roadMesh = road->mesh();
-            auto intersectRoad = [roadMesh](const mitsuba::Resolve::Ray3f& ray) {
-                auto pi = roadMesh->ray_intersect_preliminary(ray);
-                return pi.compute_surface_interaction(ray);
-            };
-            hit = selectClosest(
-                intersectVertical(rayOrigin, down, intersectRoad),
-                intersectVertical(rayOrigin, up, intersectRoad));
+        down.o = origin;
+        up.o = origin;
+
+        // NOTE: We do not use direct intersections for road meshes, as they may be arbitrary.
+        auto downHit = miScene->ray_intersect(down);
+        auto upHit = miScene->ray_intersect(up);
+
+        const bool downValid = drjit::all_nested(downHit.is_valid());
+        const bool upValid = drjit::all_nested(upHit.is_valid());
+
+        if (downValid && upValid) {
+            const auto downDist = toScalar<double>(drjit::norm(downHit.p - origin));
+            const auto upDist = toScalar<double>(drjit::norm(upHit.p - origin));
+            hits.push_back(fromLocalScene(downDist <= upDist ? downHit.p : upHit.p));
+        } else if (downValid) {
+            hits.push_back(fromLocalScene(downHit.p));
+        } else if (upValid) {
+            hits.push_back(fromLocalScene(upHit.p));
         }
     }
 
-    if (!hit) {
-        auto miScene = scene_->miScene();
-        auto intersectScene = [miScene](const mitsuba::Resolve::Ray3f& ray) {
-            return miScene->ray_intersect(ray);
-        };
-        hit = selectClosest(
-            intersectVertical(rayOrigin, down, intersectScene),
-            intersectVertical(rayOrigin, up, intersectScene));
+    return hits;
+}
+
+std::optional<mitsuba::Resolve::Point3f> TraciRelaxedCoordinateTransformer::orientationForPlane(const mitsuba::Resolve::Matrix4f& plane, const mitsuba::Resolve::Vector3f& localVelocity) const {
+    const mitsuba::Resolve::Vector3f p0(plane[0].x(), plane[0].y(), plane[0].z());
+    const mitsuba::Resolve::Vector3f p1(plane[1].x(), plane[1].y(), plane[1].z());
+    const mitsuba::Resolve::Vector3f p2(plane[2].x(), plane[2].y(), plane[2].z());
+    const mitsuba::Resolve::Vector3f p3(plane[3].x(), plane[3].y(), plane[3].z());
+
+    std::optional<mitsuba::Resolve::Vector3f> normal;
+    const auto n012 = drjit::cross(p1 - p0, p2 - p0);
+    if (toScalar<double>(drjit::norm(n012)) >= 1e-9) {
+        normal = drjit::normalize(n012);
+    } else {
+        const auto n013 = drjit::cross(p1 - p0, p3 - p0);
+        if (toScalar<double>(drjit::norm(n013)) >= 1e-9) {
+            normal = drjit::normalize(n013);
+        }
     }
 
-    // In case there was no mesh - just return current position. It's probably quite bad
-    // that cars are flying, but it's not for this module to handle that.
-    if (!hit) {
+    if (!normal.has_value()) {
+        return std::nullopt;
+    }
+
+    const mitsuba::Resolve::Vector3f upCanonical (0.0, 0.0, 1.0);
+    if (toScalar<double>(drjit::dot(normal.value(), upCanonical)) < 0.0) {
+        normal = -normal.value();
+    }
+
+    auto forward = fromLocalScene(localVelocity);
+    if (toScalar<double>(drjit::norm(forward)) < 1e-9) {
+        return std::nullopt;
+    }
+
+    forward = forward - drjit::dot(forward, normal.value()) * normal.value();
+    if (toScalar<double>(drjit::norm(forward)) < 1e-9) {
+        return std::nullopt;
+    }
+
+    forward = drjit::normalize(forward);
+    auto side = drjit::cross(normal.value(), forward);
+
+    if (toScalar<double>(drjit::norm(side)) < 1e-9) {
+        return std::nullopt;
+    }
+
+    side = drjit::normalize(side);
+
+    const double r11 = toScalar<double>(forward.x());
+    const double r21 = toScalar<double>(forward.y());
+    const double r31 = toScalar<double>(forward.z());
+    const double r32 = toScalar<double>(side.z());
+    const double r33 = toScalar<double>(normal.value().z());
+
+    const double beta = std::asin(std::clamp(-r31, -1.0, 1.0));
+    const double alpha = std::atan2(r21, r11);
+    const double gamma = std::atan2(r32, r33);
+
+    return mitsuba::Resolve::Point3f(alpha, beta, gamma);
+}
+
+void TraciRelaxedCoordinateTransformer::adjust(py::SceneObject object) const {
+    mitsuba::Resolve::Vector3f base = fromLocalScene(object.position());
+
+    const auto mesh = object.mesh();
+    const auto& min = mesh->bbox().min;
+    const auto& max = mesh->bbox().max;
+
+    mitsuba::Resolve::Matrix4f upper {};
+    std::array<mitsuba::Resolve::Vector3f, 8> corners;
+    std::size_t cornerIndex = 0;
+    for (const auto lx : {min.x(), max.x()}) {
+        for (const auto ly : {min.y(), max.y()}) {
+            for (const auto lz : {min.z(), max.z()}) {
+                corners[cornerIndex++] = fromLocalScene(mitsuba::Resolve::Vector3f(lx, ly, lz));
+            }
+        }
+    }
+
+    std::array<std::size_t, 8> order {};
+    for (std::size_t i = 0; i < order.size(); ++i) {
+        order[i] = i;
+    }
+
+    std::sort(order.begin(), order.end(), [&corners](std::size_t a, std::size_t b) {
+        return toScalar<double>(corners[a].z()) < toScalar<double>(corners[b].z());
+    });
+
+    for (std::size_t i = 0; i < 4; ++i) {
+        const auto& up = corners[order[order.size() - 1 - i]];
+        upper[i][0] = up.x();
+        upper[i][1] = up.y();
+        upper[i][2] = up.z();
+    }
+
+    const auto hits = discoverRoadHits(upper);
+    if (hits.empty()) {
+        // NOTE: skip modifications if no valid support points were found.
         return;
     }
 
-    object.setPosition({
-        base.x(),
-        hit->point.y() + offset,
-        base.z()});
+    const auto fitted = PlaneTransformer::fromHits(hits);
 
-    const auto velocity = vector(object.velocity());
-    const auto roadNormal = normalized(vector(hit->normal));
-    if (!roadNormal) {
-        return;
-    }
+    // Position-only correction in canonical coordinates: preserve X/Y and set vertical Z to fitted support.
+    auto minZ = [](const mitsuba::Resolve::Matrix4f& m) {
+        auto value = m[0].z();
+        for (std::size_t i = 1; i < 4; ++i) {
+            value = drjit::minimum(value, m[i].z());
+        }
+        return value;
+    };
 
-    const auto tangent = normalized(velocity - dot(velocity, *roadNormal) * *roadNormal);
-    if (!tangent) {
-        return;
-    }
-
-    const auto side = normalized(cross(*roadNormal, *tangent));
-    if (!side) {
-        return;
-    }
-
-    object.setOrientation(orientationFromBasis(*tangent, *side, *roadNormal));
+    object.setPosition(toLocalScene(mitsuba::Resolve::Vector3f(base.x(), base.y(), minZ(fitted))));
+    // NOTE: Keep vehicle heading orientation from TraCI update path for now.
+    // Relaxed slope orientation can tilt meshes into the road; revisit when
+    // orientation model is stabilized.
 }

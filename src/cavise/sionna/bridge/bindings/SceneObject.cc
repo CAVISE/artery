@@ -53,6 +53,10 @@ typename mitsuba::Resolve::Point3f py::SceneObject::orientation() const {
     return sionna::access<mitsuba::Resolve::Point3f>(bound_, "orientation");
 }
 
+typename mitsuba::Resolve::Vector3f py::SceneObject::scaling() const {
+    return sionna::access<mitsuba::Resolve::Vector3f>(bound_, "scaling");
+}
+
 typename mitsuba::Resolve::Vector3f py::SceneObject::velocity() const {
     return sionna::access<mitsuba::Resolve::Vector3f>(bound_, "velocity");
 }
