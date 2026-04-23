@@ -23,6 +23,9 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Install system deps
+        run: apt-get update && apt-get install -y --no-install-recommends cppzmq-dev libgtest-dev
+
       - name: Prepare venv
         run: python3 -m venv venv
 

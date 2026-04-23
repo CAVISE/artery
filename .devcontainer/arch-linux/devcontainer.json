@@ -7,7 +7,7 @@
         "args": {
             "USER": "devcontainer",
             "OMNETPP_TAG": "omnetpp-5.6.2",
-            "SUMO_TAG": "v1_23_1",
+            "SUMO_TAG": "v1_26_0",
             "GEOGRAPHICLIB_TAG": "v2.5"
         }
     },
