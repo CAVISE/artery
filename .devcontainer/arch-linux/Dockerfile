@@ -14,12 +14,23 @@ RUN pacman -Syu --noconfirm     \
     gcc sdl2 libsm openmp       \
     openscenegraph qt5-base     \
     pacman-contrib sudo         \
-    boost crypto++ xorg         \
+    boost boost-libs crypto++ xorg \
     ttf-ubuntu-font-family      \
     ninja cppzmq protobuf       \
     pkg-config                  \
     && pip install --break-system-packages conan \
-    && paccache -r -k 0
+    && paccache -r -k 0 \
+    && find /usr/lib/cmake -name "*.cmake" \
+       | xargs -r grep -l "libboost" \
+       | xargs -r sed -i -E '/IMPORTED_LOCATION/s|(libboost[^"]*\.so)\.[0-9]+\.[0-9]+\.[0-9]+|\1|g' \
+    && for so in $(find /usr/lib/cmake -name "*.cmake" \
+           | xargs -r grep -ohP '/usr/lib/libboost_\w+\.so' \
+           | sort -u); do \
+         if [ ! -f "$so" ]; then \
+           printf 'void f(){}' | gcc -x c - -shared -fPIC \
+             -Wl,-soname,"$(basename "$so")" -o "$so"; \
+         fi; \
+       done
 
 ###############
 # Build stage #
@@ -42,6 +53,7 @@ RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omn
 
 RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclipse-sumo/sumo \
     && cd sumo \
+    && (rm -rf /usr/lib/cmake/boost_process* 2>/dev/null; true) \
     && cmake -B build . \
         -G Ninja \
         -DENABLE_JAVA_BINDINGS=OFF \
