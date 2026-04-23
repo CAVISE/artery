@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y        \
     libfox-1.6-dev libgdal-dev libproj-dev      \
     libgeographiclib-dev libxerces-c-dev        \
     ninja-build curl python3-venv clang-tidy    \
-    pkg-config libzmq5-dev libprotobuf-dev      \
+    pkg-config libzmq5-dev cppzmq-dev libprotobuf-dev \
     protobuf-compiler python3-pip               \
     && rm -rf /var/lib/apt/lists/*
 
@@ -54,8 +54,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev zlib1g-dev libboost-all-dev         \
     libcrypto++-dev libgdal-dev libproj-dev         \
     libgeographiclib-dev libxerces-c-dev            \
-    pkg-config libzmq5-dev libprotobuf-dev          \
-    protobuf-compiler                               \
+    pkg-config libzmq5-dev cppzmq-dev libprotobuf-dev \
+    protobuf-compiler libgtest-dev                  \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
