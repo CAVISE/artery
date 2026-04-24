@@ -16,6 +16,8 @@ using namespace artery::sionna;
 
 Define_Module(TraciDynamicSceneConfigProvider);
 
+omnetpp::simsignal_t TraciDynamicSceneConfigProvider::sceneEditedSignal = omnetpp::cComponent::registerSignal("sceneEdited");
+
 namespace {
 
     template <typename T>
@@ -294,4 +296,6 @@ void TraciDynamicSceneConfigProvider::edit() {
     state_.toRemove.clear();
     state_.pendingObjects.clear();
     state_.cachedTransforms.clear();
+
+    emit(sceneEditedSignal, 1UL);
 }

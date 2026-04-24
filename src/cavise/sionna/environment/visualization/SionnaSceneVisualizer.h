@@ -3,6 +3,7 @@
 #include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
 #include <cavise/sionna/bridge/bindings/Camera.h>
 
+#include <omnetpp/ccomponent.h>
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
 
@@ -14,8 +15,11 @@
 
 namespace artery::sionna {
 
+    class PathLoss;
+
     class SionnaSceneVisualizer
         : public ISceneVisualizer
+        , public omnetpp::cListener
         , public omnetpp::cSimpleModule {
     public:
         SionnaSceneVisualizer() = default;
@@ -29,6 +33,9 @@ namespace artery::sionna {
         void setScene(py::SionnaScene scene) override;
         void renderFrame() override;
 
+        // omnetpp::cListener implementation.
+        void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, unsigned long value, omnetpp::cObject* details) override;
+
     private:
         std::vector<std::pair<std::string, py::Camera>> resolveCameras() const;
         std::filesystem::path framePath(const std::string& cameraId) const;
@@ -37,14 +44,17 @@ namespace artery::sionna {
     private:
         std::optional<py::SionnaScene> scene_;
         omnetpp::cMessage* renderTimer_ = nullptr;
+        PathLoss* pathLossModule_ = nullptr;
 
         std::string outputDir_;
         std::string camera_;
+        std::string pathLossModulePath_;
         int frameIndex_ = 0;
         int spp_ = 16;
         int width_ = 1280;
         int height_ = 720;
         omnetpp::SimTime renderInterval_ = omnetpp::SimTime::ZERO;
+        bool renderOnPathLoss_ = false;
     };
 
 } // namespace artery::sionna

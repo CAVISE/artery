@@ -34,6 +34,8 @@ namespace artery::sionna {
 
         void visitObjects(const inet::IVisitor* visitor, const inet::LineSegment& lineSegment) const override;
 
+        const py::SionnaScene& scene() const;
+
     protected:
         int numInitStages() const override;
         void initialize(int stage) override;

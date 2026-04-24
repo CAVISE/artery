@@ -9,6 +9,11 @@ target_sources(sionna-phy
         Material.cc
         PathLoss.cc
         PhysicalEnvironment.cc
+        radio/SionnaAntennaArray.cc
+        radio/SionnaPlanarAntennaArray.cc
+        radio/SionnaRadioDeviceBase.cc
+        radio/SionnaTransmitter.cc
+        radio/SionnaReceiver.cc
         config/scenes/FileSceneConfigProvider.cc
         config/meshes/SionnaAssetMeshRegistry.cc
         config/dynamic/TraciDynamicSceneConfigProvider.cc
@@ -25,6 +30,11 @@ target_sources(sionna-phy
         Material.h
         PathLoss.h
         PhysicalEnvironment.h
+        radio/SionnaAntennaArray.h
+        radio/SionnaPlanarAntennaArray.h
+        radio/SionnaRadioDeviceBase.h
+        radio/SionnaTransmitter.h
+        radio/SionnaReceiver.h
         config/dynamic/IDynamicSceneConfigProvider.h
         config/meshes/IMeshRegistry.h
         config/scenes/IStaticSceneProvider.h

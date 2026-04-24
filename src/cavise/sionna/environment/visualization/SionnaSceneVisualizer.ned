@@ -13,4 +13,6 @@ simple SionnaSceneVisualizer like ISceneVisualizer
         int width = default(1280);
         int height = default(720);
         double renderInterval @unit(s) = default(0s);
+        bool renderOnPathLoss = default(false);
+        string pathLossModule = default(absPath("^.^.radioMedium.pathLoss"));
 }

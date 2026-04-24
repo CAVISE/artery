@@ -33,8 +33,12 @@
 #include <cavise/sionna/bridge/capabilities/Defaulted.h>
 
 #include <cavise/sionna/bridge/bindings/Modules.h>
+#include <cavise/sionna/bridge/bindings/AntennaArray.h>
 #include <cavise/sionna/bridge/bindings/Camera.h>
 #include <cavise/sionna/bridge/bindings/Constants.h>
 #include <cavise/sionna/bridge/bindings/Material.h>
+#include <cavise/sionna/bridge/bindings/PathSolver.h>
+#include <cavise/sionna/bridge/bindings/Paths.h>
+#include <cavise/sionna/bridge/bindings/RadioDevice.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 #include <cavise/sionna/bridge/bindings/Scene.h>

@@ -25,6 +25,8 @@ namespace artery::sionna {
         , public omnetpp::cSimpleModule
         , public omnetpp::cListener {
     public:
+        static omnetpp::simsignal_t sceneEditedSignal;
+
         TraciDynamicSceneConfigProvider() = default;
 
         // omnetpp::cSimpleModule implementation.

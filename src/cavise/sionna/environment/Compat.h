@@ -63,6 +63,36 @@ namespace artery::sionna {
     };
 
     template <>
+    struct impl<mitsuba::Resolve::Point3f, inet::Coord, void> {
+        static mitsuba::Resolve::Point3f convert(const inet::Coord& value) {
+            return mitsuba::Resolve::Point3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x),
+                fromScalar<mitsuba::Resolve::Float>(value.y),
+                fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Vector3f, inet::Coord, void> {
+        static mitsuba::Resolve::Vector3f convert(const inet::Coord& value) {
+            return mitsuba::Resolve::Vector3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x),
+                fromScalar<mitsuba::Resolve::Float>(value.y),
+                fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Point3f, inet::EulerAngles, void> {
+        static mitsuba::Resolve::Point3f convert(const inet::EulerAngles& value) {
+            return mitsuba::Resolve::Point3f(
+                fromScalar<mitsuba::Resolve::Float>(value.alpha),
+                fromScalar<mitsuba::Resolve::Float>(value.beta),
+                fromScalar<mitsuba::Resolve::Float>(value.gamma));
+        }
+    };
+
+    template <>
     struct impl<mitsuba::Resolve::Point3f, traci::TraCIPosition, void> {
         static mitsuba::Resolve::Point3f convert(const traci::TraCIPosition& value) {
             return mitsuba::Resolve::Point3f(

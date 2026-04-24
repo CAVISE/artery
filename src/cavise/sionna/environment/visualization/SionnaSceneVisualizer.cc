@@ -1,5 +1,7 @@
 #include "SionnaSceneVisualizer.h"
 
+#include <cavise/sionna/environment/PathLoss.h>
+
 #include <omnetpp/cexception.h>
 #include <omnetpp/cxmlelement.h>
 
@@ -16,12 +18,27 @@ Define_Module(SionnaSceneVisualizer);
 void SionnaSceneVisualizer::initialize() {
     outputDir_ = par("outputDir").stdstringValue();
     camera_ = par("camera").stdstringValue();
+    pathLossModulePath_ = par("pathLossModule").stdstringValue();
     spp_ = par("spp").intValue();
     width_ = par("width").intValue();
     height_ = par("height").intValue();
     renderInterval_ = par("renderInterval");
+    renderOnPathLoss_ = par("renderOnPathLoss").boolValue();
 
     renderTimer_ = new omnetpp::cMessage("sionna-render-timer");
+
+    if (renderOnPathLoss_) {
+        if (pathLossModulePath_.empty()) {
+            throw omnetpp::cRuntimeError("SionnaSceneVisualizer pathLossModule must be configured when renderOnPathLoss is enabled");
+        }
+
+        pathLossModule_ = dynamic_cast<PathLoss*>(getModuleByPath(pathLossModulePath_.c_str()));
+        if (pathLossModule_ == nullptr) {
+            throw omnetpp::cRuntimeError("SionnaSceneVisualizer could not resolve pathLossModule at path %s", pathLossModulePath_.c_str());
+        }
+
+        pathLossModule_->subscribe(PathLoss::pathsSolvedSignal, this);
+    }
 }
 
 void SionnaSceneVisualizer::handleMessage(omnetpp::cMessage* msg) {
@@ -34,12 +51,25 @@ void SionnaSceneVisualizer::handleMessage(omnetpp::cMessage* msg) {
 }
 
 void SionnaSceneVisualizer::finish() {
+    if (pathLossModule_ != nullptr && renderOnPathLoss_) {
+        pathLossModule_->unsubscribe(PathLoss::pathsSolvedSignal, this);
+        pathLossModule_ = nullptr;
+    }
+
     scene_.reset();
 
     if (renderTimer_ != nullptr) {
         cancelAndDelete(renderTimer_);
         renderTimer_ = nullptr;
     }
+}
+
+void SionnaSceneVisualizer::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
+    if (signal != PathLoss::pathsSolvedSignal) {
+        throw omnetpp::cRuntimeError("SionnaSceneVisualizer received unknown signal");
+    }
+
+    renderFrame();
 }
 
 void SionnaSceneVisualizer::setScene(py::SionnaScene scene) {
@@ -57,6 +87,11 @@ void SionnaSceneVisualizer::renderFrame() {
         return;
     }
 
+    std::optional<py::Paths> paths;
+    if (renderOnPathLoss_ && pathLossModule_ != nullptr) {
+        paths = pathLossModule_->cachedPaths();
+    }
+
     const auto cameras = resolveCameras();
     for (const auto& [cameraId, camera] : cameras) {
         const auto filename = framePath(cameraId);
@@ -67,7 +102,11 @@ void SionnaSceneVisualizer::renderFrame() {
             filename.string(),
             spp_,
             width_,
-            height_);
+            height_,
+            std::nullopt,
+            std::nullopt,
+            paths,
+            false);
     }
 
     ++frameIndex_;

@@ -154,3 +154,11 @@ void sionna::PhysicalEnvironment::visitObjects(
         }
     }
 }
+
+const artery::sionna::py::SionnaScene& sionna::PhysicalEnvironment::scene() const {
+    if (!scene_.has_value()) {
+        throw omnetpp::cRuntimeError("physical environment scene is not initialized");
+    }
+
+    return *scene_;
+}
