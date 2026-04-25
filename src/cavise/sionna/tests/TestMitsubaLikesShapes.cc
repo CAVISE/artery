@@ -112,7 +112,7 @@ TEST_F(SceneTest, Prism_Triangle) {
 }
 
 TEST_F(SceneTest, Prism_Quad) {
-    // Прямоугольная призма (кубоид через prism)
+    // INET: shape="prism 10 -5 -5 5 -5 5 5 -5 5"
     float height = 10.0f;
     std::vector<float> base = {-5, -5, 5, -5, 5, 5, -5, 5};
 

@@ -1,42 +1,33 @@
 #include <cavise/sionna/bridge/EnvironmentMeshGenerator.h>
+#include <cavise/sionna/bridge/Fwd.h>
+#include <cavise/sionna/bridge/Helpers.h>
 #include <cmath>
 #include <tuple>
 
+using Float = float;
+using Spectrum = mitsuba::Color<Float, 3>;
+
+namespace dr = drjit;
+
+MI_IMPORT_CORE_TYPES()
+
 namespace artery::sionna::meshes {
 
-struct Vec3 {
-    float x, y, z;
-    Vec3(float x = 0, float y = 0, float z = 0) : x(x), y(y), z(z) {}
-    Vec3 operator-(const Vec3& o) const { return {x - o.x, y - o.y, z - o.z}; }
-    Vec3 operator+(const Vec3& o) const { return {x + o.x, y + o.y, z + o.z}; }
-    Vec3 operator*(float s) const { return {x * s, y * s, z * s}; }
-    float dot(const Vec3& o) const { return x * o.x + y * o.y + z * o.z; }
-    Vec3 cross(const Vec3& o) const {
-        return {y * o.z - z * o.y, z * o.x - x * o.z, x * o.y - y * o.x};
-    }
-    float norm() const { return std::sqrt(x * x + y * y + z * z); }
-    Vec3 normalized() const {
-        float n = norm();
-        if (n < 1e-9f) return {0, 0, 0};
-        return {x / n, y / n, z / n};
-    }
-    bool operator==(const Vec3& o) const {
-        return std::abs(x - o.x) < 1e-6f && std::abs(y - o.y) < 1e-6f &&
-               std::abs(z - o.z) < 1e-6f;
-    }
-};
+Vector3f normalized(const Vector3f& p) {
+        float n = norm(p);
+        if (n < 1e-9f) return Vector3f(0.f);
+        return normalize(p);
+}
 
 // Centroid of a list of points
-Vec3 centroid(const std::vector<Vec3>& pts) {
-    Vec3 c;
+Vector3f centroid(const std::vector<Vector3f>& pts) {
+    Vector3f c(0.f);
     for (const auto& p : pts) {
-        c.x += p.x;
-        c.y += p.y;
-        c.z += p.z;
+        c += p;
     }
     float n = static_cast<float>(pts.size());
-    return {c.x / n, c.y / n, c.z / n};
-}
+    return c / n;
+};
 
 // ---------------------------------------------------------------------------
 // Minimal incremental convex hull (O(n^2)) for generateObjPolyhedron
@@ -45,53 +36,63 @@ Vec3 centroid(const std::vector<Vec3>& pts) {
 
 struct Face {
     int a, b, c;    // indices into the global point array
-    Vec3 normal;    // outward normal
+    Vector3f normal;    // outward normal
 };
 
 // Signed volume of tetrahedron formed by face (a,b,c) and point d
-float signedVolume(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d) {
-    return (b - a).cross(c - a).dot(d - a);
+float signedVolume(const Vector3f& a, const Vector3f& b, const Vector3f& c, const Vector3f& d) {
+    return dot(cross(b - a, c - a), d - a);
 }
 
 // Returns true if point p is strictly above face (i.e. on the outward side)
-bool isVisible(const Face& f, const Vec3& p, const std::vector<Vec3>& pts) {
-    return f.normal.dot(p - pts[f.a]) > 1e-7f;
+bool isVisible(const Face& f, const Vector3f& p, const std::vector<Vector3f>& pts) {
+    return dot(f.normal, p - pts[f.a]) > 1e-7f;
 }
 
-std::vector<Face> buildConvexHull(const std::vector<Vec3>& pts) {
+std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
     int n = static_cast<int>(pts.size());
-    assert(n >= 4 && "Need at least 4 non-coplanar points for a convex hull");
-
+    if (n < 4) {
+        throw wrapRuntimeError("Need at least 4 non-coplanar points for a convex hull");
+    }
     std::vector<Face> hull;
 
     // --- Build initial tetrahedron ---
     // Find 4 non-coplanar points
     int p0 = 0, p1 = -1, p2 = -1, p3 = -1;
 
-    for (int i = 1; i < n && p1 < 0; ++i)
-        if ((pts[i] - pts[p0]).norm() > 1e-7f)
+    for (int i = 1; i < n && p1 < 0; ++i) {
+        if (norm(pts[i] - pts[p0]) > 1e-7f) {
             p1 = i;
+        }
+    }
 
-    for (int i = 1; i < n && p2 < 0; ++i)
-        if (i != p1 && (pts[i] - pts[p0]).cross(pts[p1] - pts[p0]).norm() > 1e-7f)
+    for (int i = 1; i < n && p2 < 0; ++i) {
+        if (i != p1 && norm(cross(pts[i] - pts[p0], pts[p1] - pts[p0])) > 1e-7f) {
             p2 = i;
+        }
+    }
 
-    for (int i = 1; i < n && p3 < 0; ++i)
+    for (int i = 1; i < n && p3 < 0; ++i) {
         if (i != p1 && i != p2 &&
-            std::abs((pts[i] - pts[p0]).dot((pts[p1] - pts[p0]).cross(pts[p2] - pts[p0]))) > 1e-7f)
+            std::abs(dot(pts[i] - pts[p0], cross(pts[p1] - pts[p0], pts[p2] - pts[p0]))) > 1e-7f) {
             p3 = i;
+        }
+    }
 
-    assert(p1 >= 0 && p2 >= 0 && p3 >= 0 && "Points appear to be coplanar or collinear");
+    if (p1 < 0 || p2 < 0 || p3 < 0) {
+        throw wrapRuntimeError("Points appear to be coplanar or collinear");
+    }
 
     // Orient initial tetrahedron so all normals point outward
     // Use the centroid of the tetrahedron as the interior reference point
-    Vec3 innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25f;
+    Vector3f innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25f;
 
     auto makeFace = [&](int a, int b, int c) -> Face {
-        Vec3 n = (pts[b] - pts[a]).cross(pts[c] - pts[a]).normalized();
+        Vector3f n = normalized(cross(pts[b] - pts[a], pts[c] - pts[a]));
         // Flip if normal points inward
-        if (n.dot(pts[a] - innerPoint) < 0)
+        if (dot(n, pts[a] - innerPoint) < 0) {
             n = n * -1.0f, std::swap(b, c);
+        }
         return {a, b, c, n};
     };
 
@@ -102,10 +103,11 @@ std::vector<Face> buildConvexHull(const std::vector<Vec3>& pts) {
 
     // --- Incrementally add remaining points ---
     for (int i = 0; i < n; ++i) {
-        if (i == p0 || i == p1 || i == p2 || i == p3)
+        if (i == p0 || i == p1 || i == p2 || i == p3) {
             continue;
+        }
 
-        const Vec3& p = pts[i];
+        const Vector3f& p = pts[i];
 
         // Collect visible faces and horizon edges
         std::vector<bool> visible(hull.size(), false);
@@ -141,20 +143,23 @@ std::vector<Face> buildConvexHull(const std::vector<Vec3>& pts) {
                     }
                     if (adjVisible) break;
                 }
-                if (!adjVisible)
+                if (!adjVisible) {
                     horizon.push_back({ea, eb});
+                }
             }
         }
 
         // Remove visible faces
         std::vector<Face> newHull;
-        for (int f = 0; f < (int)hull.size(); ++f)
-            if (!visible[f])
+        for (int f = 0; f < (int)hull.size(); ++f) {
+            if (!visible[f]) {
                 newHull.push_back(hull[f]);
+            }
+        }
 
         // Add new cone faces from horizon edges to the new point
-        Vec3 innerPt = centroid([&]() {
-            std::vector<Vec3> tmp;
+        Vector3f innerPt = centroid([&]() {
+            std::vector<Vector3f> tmp;
             for (const auto& ff : newHull) {
                 tmp.push_back(pts[ff.a]);
                 tmp.push_back(pts[ff.b]);
@@ -164,9 +169,9 @@ std::vector<Face> buildConvexHull(const std::vector<Vec3>& pts) {
         }());
 
         for (const auto& e : horizon) {
-            Vec3 n = (pts[e.b] - pts[e.a]).cross(p - pts[e.a]).normalized();
+            Vector3f n = normalized(cross(pts[e.b] - pts[e.a], p - pts[e.a]));
             // Ensure outward orientation
-            if (n.dot(pts[e.a] - innerPt) < 0) {
+            if (dot(n, pts[e.a] - innerPt) < 0) {
                 n = n * -1.0f;
                 newHull.push_back({e.b, e.a, i, n});
             } else {
@@ -181,16 +186,21 @@ std::vector<Face> buildConvexHull(const std::vector<Vec3>& pts) {
 }
 
 std::string generateObjPolyhedron(const std::vector<float>& vertices) {
-    assert(vertices.size() % 3 == 0 && "vertices must contain x,y,z triples");
-    assert(vertices.size() >= 12 && "Need at least 4 points for a polyhedron");
+    if (vertices.size() % 3 != 0) {
+        throw wrapRuntimeError("vertices must contain x,y,z triples");
+    }
+    if (vertices.size() < 12) {
+        throw wrapRuntimeError("Need at least 4 points for a polyhedron");
+    }
 
     const int n = static_cast<int>(vertices.size()) / 3;
 
-    // Build Vec3 point list
-    std::vector<Vec3> pts;
+    // Build Vector3f point list
+    std::vector<Vector3f> pts;
     pts.reserve(n);
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n; ++i) {
         pts.push_back({vertices[3 * i], vertices[3 * i + 1], vertices[3 * i + 2]});
+    }
 
     // Compute convex hull
     std::vector<Face> hull = buildConvexHull(pts);
@@ -199,7 +209,7 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
     // Build deduplicated vertex list for the OBJ output.
     // We collect only the hull vertices (some input points may be interior).
     // -----------------------------------------------------------------------
-    std::vector<Vec3> outVerts;
+    std::vector<Vector3f> outVerts;
     // Map from original index -> output index (1-based)
     std::unordered_map<int, int> indexMap;
 
@@ -223,8 +233,9 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
     obj << "o Polyhedron\n\n";
 
     // Vertices
-    for (const auto& v : outVerts)
-        obj << "v " << v.x << " " << v.y << " " << v.z << "\n";
+    for (const auto& v : outVerts) {
+        obj << "v " << v.x() << " " << v.y() << " " << v.z() << "\n";
+    }
 
     obj << "\n# Faces\n";
     for (const auto& f : hull) {
