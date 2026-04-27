@@ -2,7 +2,6 @@
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/Helpers.h>
 #include <cmath>
-#include <tuple>
 
 using Float = float;
 using Spectrum = mitsuba::Color<Float, 3>;
@@ -15,7 +14,9 @@ namespace artery::sionna::meshes {
 
 Vector3f normalized(const Vector3f& p) {
         float n = norm(p);
-        if (n < 1e-9f) return Vector3f(0.f);
+        if (n < 1e-9F) {
+            return Vector3f(0.F);
+        }
         return normalize(p);
 }
 
@@ -35,8 +36,8 @@ Vector3f centroid(const std::vector<Vector3f>& pts) {
 // ---------------------------------------------------------------------------
 
 struct Face {
-    int a, b, c;    // indices into the global point array
-    Vector3f normal;    // outward normal
+    int a{}, b{}, c{}; // indices into the global point array
+    Vector3f normal{}; // outward normal
 };
 
 // Signed volume of tetrahedron formed by face (a,b,c) and point d
@@ -46,7 +47,7 @@ float signedVolume(const Vector3f& a, const Vector3f& b, const Vector3f& c, cons
 
 // Returns true if point p is strictly above face (i.e. on the outward side)
 bool isVisible(const Face& f, const Vector3f& p, const std::vector<Vector3f>& pts) {
-    return dot(f.normal, p - pts[f.a]) > 1e-7f;
+    return dot(f.normal, p - pts[f.a]) > 1e-7F;
 }
 
 std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
@@ -58,23 +59,26 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
 
     // --- Build initial tetrahedron ---
     // Find 4 non-coplanar points
-    int p0 = 0, p1 = -1, p2 = -1, p3 = -1;
+    int p0 = 0;
+    int p1 = -1;
+    int p2 = -1;
+    int p3 = -1;
 
     for (int i = 1; i < n && p1 < 0; ++i) {
-        if (norm(pts[i] - pts[p0]) > 1e-7f) {
+        if (norm(pts[i] - pts[p0]) > 1e-7F) {
             p1 = i;
         }
     }
 
     for (int i = 1; i < n && p2 < 0; ++i) {
-        if (i != p1 && norm(cross(pts[i] - pts[p0], pts[p1] - pts[p0])) > 1e-7f) {
+        if (i != p1 && norm(cross(pts[i] - pts[p0], pts[p1] - pts[p0])) > 1e-7F) {
             p2 = i;
         }
     }
 
     for (int i = 1; i < n && p3 < 0; ++i) {
         if (i != p1 && i != p2 &&
-            std::abs(dot(pts[i] - pts[p0], cross(pts[p1] - pts[p0], pts[p2] - pts[p0]))) > 1e-7f) {
+            std::abs(dot(pts[i] - pts[p0], cross(pts[p1] - pts[p0], pts[p2] - pts[p0]))) > 1e-7F) {
             p3 = i;
         }
     }
@@ -91,7 +95,7 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
         Vector3f n = normalized(cross(pts[b] - pts[a], pts[c] - pts[a]));
         // Flip if normal points inward
         if (dot(n, pts[a] - innerPoint) < 0) {
-            n = n * -1.0f, std::swap(b, c);
+            n = n * -1.0F, std::swap(b, c);
         }
         return {a, b, c, n};
     };
@@ -118,22 +122,31 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
                 anyVisible = true;
             }
         }
-        if (!anyVisible) continue; // point already inside hull
+        if (!anyVisible) {
+            continue; // point already inside hull
+        }
 
         // Find horizon edges: edges shared by exactly one visible face
         // Represent edge as ordered pair (min,max) + winding
         struct Edge { int a, b; };
         std::vector<Edge> horizon;
         for (int f = 0; f < (int)hull.size(); ++f) {
-            if (!visible[f]) continue;
+            if (!visible[f]) {
+                continue;
+            }
             int tri[3] = {hull[f].a, hull[f].b, hull[f].c};
             for (int e = 0; e < 3; ++e) {
-                int ea = tri[e], eb = tri[(e + 1) % 3];
+                int ea = tri[e];
+                int eb = tri[(e + 1) % 3];
                 // Check if the adjacent face (sharing ea-eb reversed) is not visible
                 bool adjVisible = false;
                 for (int g = 0; g < (int)hull.size(); ++g) {
-                    if (!visible[g]) continue;
-                    if (g == f) continue;
+                    if (!visible[g]) {
+                        continue;
+                    }
+                    if (g == f) {
+                        continue;
+                    }
                     int tri2[3] = {hull[g].a, hull[g].b, hull[g].c};
                     for (int e2 = 0; e2 < 3; ++e2) {
                         if (tri2[e2] == eb && tri2[(e2 + 1) % 3] == ea) {
@@ -141,7 +154,9 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
                             break;
                         }
                     }
-                    if (adjVisible) break;
+                    if (adjVisible) {
+                        break;
+                    }
                 }
                 if (!adjVisible) {
                     horizon.push_back({ea, eb});
@@ -215,9 +230,11 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
 
     auto getOutIndex = [&](int origIdx) -> int {
         auto it = indexMap.find(origIdx);
-        if (it != indexMap.end()) return it->second;
+        if (it != indexMap.end()) {
+            return it->second;
+        }
         outVerts.push_back(pts[origIdx]);
-        int oi = static_cast<int>(outVerts.size()); // 1-based
+        int oi = 0 = static_cast<int>(outVerts.size()); // 1-based
         indexMap[origIdx] = oi;
         return oi;
     };

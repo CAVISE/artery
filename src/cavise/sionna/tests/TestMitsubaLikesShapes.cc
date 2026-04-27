@@ -1,6 +1,9 @@
-#include <memory>
+#include <functional>
+#include <ios>
+#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
-#include <optional>
 #include <filesystem>
 
 #include <gtest/gtest.h>
@@ -27,13 +30,15 @@
 #include <nanobind/stl/bind_vector.h>
 
 #include <cavise/sionna/bridge/EnvironmentMeshGenerator.h>
+#include <string>
 
 namespace nb = nanobind;
 
 static std::function<void()> develop_callback_fn = nullptr;
 static void develop_callback() {
-    if (develop_callback_fn)
+    if (develop_callback_fn) {
         develop_callback_fn();
+    }
 }
 
 class SceneTest : public ::testing::Test {
@@ -46,14 +51,14 @@ protected:
         std::filesystem::path filepath = std::filesystem::path("meshes") / filename;
         
         std::ofstream out(filepath, std::ios::trunc);
-        ASSERT_TRUE(out.is_open()) << "Failed to open file: " << filepath;
-        
+        ASSERT_TRUE(out.is_open()) << true << filepath;
+
         out << obj_content;
         out.close();
-        
-        EXPECT_TRUE(std::filesystem::exists(filepath)) << "Output file was not created: " << filepath;
-        EXPECT_GT(std::filesystem::file_size(filepath), 0) << "Output file is empty: " << filepath;
-        
+
+        EXPECT_TRUE(std::filesystem::exists(filepath)) << true << filepath;
+        EXPECT_GT(std::filesystem::file_size(filepath), 0) << true << filepath;
+
         std::cout << "Saved: " << filepath << " (" << std::filesystem::file_size(filepath) << " bytes)\n";
     }
 };
@@ -92,7 +97,7 @@ TEST_F(SceneTest, Sphere_Radius10) {
 
 TEST_F(SceneTest, Prism_Hexagon) {
     // INET: shape="prism 100 -86.6 -50 0 -100 86.6 -50 86.6 50 0 100 -86.6 50"
-    float height = 100.0f;
+    float const height = 100.0F;
     std::vector<float> base = {
         -86.6f, -50.0f,  0.0f, -100.0f,  86.6f, -50.0f,
          86.6f,  50.0f,  0.0f,  100.0f, -86.6f,  50.0f
@@ -104,7 +109,7 @@ TEST_F(SceneTest, Prism_Hexagon) {
 
 TEST_F(SceneTest, Prism_Triangle) {
     // INET: shape="prism 100 0 0 150 0 75 129.9"
-    float height = 100.0f;
+    float const height = 100.0F;
     std::vector<float> base = {0.0f, 0.0f, 150.0f, 0.0f, 75.0f, 129.9f};
 
     std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
@@ -113,7 +118,7 @@ TEST_F(SceneTest, Prism_Triangle) {
 
 TEST_F(SceneTest, Prism_Quad) {
     // INET: shape="prism 10 -5 -5 5 -5 5 5 -5 5"
-    float height = 10.0f;
+    float const height = 10.0F;
     std::vector<float> base = {-5, -5, 5, -5, 5, 5, -5, 5};
 
     std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
@@ -161,8 +166,8 @@ TEST_F(SceneTest, Render_Simple_xml) {
 
     ASSERT_EQ(MI_DEFAULT_VARIANT, "scalar_rgb");
 
-    bool parallel{true}; // Common flags
-    bool optimize{true};
+    bool const parallel{true}; // Common flags
+    bool const optimize{true};
     std::string name{"./simple.xml"}; // Relative path !!!PREPARE SCENE AND MESHES
     std::string name_out{"./simple.exr"};
 
@@ -170,8 +175,9 @@ TEST_F(SceneTest, Render_Simple_xml) {
     mi.attr("set_variant")(MI_DEFAULT_VARIANT); // curr_variant hiden inside library, can't change without memory fuckery. Too dangerous to change via callback, but possible, check alias.cpp:162
 
     nb::object variant = mi.attr("variant")(); // Verification + posible expansion of variants to test
-    if (variant.is_none())
+    if (variant.is_none()) {
         Throw("No variant was set!");
+    }
 
     parser::ParameterList params; // maybe params.reserve(0) ???
     nb::str variant_str = nb::borrow<nb::str>(std::move(variant));
@@ -206,17 +212,21 @@ TEST_F(SceneTest, Render_Simple_xml) {
     
     //MI_INVOKE_VARIANT(variant_str.c_str(), render, objects[0].get(), sensor_i, filename);
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(objects[0].get());
-    if (!scene)
+    if (!scene) {
         Throw("Root element of the input file must be a <scene> tag!");
-    if (scene->sensors().empty())
+    }
+    if (scene->sensors().empty()) {
         Throw("No sensor specified for scene: %s", scene);
-    if (sensor_i >= scene->sensors().size())
+    }
+    if (sensor_i >= scene->sensors().size()) {
         Throw("Specified sensor index is out of bounds!");
+    }
     auto film = scene->sensors()[sensor_i]->film();
 
     auto integrator = scene->integrator();
-    if (!integrator)
+    if (!integrator) {
         Throw("No integrator specified for scene: %s", scene);
+    }
 
     develop_callback_fn = [film]() { film->develop(); };
 

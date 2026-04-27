@@ -5,11 +5,11 @@ namespace artery::sionna::meshes {
 std::string generateObjCube(float x, float y, float z) {
     std::ostringstream oss;
     oss << "o Cube\n";
-    
-    float sx = x * 0.5f;
-    float sy = y * 0.5f;
-    float sz = z * 0.5f;
-    
+
+    float sx = x * 0.5F;
+    float sy = y * 0.5F;
+    float sz = z * 0.5F;
+
     oss << "v " << -sx << " " << -sy << " " << -sz << "\n"; // 1
     oss << "v " <<  sx << " " << -sy << " " << -sz << "\n"; // 2
     oss << "v " <<  sx << " " <<  sy << " " << -sz << "\n"; // 3
