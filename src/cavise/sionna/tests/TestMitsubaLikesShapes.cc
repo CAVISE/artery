@@ -68,12 +68,12 @@ protected:
 // ============================================================================
 
 TEST_F(SceneTest, Cube_Unit) {
-    std::string obj = artery::sionna::meshes::generateObjCube(1.0f, 1.0f, 1.0f);
+    std::string const obj = artery::sionna::meshes::generateObjCube(1.0F, 1.0F, 1.0F);
     SaveObjToFile(obj, "cube_unit.obj");
 }
 
 TEST_F(SceneTest, Cube_Rectangular) {
-    std::string obj = artery::sionna::meshes::generateObjCube(10.0f, 5.0f, 2.0f);
+    std::string const obj = artery::sionna::meshes::generateObjCube(10.0F, 5.0F, 2.0F);
     SaveObjToFile(obj, "cube_rect.obj");
 }
 
@@ -82,12 +82,12 @@ TEST_F(SceneTest, Cube_Rectangular) {
 // ============================================================================
 
 TEST_F(SceneTest, Sphere_Radius1) {
-    std::string obj = artery::sionna::meshes::generateObjSphere(1.0f);
+    std::string const obj = artery::sionna::meshes::generateObjSphere(1.0F);
     SaveObjToFile(obj, "sphere_r1.obj");
 }
 
 TEST_F(SceneTest, Sphere_Radius10) {
-    std::string obj = artery::sionna::meshes::generateObjSphere(10.0f);
+    std::string const obj = artery::sionna::meshes::generateObjSphere(10.0F);
     SaveObjToFile(obj, "sphere_r10.obj");
 }
 
@@ -190,8 +190,9 @@ TEST_F(SceneTest, Render_Simple_xml) {
 
     // Set up FileResolver like the old parser does
     fs::path filename(name);
-    if (!fs::exists(filename))
+    if (!fs::exists(filename)) {
         Throw("\"%s\": file does not exist!", filename);
+    }
 
     ref<FileResolver> fs_backup = file_resolver(); // better to prepare new file_resolver to avoid conflicts
     ref<FileResolver> fs = new FileResolver(*fs_backup);
@@ -200,7 +201,7 @@ TEST_F(SceneTest, Render_Simple_xml) {
 
     std::vector<ref<Object>> objects;
     try {
-        nb::gil_scoped_release release;
+        nb::gil_scoped_release const release;
         parser::ParserState state = parser::parse_file(config, name, params);
         parser::transform_all(config, state);
         objects = parser::instantiate(config, state);

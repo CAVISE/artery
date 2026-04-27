@@ -234,7 +234,8 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
             return it->second;
         }
         outVerts.push_back(pts[origIdx]);
-        int oi = 0 = static_cast<int>(outVerts.size()); // 1-based
+        int oi = 0;
+        oi = static_cast<int>(outVerts.size()); // 1-based
         indexMap[origIdx] = oi;
         return oi;
     };
