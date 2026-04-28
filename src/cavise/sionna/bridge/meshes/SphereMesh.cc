@@ -6,12 +6,13 @@ std::string generateObjSphere(float radius) {
     std::ostringstream oss;
     oss << "o Sphere\n";
     
-    const int rings = 16, sectors = 32;
+    const int rings = 16;
+    const int sectors = 32;
     
     for (int r = 0; r <= rings; ++r) {
         float phi = M_PI * r / rings;
         for (int s = 0; s <= sectors; ++s) {
-            float theta = 2.0f * M_PI * s / sectors;
+            float theta = 2.0F * M_PI * s / sectors;
             float x = radius * sinf(phi) * cosf(theta);
             float y = radius * sinf(phi) * sinf(theta);
             float z = radius * cosf(phi);

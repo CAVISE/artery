@@ -22,7 +22,7 @@ Vector3f normalized(const Vector3f& p) {
 
 // Centroid of a list of points
 Vector3f centroid(const std::vector<Vector3f>& pts) {
-    Vector3f c(0.f);
+    Vector3f c(0.F);
     for (const auto& p : pts) {
         c += p;
     }
@@ -89,7 +89,7 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
 
     // Orient initial tetrahedron so all normals point outward
     // Use the centroid of the tetrahedron as the interior reference point
-    Vector3f innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25f;
+    Vector3f innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25F;
 
     auto makeFace = [&](int a, int b, int c) -> Face {
         Vector3f n = normalized(cross(pts[b] - pts[a], pts[c] - pts[a]));
@@ -187,7 +187,7 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
             Vector3f n = normalized(cross(pts[e.b] - pts[e.a], p - pts[e.a]));
             // Ensure outward orientation
             if (dot(n, pts[e.a] - innerPt) < 0) {
-                n = n * -1.0f;
+                n = n * -1.0F;
                 newHull.push_back({e.b, e.a, i, n});
             } else {
                 newHull.push_back({e.a, e.b, i, n});

@@ -99,8 +99,8 @@ TEST_F(SceneTest, Prism_Hexagon) {
     // INET: shape="prism 100 -86.6 -50 0 -100 86.6 -50 86.6 50 0 100 -86.6 50"
     float const height = 100.0F;
     std::vector<float> base = {
-        -86.6f, -50.0f,  0.0f, -100.0f,  86.6f, -50.0f,
-         86.6f,  50.0f,  0.0f,  100.0f, -86.6f,  50.0f
+        -86.6F, -50.0F,  0.0F, -100.0F,  86.6F, -50.0F,
+         86.6F,  50.0F,  0.0F,  100.0F, -86.6F,  50.0F
     };
 
     std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
@@ -110,7 +110,7 @@ TEST_F(SceneTest, Prism_Hexagon) {
 TEST_F(SceneTest, Prism_Triangle) {
     // INET: shape="prism 100 0 0 150 0 75 129.9"
     float const height = 100.0F;
-    std::vector<float> base = {0.0f, 0.0f, 150.0f, 0.0f, 75.0f, 129.9f};
+    std::vector<float> base = {0.0F, 0.0F, 150.0F, 0.0F, 75.0F, 129.9F};
 
     std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
     SaveObjToFile(obj, "prism_tri.obj");
@@ -213,7 +213,7 @@ TEST_F(SceneTest, Render_Simple_xml) {
     
     //MI_INVOKE_VARIANT(variant_str.c_str(), render, objects[0].get(), sensor_i, filename);
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(objects[0].get());
-    if (!scene) {
+    if (scene == nullptr) {
         Throw("Root element of the input file must be a <scene> tag!");
     }
     if (scene->sensors().empty()) {
@@ -225,7 +225,7 @@ TEST_F(SceneTest, Render_Simple_xml) {
     auto film = scene->sensors()[sensor_i]->film();
 
     auto integrator = scene->integrator();
-    if (!integrator) {
+    if (integrator == nullptr) {
         Throw("No integrator specified for scene: %s", scene);
     }
 
