@@ -15,14 +15,12 @@ py::SceneObject::SceneObject(nanobind::object obj) {
 }
 
 py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const py::RadioMaterial& material) {
-    using namespace literals;
     this->InitPythonClassCapability::init(
         "mi_mesh"_a = mesh.get(),
         "radio_material"_a = material);
 }
 
 py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const std::string& name, const py::RadioMaterial& material) {
-    using namespace literals;
     this->InitPythonClassCapability::init(
         "mi_mesh"_a = mesh.get(),
         "name"_a = name,
@@ -30,7 +28,6 @@ py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const st
 }
 
 py::SceneObject::SceneObject(const std::string& fname, const std::string& name, const py::RadioMaterial& material) {
-    using namespace literals;
     this->InitPythonClassCapability::init(
         "fname"_a = fname,
         "name"_a = name,
@@ -45,43 +42,43 @@ std::string py::SceneObject::name() const {
     return sionna::access<std::string>(bound_, "name");
 }
 
-typename mitsuba::Resolve::Point3f py::SceneObject::position() const {
-    return sionna::access<mitsuba::Resolve::Point3f>(bound_, "position");
+typename mi::Point3f py::SceneObject::position() const {
+    return sionna::access<mi::Point3f>(bound_, "position");
 }
 
-typename mitsuba::Resolve::Point3f py::SceneObject::orientation() const {
-    return sionna::access<mitsuba::Resolve::Point3f>(bound_, "orientation");
+typename mi::Point3f py::SceneObject::orientation() const {
+    return sionna::access<mi::Point3f>(bound_, "orientation");
 }
 
-typename mitsuba::Resolve::Vector3f py::SceneObject::scaling() const {
-    return sionna::access<mitsuba::Resolve::Vector3f>(bound_, "scaling");
+typename mi::Vector3f py::SceneObject::scaling() const {
+    return sionna::access<mi::Vector3f>(bound_, "scaling");
 }
 
-typename mitsuba::Resolve::Vector3f py::SceneObject::velocity() const {
-    return sionna::access<mitsuba::Resolve::Vector3f>(bound_, "velocity");
+typename mi::Vector3f py::SceneObject::velocity() const {
+    return sionna::access<mi::Vector3f>(bound_, "velocity");
 }
 
-mitsuba::ref<mitsuba::Resolve::Mesh> py::SceneObject::mesh() const {
-    return sionna::access<mitsuba::ref<mitsuba::Resolve::Mesh>>(bound_, "_mi_mesh");
+mitsuba::ref<mi::Mesh> py::SceneObject::mesh() const {
+    return sionna::access<mitsuba::ref<mi::Mesh>>(bound_, "_mi_mesh");
 }
 
 py::RadioMaterial py::SceneObject::material() const {
     return sionna::access<py::RadioMaterial>(bound_, "radio_material");
 }
 
-void py::SceneObject::setPosition(const mitsuba::Resolve::Point3f& position) {
+void py::SceneObject::setPosition(const mi::Point3f& position) {
     sionna::set(bound_, "position", position);
 }
 
-void py::SceneObject::setOrientation(const mitsuba::Resolve::Point3f& orientation) {
+void py::SceneObject::setOrientation(const mi::Point3f& orientation) {
     sionna::set(bound_, "orientation", orientation);
 }
 
-void py::SceneObject::setScaling(const mitsuba::Resolve::Vector3f& scaling) {
+void py::SceneObject::setScaling(const mi::Vector3f& scaling) {
     sionna::set(bound_, "scaling", scaling);
 }
 
-void py::SceneObject::setVelocity(const mitsuba::Resolve::Vector3f& velocity) {
+void py::SceneObject::setVelocity(const mi::Vector3f& velocity) {
     sionna::set(bound_, "velocity", velocity);
 }
 

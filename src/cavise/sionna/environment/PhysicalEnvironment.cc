@@ -160,5 +160,13 @@ const artery::sionna::py::SionnaScene& sionna::PhysicalEnvironment::scene() cons
         throw omnetpp::cRuntimeError("physical environment scene is not initialized");
     }
 
-    return *scene_;
+    return scene_.value();
+}
+
+artery::sionna::py::SionnaScene& sionna::PhysicalEnvironment::scene() {
+    if (!scene_.has_value()) {
+        throw omnetpp::cRuntimeError("physical environment scene is not initialized");
+    }
+
+    return scene_.value();
 }

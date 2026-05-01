@@ -58,7 +58,7 @@ const py::AntennaArray& SionnaAntennaArray::array() const {
 }
 
 void SionnaAntennaArray::setArray(py::AntennaArray array) {
-    numAntennas = static_cast<int>(array.numAnt());
+    numAntennas = static_cast<int>(array.numAntennas());
     array_.emplace(std::move(array));
 }
 

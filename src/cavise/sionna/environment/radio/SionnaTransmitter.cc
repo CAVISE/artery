@@ -17,11 +17,26 @@ void SionnaTransmitter::bindIntoScene() {
         throw omnetpp::cRuntimeError("Sionna scene already contains an item named %s", sceneName().c_str());
     }
 
+    const auto rawPosition = mobility()->getCurrentPosition();
+    const auto rawOrientation = mobility()->getCurrentAngularPosition();
+    const auto rawVelocity = mobility()->getCurrentSpeed();
+    const auto position = scenePosition();
+    const auto orientation = sceneOrientation();
+    const auto velocity = sceneVelocity();
+
+    EV_INFO << "Binding Sionna transmitter " << sceneName()
+            << ": mobility position=" << rawPosition
+            << " orientation=" << rawOrientation
+            << " velocity=" << rawVelocity
+            << " -> scene position=" << position
+            << " orientation=" << orientation
+            << " velocity=" << velocity << endl;
+
     py::Transmitter device(
         sceneName(),
-        scenePosition(),
-        sceneOrientation(),
-        sceneVelocity());
+        position,
+        orientation,
+        velocity);
     scene.add(device);
 
     device_.emplace(std::move(device));
@@ -43,9 +58,24 @@ void SionnaTransmitter::finish() {
 
 void SionnaTransmitter::sync() {
     auto& tx = device();
-    tx.setPosition(scenePosition());
-    tx.setOrientation(sceneOrientation());
-    tx.setVelocity(sceneVelocity());
+    const auto rawPosition = mobility()->getCurrentPosition();
+    const auto rawOrientation = mobility()->getCurrentAngularPosition();
+    const auto rawVelocity = mobility()->getCurrentSpeed();
+    const auto position = scenePosition();
+    const auto orientation = sceneOrientation();
+    const auto velocity = sceneVelocity();
+
+    EV_INFO << "Syncing Sionna transmitter " << sceneName()
+            << ": mobility position=" << rawPosition
+            << " orientation=" << rawOrientation
+            << " velocity=" << rawVelocity
+            << " -> scene position=" << position
+            << " orientation=" << orientation
+            << " velocity=" << velocity << endl;
+
+    tx.setPosition(position);
+    tx.setOrientation(orientation);
+    tx.setVelocity(velocity);
 }
 
 void SionnaTransmitter::setPowerDbm(float powerDbm) {

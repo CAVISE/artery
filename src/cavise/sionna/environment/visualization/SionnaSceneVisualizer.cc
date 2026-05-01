@@ -1,5 +1,6 @@
 #include "SionnaSceneVisualizer.h"
 
+#include <cavise/sionna/environment/config/dynamic/TraciDynamicSceneConfigProvider.h>
 #include <cavise/sionna/environment/PathLoss.h>
 
 #include <omnetpp/cexception.h>
@@ -18,54 +19,41 @@ Define_Module(SionnaSceneVisualizer);
 void SionnaSceneVisualizer::initialize() {
     outputDir_ = par("outputDir").stdstringValue();
     camera_ = par("camera").stdstringValue();
-    pathLossModulePath_ = par("pathLossModule").stdstringValue();
     spp_ = par("spp").intValue();
     width_ = par("width").intValue();
     height_ = par("height").intValue();
-    renderInterval_ = par("renderInterval");
-    renderOnPathLoss_ = par("renderOnPathLoss").boolValue();
 
-    renderTimer_ = new omnetpp::cMessage("sionna-render-timer");
+    dynamicSceneConfigProvider_ = dynamic_cast<TraciDynamicSceneConfigProvider*>(getModuleByPath("^.dynamicSceneConfigProvider"));
+    if (dynamicSceneConfigProvider_ == nullptr) {
+        throw omnetpp::cRuntimeError("SionnaSceneVisualizer could not resolve dynamicSceneConfigProvider at path ^.dynamicSceneConfigProvider");
+    }
 
-    if (renderOnPathLoss_) {
-        if (pathLossModulePath_.empty()) {
-            throw omnetpp::cRuntimeError("SionnaSceneVisualizer pathLossModule must be configured when renderOnPathLoss is enabled");
-        }
+    dynamicSceneConfigProvider_->subscribe(TraciDynamicSceneConfigProvider::sceneEditedSignal, this);
 
-        pathLossModule_ = dynamic_cast<PathLoss*>(getModuleByPath(pathLossModulePath_.c_str()));
-        if (pathLossModule_ == nullptr) {
-            throw omnetpp::cRuntimeError("SionnaSceneVisualizer could not resolve pathLossModule at path %s", pathLossModulePath_.c_str());
-        }
-
-        pathLossModule_->subscribe(PathLoss::pathsSolvedSignal, this);
+    if (auto* pathLossModule = dynamic_cast<PathLoss*>(getModuleByPath("^.^.radioMedium.pathLoss"))) {
+        pathLossModule_ = pathLossModule;
     }
 }
 
 void SionnaSceneVisualizer::handleMessage(omnetpp::cMessage* msg) {
-    if (msg != renderTimer_) {
-        throw omnetpp::cRuntimeError("SionnaSceneVisualizer received unknown message");
-    }
-
-    renderFrame();
-    scheduleNextRender();
+    throw omnetpp::cRuntimeError("SionnaSceneVisualizer does not use self-messages, received '%s'", msg->getName());
 }
 
 void SionnaSceneVisualizer::finish() {
-    if (pathLossModule_ != nullptr && renderOnPathLoss_) {
-        pathLossModule_->unsubscribe(PathLoss::pathsSolvedSignal, this);
+    if (dynamicSceneConfigProvider_ != nullptr) {
+        dynamicSceneConfigProvider_->unsubscribe(TraciDynamicSceneConfigProvider::sceneEditedSignal, this);
+        dynamicSceneConfigProvider_ = nullptr;
+    }
+
+    if (pathLossModule_ != nullptr) {
         pathLossModule_ = nullptr;
     }
 
     scene_.reset();
-
-    if (renderTimer_ != nullptr) {
-        cancelAndDelete(renderTimer_);
-        renderTimer_ = nullptr;
-    }
 }
 
 void SionnaSceneVisualizer::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
-    if (signal != PathLoss::pathsSolvedSignal) {
+    if (signal != TraciDynamicSceneConfigProvider::sceneEditedSignal) {
         throw omnetpp::cRuntimeError("SionnaSceneVisualizer received unknown signal");
     }
 
@@ -74,12 +62,6 @@ void SionnaSceneVisualizer::receiveSignal(omnetpp::cComponent* /* source */, omn
 
 void SionnaSceneVisualizer::setScene(py::SionnaScene scene) {
     scene_ = std::move(scene);
-
-    if (renderInterval_ <= omnetpp::SimTime::ZERO) {
-        renderFrame();
-    } else {
-        scheduleNextRender();
-    }
 }
 
 void SionnaSceneVisualizer::renderFrame() {
@@ -88,7 +70,7 @@ void SionnaSceneVisualizer::renderFrame() {
     }
 
     std::optional<py::Paths> paths;
-    if (renderOnPathLoss_ && pathLossModule_ != nullptr) {
+    if (pathLossModule_ != nullptr) {
         paths = pathLossModule_->cachedPaths();
     }
 
@@ -177,14 +159,4 @@ std::filesystem::path SionnaSceneVisualizer::framePath(const std::string& camera
     std::ostringstream name;
     name << "frame-" << std::setw(6) << std::setfill('0') << frameIndex_ << ".png";
     return std::filesystem::path(outputDir_) / cameraId / name.str();
-}
-
-void SionnaSceneVisualizer::scheduleNextRender() {
-    if (renderTimer_ == nullptr || renderInterval_ <= omnetpp::SimTime::ZERO) {
-        return;
-    }
-
-    if (!renderTimer_->isScheduled()) {
-        scheduleAt(omnetpp::simTime() + renderInterval_, renderTimer_);
-    }
 }

@@ -19,8 +19,7 @@ namespace artery::sionna::py {
         AntennaArray() = default;
         explicit AntennaArray(nanobind::object obj);
 
-        mitsuba::Resolve::Point3f normalizedPositions() const;
-        std::size_t numAnt() const;
+        std::size_t numAntennas() const;
         std::size_t arraySize() const;
     };
 

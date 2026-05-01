@@ -121,7 +121,7 @@ void py::SionnaScene::renderToFile(
     }
 }
 
-py::SionnaScene::SceneElement py::SionnaScene::get(const std::string& name) const {
+py::SionnaScene::TSceneElement py::SionnaScene::get(const std::string& name) const {
     nanobind::object value = sionna::call<nanobind::object>(bound_, "get", "name"_a = name);
     if (value.is_none()) {
         return std::monostate{};
@@ -246,14 +246,6 @@ maybe_diff_t<mitsuba::Resolve::Float> py::SionnaScene::temperature() const {
 
 void py::SionnaScene::setTemperature(maybe_diff_t<mitsuba::Resolve::Float> t) {
     sionna::set(bound_, "temperature", t);
-}
-
-maybe_diff_t<mitsuba::Resolve::Float> py::SionnaScene::thermalNoisePower() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(bound_, "thermal_noise_power");
-}
-
-maybe_diff_t<mitsuba::Resolve::Float> py::SionnaScene::angularFrequency() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(bound_, "angular_frequency");
 }
 
 mitsuba::ref<mitsuba::Resolve::Scene> py::SionnaScene::miScene() const {

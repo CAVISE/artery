@@ -2,7 +2,6 @@
 
 #include <nanobind/nanobind.h>
 
-// TODO: make defaulted import casters.
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>

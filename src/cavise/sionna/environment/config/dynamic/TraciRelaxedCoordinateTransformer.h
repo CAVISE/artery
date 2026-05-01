@@ -39,10 +39,6 @@ namespace artery::sionna {
         // the wrapper here to fetch relevant ref to current mi.Scene.
         std::optional<py::SionnaScene> scene_;
 
-        // NOTE: When importing maps from OSM, roads are joined into a single mesh. This transformer uses
-        // this name as a default when running ray casts to find intersections. For persons, you should specify
-        // a different name per-call, or unite persons walk roads and car roads into a single mesh instead
-        // if you find that viable.
         std::string roadMeshName_;
     };
 

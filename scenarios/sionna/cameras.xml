@@ -1,10 +1,10 @@
 <cameras>
     <!-- Seaside entry from the left of the map -->
-    <camera
+    <!-- <camera
         id="limassol_seaside_entry_left"
         position="-100 90 778"
         orientation="1.5 1.6 -0.03"
-    />
+    /> -->
 
     <!-- Seaside entry from the right of the map -->
     <camera
@@ -14,9 +14,9 @@
     />
 
     <!-- City entry from right -->
-    <camera
+    <!-- <camera
         id="limassol_city_entry_right"
         position="453 241 -863"
         orientation="-1.64 -1.04 7.5"
-    />
+    /> -->
 </cameras>

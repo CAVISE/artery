@@ -19,11 +19,26 @@ void SionnaReceiver::bindIntoScene() {
         throw omnetpp::cRuntimeError("Sionna scene already contains an item named %s", sceneName().c_str());
     }
 
+    const auto rawPosition = mobility()->getCurrentPosition();
+    const auto rawOrientation = mobility()->getCurrentAngularPosition();
+    const auto rawVelocity = mobility()->getCurrentSpeed();
+    const auto position = scenePosition();
+    const auto orientation = sceneOrientation();
+    const auto velocity = sceneVelocity();
+
+    EV_INFO << "Binding Sionna receiver " << sceneName()
+            << ": mobility position=" << rawPosition
+            << " orientation=" << rawOrientation
+            << " velocity=" << rawVelocity
+            << " -> scene position=" << position
+            << " orientation=" << orientation
+            << " velocity=" << velocity << endl;
+
     py::Receiver device(
         sceneName(),
-        scenePosition(),
-        sceneOrientation(),
-        sceneVelocity());
+        position,
+        orientation,
+        velocity);
     scene.add(device);
 
     device_.emplace(std::move(device));
@@ -45,9 +60,24 @@ void SionnaReceiver::finish() {
 
 void SionnaReceiver::sync() {
     auto& rx = device();
-    rx.setPosition(scenePosition());
-    rx.setOrientation(sceneOrientation());
-    rx.setVelocity(sceneVelocity());
+    const auto rawPosition = mobility()->getCurrentPosition();
+    const auto rawOrientation = mobility()->getCurrentAngularPosition();
+    const auto rawVelocity = mobility()->getCurrentSpeed();
+    const auto position = scenePosition();
+    const auto orientation = sceneOrientation();
+    const auto velocity = sceneVelocity();
+
+    EV_INFO << "Syncing Sionna receiver " << sceneName()
+            << ": mobility position=" << rawPosition
+            << " orientation=" << rawOrientation
+            << " velocity=" << rawVelocity
+            << " -> scene position=" << position
+            << " orientation=" << orientation
+            << " velocity=" << velocity << endl;
+
+    rx.setPosition(position);
+    rx.setOrientation(orientation);
+    rx.setVelocity(velocity);
 }
 
 py::Receiver& SionnaReceiver::device() {

@@ -9,6 +9,7 @@ target_sources(sionna-phy
         Material.cc
         PathLoss.cc
         PhysicalEnvironment.cc
+        api/SionnaAPI.cc
         radio/SionnaAntennaArray.cc
         radio/SionnaPlanarAntennaArray.cc
         radio/SionnaRadioDeviceBase.cc
@@ -30,6 +31,7 @@ target_sources(sionna-phy
         Material.h
         PathLoss.h
         PhysicalEnvironment.h
+        api/SionnaAPI.h
         radio/SionnaAntennaArray.h
         radio/SionnaPlanarAntennaArray.h
         radio/SionnaRadioDeviceBase.h

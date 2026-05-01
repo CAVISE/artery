@@ -1,5 +1,8 @@
 #include "SionnaRadioDeviceBase.h"
 
+#include <artery/inet/AntennaMobility.h>
+#include <artery/traci/Cast.h>
+
 #include <cavise/sionna/environment/Compat.h>
 #include <cavise/sionna/environment/PhysicalEnvironment.h>
 
@@ -23,6 +26,51 @@ namespace {
         }
 
         return name;
+    }
+
+    inet::IMobility* resolveBoundaryMobility(inet::IMobility* mobility) {
+        auto* antennaMobility = dynamic_cast<artery::AntennaMobility*>(mobility);
+        if (antennaMobility == nullptr) {
+            return mobility;
+        }
+
+        auto* parentModule = antennaMobility->getModuleByPath(antennaMobility->par("mobilityModule"));
+        auto* parentMobility = dynamic_cast<inet::IMobility*>(parentModule);
+        if (parentMobility == nullptr) {
+            throw omnetpp::cRuntimeError("AntennaMobility parent does not implement inet::IMobility");
+        }
+
+        return resolveBoundaryMobility(parentMobility);
+    }
+
+    traci::Boundary mobilityBoundary(inet::IMobility& mobility) {
+        auto* boundaryMobility = resolveBoundaryMobility(&mobility);
+        const auto min = boundaryMobility->getConstraintAreaMin();
+        const auto max = boundaryMobility->getConstraintAreaMax();
+
+        libsumo::TraCIPositionVector boundary;
+        boundary.value.resize(2);
+        boundary.value[0].x = min.x;
+        boundary.value[0].y = min.y;
+        boundary.value[0].z = min.z;
+        boundary.value[1].x = max.x;
+        boundary.value[1].y = max.y;
+        boundary.value[1].z = max.z;
+        return traci::Boundary(boundary);
+    }
+
+    mitsuba::Resolve::Vector3f reverseMobilityPosition(inet::IMobility& mobility) {
+        const auto boundary = mobilityBoundary(mobility);
+        const auto position = mobility.getCurrentPosition();
+        return mitsuba::Resolve::Vector3f(
+            fromScalar<mitsuba::Resolve::Float>(position.x + boundary.lowerLeftPosition().x),
+            fromScalar<mitsuba::Resolve::Float>(boundary.upperRightPosition().y - position.y),
+            fromScalar<mitsuba::Resolve::Float>(position.z));
+    }
+
+    traci::TraCIAngle reverseMobilityHeading(inet::IMobility& mobility) {
+        const auto orientation = mobility.getCurrentAngularPosition();
+        return traci::angle_cast(artery::Angle::from_radian(-orientation.alpha));
     }
 
 } // namespace
@@ -113,28 +161,12 @@ std::string SionnaRadioDeviceBase::sceneName() const {
 }
 
 mitsuba::Resolve::Point3f SionnaRadioDeviceBase::scenePosition() const {
-    const auto canonical = coordinateTransformer()->fromSumo(convert<mitsuba::Resolve::Vector3f>(mobility()->getCurrentPosition()));
+    const auto canonical = coordinateTransformer()->fromSumo(reverseMobilityPosition(*mobility()));
     return coordinateTransformer()->toLocalScene(canonical);
 }
 
 mitsuba::Resolve::Point3f SionnaRadioDeviceBase::sceneOrientation() const {
-    auto sumoForward = convert<mitsuba::Resolve::Vector3f>(mobility()->getCurrentSpeed());
-    if (toScalar<double>(drjit::norm(sumoForward)) < 1e-9) {
-        const auto angles = mobility()->getCurrentAngularPosition();
-        sumoForward = mitsuba::Resolve::Vector3f(
-            fromScalar<mitsuba::Resolve::Float>(std::cos(angles.alpha)),
-            fromScalar<mitsuba::Resolve::Float>(std::sin(angles.alpha)),
-            fromScalar<mitsuba::Resolve::Float>(0.0));
-    }
-
-    const auto canonicalForward = coordinateTransformer()->vectorFromSumo(sumoForward);
-    const auto canonicalYaw = std::atan2(
-        -toScalar<double>(canonicalForward.y()),
-        toScalar<double>(canonicalForward.x()));
-    const mitsuba::Resolve::Point3f canonicalOrientation(
-        fromScalar<mitsuba::Resolve::Float>(0.0),
-        fromScalar<mitsuba::Resolve::Float>(0.0),
-        fromScalar<mitsuba::Resolve::Float>(canonicalYaw));
+    const auto canonicalOrientation = convert<mitsuba::Resolve::Point3f>(reverseMobilityHeading(*mobility()));
     return coordinateTransformer()->toLocalScene(canonicalOrientation);
 }
 

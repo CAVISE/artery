@@ -30,6 +30,7 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
         string idConverterType = default("cavise.sionna.environment.config.dynamic.TraciIDConverter");
         string coordinateTransformerType = default("cavise.sionna.environment.config.dynamic.TraciCoordinateTransformer");
         string sceneVisualizerType = default("cavise.sionna.environment.visualization.SionnaSceneVisualizer");
+        string sionnaApiType = default("cavise.sionna.environment.api.SionnaAPI");
 
     submodules:
         sceneConfigProvider: <sceneConfigProviderType> like IStaticSceneProvider {
@@ -54,5 +55,9 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
 
         sceneVisualizer: <sceneVisualizerType> like ISceneVisualizer if sceneVisualizerType != "" {
             @display("p=140,220");
+        }
+
+        sionnaApi: <sionnaApiType> if sionnaApiType != "" {
+            @display("p=140,260");
         }
 }

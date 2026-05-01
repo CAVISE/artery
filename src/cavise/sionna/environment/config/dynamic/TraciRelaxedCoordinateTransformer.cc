@@ -6,9 +6,11 @@
 
 #include <drjit/array.h>
 #include <drjit/array_router.h>
+#include <drjit/array_static.h>
 #include <drjit/dynamic.h>
 #include <drjit/matrix.h>
 #include <drjit/tensor.h>
+#include <mitsuba/core/spectrum.h>
 #include <omnetpp/cexception.h>
 #include <inet/common/InitStages.h>
 #include <mitsuba/render/mesh.h>
@@ -24,18 +26,24 @@ Define_Module(TraciRelaxedCoordinateTransformer);
 
 namespace {
 
+    mitsuba::Resolve::Ray3f sceneRay(const mitsuba::Resolve::Point3f& origin, const mitsuba::Resolve::Vector3f& direction) {
+        using Ray = mitsuba::Resolve::Ray3f;
+        typename Ray::Wavelength wavelengths = drjit::zeros<typename Ray::Wavelength>();
+        if constexpr (mitsuba::is_spectral_v<mitsuba::Resolve::Spectrum>) {
+            wavelengths = mitsuba::sample_wavelength<typename Ray::Float, mitsuba::Resolve::Spectrum>(typename Ray::Float(0.5f)).first;
+        }
+
+        return Ray(origin, direction, typename Ray::Float(0.f), wavelengths);
+    }
+
     class PlaneTransformer {
     public:
         static mitsuba::Resolve::Matrix4f fromHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
             if (hits.size() >= 3) {
                 return threeHits(hits);
-            } else if (hits.size() == 2) {
-                return twoHits(hits);
-            } else if (hits.size() == 1) {
-                return oneHit(hits);
             }
 
-            throw omnetpp::cRuntimeError("expected at least 1 hit, got %zu", hits.size());
+            throw omnetpp::cRuntimeError("expected at least 3 hits, got %zu: maybe the object started flying?", hits.size());
         }
 
         static mitsuba::Resolve::Matrix4f threeHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
@@ -48,11 +56,6 @@ namespace {
 
             if (toScalar<double>(drjit::dot(normal, up)) < 0.0) {
                 normal = -normal;
-            }
-
-            if (std::abs(toScalar<double>(drjit::dot(normal, up))) < 1e-9) {
-                std::vector<mitsuba::Resolve::Point3f> reduced{p0, p1};
-                return twoHits(reduced);
             }
 
             auto support = drjit::dot(normal, p0);
@@ -72,71 +75,6 @@ namespace {
 
             // Keep a valid 4th row so callers can safely read all rows.
             plane[3] = plane[2];
-
-            return plane;
-        }
-
-        static mitsuba::Resolve::Matrix4f twoHits(const std::vector<mitsuba::Resolve::Point3f>& hits) {
-            const mitsuba::Resolve::Point3f& p0 = hits[0];
-            const mitsuba::Resolve::Point3f& p1 = hits[1];
-            const mitsuba::Resolve::Vector3f up(0.0, 0.0, 1.0);
-
-            auto tangent = p1 - p0;
-            if (toScalar<double>(drjit::norm(tangent)) < 1e-9) {
-                std::vector<mitsuba::Resolve::Point3f> reduced{p0};
-                return oneHit(reduced);
-            }
-
-            tangent = drjit::normalize(tangent);
-            auto side = drjit::cross(up, tangent);
-
-            if (toScalar<double>(drjit::norm(side)) < 1e-9) {
-                side = mitsuba::Resolve::Vector3f(1.0, 0.0, 0.0);
-            } else {
-                side = drjit::normalize(side);
-            }
-
-            auto normal = drjit::normalize(drjit::cross(tangent, side));
-            if (toScalar<double>(drjit::dot(normal, up)) < 0.0) {
-                normal = -normal;
-            }
-
-            if (std::abs(toScalar<double>(drjit::dot(normal, up))) < 1e-9) {
-                std::vector<mitsuba::Resolve::Point3f> reduced{p0};
-                return oneHit(reduced);
-            }
-
-            auto support = drjit::maximum(drjit::dot(normal, p0), drjit::dot(normal, p1));
-
-            auto plane = drjit::zeros<mitsuba::Resolve::Matrix4f>();
-            for (std::size_t i = 0; i < 2; ++i) {
-                auto hit = hits[i];
-                hit.z() = (support - normal.x() * hit.x() - normal.y() * hit.y()) / normal.z();
-
-                plane[i][0] = hit.x();
-                plane[i][1] = hit.y();
-                plane[i][2] = hit.z();
-            }
-
-            // Keep valid padded rows for callers that iterate 4 rows.
-            plane[2] = plane[1];
-            plane[3] = plane[1];
-
-            return plane;
-        }
-
-        static mitsuba::Resolve::Matrix4f oneHit(const std::vector<mitsuba::Resolve::Point3f>& hits) {
-            auto plane = drjit::zeros<mitsuba::Resolve::Matrix4f>();
-            const auto& hit = hits[0];
-
-            plane[0][0] = hit.x();
-            plane[0][1] = hit.y();
-            plane[0][2] = hit.z();
-
-            // Keep valid padded rows for callers that iterate 4 rows.
-            plane[1] = plane[0];
-            plane[2] = plane[0];
-            plane[3] = plane[0];
 
             return plane;
         }
@@ -176,10 +114,8 @@ std::vector<mitsuba::Resolve::Point3f> TraciRelaxedCoordinateTransformer::discov
     // NOTE: We expect at most 4 points.
     hits.reserve(upperPoints.size());
 
-    mitsuba::Resolve::Ray3f down;
-    mitsuba::Resolve::Ray3f up;
-    down.d = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, -1.0));
-    up.d = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, 1.0));
+    const auto downDirection = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, -1.0));
+    const auto upDirection = toLocalScene(mitsuba::Resolve::Vector3f(0.0, 0.0, 1.0));
 
     auto miScene = scene_->miScene();
     for (std::size_t i = 0; i < upperPoints.size(); ++i) {
@@ -187,8 +123,8 @@ std::vector<mitsuba::Resolve::Point3f> TraciRelaxedCoordinateTransformer::discov
         const auto& upper = upperPoints[i];
         const auto origin = toLocalScene(mitsuba::Resolve::Point3f(upper.x(), upper.y(), upper.z()));
 
-        down.o = origin;
-        up.o = origin;
+        auto down = sceneRay(origin, downDirection);
+        auto up = sceneRay(origin, upDirection);
 
         // NOTE: We do not use direct intersections for road meshes, as they may be arbitrary.
         auto downHit = miScene->ray_intersect(down);
@@ -276,31 +212,37 @@ void TraciRelaxedCoordinateTransformer::adjust(py::SceneObject object) const {
     const auto& min = mesh->bbox().min;
     const auto& max = mesh->bbox().max;
 
-    mitsuba::Resolve::Matrix4f upper {};
-    std::array<mitsuba::Resolve::Vector3f, 8> corners;
-    std::size_t cornerIndex = 0;
-    for (const auto lx : {min.x(), max.x()}) {
-        for (const auto ly : {min.y(), max.y()}) {
-            for (const auto lz : {min.z(), max.z()}) {
-                corners[cornerIndex++] = fromLocalScene(mitsuba::Resolve::Vector3f(lx, ly, lz));
-            }
-        }
+    // NOTE: Bbox may be rotated, so max rect is not always located on top
+    // relative to global coordinate system.
+
+    // This is not a matrix really, but sill.
+    mitsuba::Resolve::Matrix4f upper;
+    std::array<mitsuba::Resolve::Point3f, 8> corners = {
+        mitsuba::Resolve::Point3f(min.x(), min.y(), min.z()),
+        mitsuba::Resolve::Point3f(min.x(), min.y(), max.z()),
+        mitsuba::Resolve::Point3f(min.x(), max.y(), min.z()),
+        mitsuba::Resolve::Point3f(min.x(), max.y(), max.z()),
+        mitsuba::Resolve::Point3f(max.x(), min.y(), min.z()),
+        mitsuba::Resolve::Point3f(max.x(), min.y(), max.z()),
+        mitsuba::Resolve::Point3f(max.x(), max.y(), min.z()),
+        mitsuba::Resolve::Point3f(max.x(), max.y(), max.z()),
+    };
+
+    // NOTE: One might think we may just select max on Z coordinate, and then just find
+    // all bbox points on that plane, but actually since local remap exists, Z coordinate
+    // might be any of X, Y, Z, so we end up just running stupid algo.
+    for (auto& point : corners) {
+        point = fromLocalScene(point);
     }
 
-    std::array<std::size_t, 8> order {};
-    for (std::size_t i = 0; i < order.size(); ++i) {
-        order[i] = i;
-    }
-
-    std::sort(order.begin(), order.end(), [&corners](std::size_t a, std::size_t b) {
-        return toScalar<double>(corners[a].z()) < toScalar<double>(corners[b].z());
+    std::sort(corners.begin(), corners.end(), [](const auto& a, const auto& b) {
+        return toScalar<double>(a.z()) > toScalar<double>(b.z());
     });
 
     for (std::size_t i = 0; i < 4; ++i) {
-        const auto& up = corners[order[order.size() - 1 - i]];
-        upper[i][0] = up.x();
-        upper[i][1] = up.y();
-        upper[i][2] = up.z();
+        upper[i][0] = corners.at(i).x();
+        upper[i][1] = corners.at(i).y();
+        upper[i][2] = corners.at(i).z();
     }
 
     const auto hits = discoverRoadHits(upper);
@@ -320,8 +262,8 @@ void TraciRelaxedCoordinateTransformer::adjust(py::SceneObject object) const {
         return value;
     };
 
-    object.setPosition(toLocalScene(mitsuba::Resolve::Vector3f(base.x(), base.y(), minZ(fitted))));
     // NOTE: Keep vehicle heading orientation from TraCI update path for now.
     // Relaxed slope orientation can tilt meshes into the road; revisit when
     // orientation model is stabilized.
+    object.setPosition(toLocalScene(mitsuba::Resolve::Vector3f(base.x(), base.y(), minZ(fitted))));
 }

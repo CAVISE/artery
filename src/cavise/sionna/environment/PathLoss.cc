@@ -54,6 +54,7 @@ void PathLoss::initialize(int stage) {
         maxRange_ = par("maxRange").doubleValue();
     } else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT_2) {
         solver_.emplace();
+        solver_->setLoopMode("evaluated");
     }
 }
 

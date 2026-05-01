@@ -1,3 +1,4 @@
 setuptools
 sionna-rt
 nanobind
+opencv-python

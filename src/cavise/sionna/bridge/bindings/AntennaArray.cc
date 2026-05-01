@@ -13,11 +13,7 @@ py::AntennaArray::AntennaArray(nanobind::object obj) {
     WrapPythonClassCapability::init(std::move(obj));
 }
 
-mitsuba::Resolve::Point3f py::AntennaArray::normalizedPositions() const {
-    return sionna::access<mitsuba::Resolve::Point3f>(bound_, "normalized_positions");
-}
-
-std::size_t py::AntennaArray::numAnt() const {
+std::size_t py::AntennaArray::numAntennas() const {
     return sionna::access<std::size_t>(bound_, "num_ant");
 }
 
