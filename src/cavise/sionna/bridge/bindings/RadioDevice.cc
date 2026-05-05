@@ -1,6 +1,6 @@
-#include "RadioDevice.h"
-
 #include <cavise/sionna/bridge/Helpers.h>
+
+#include "RadioDevice.h"
 
 using namespace artery::sionna;
 using namespace artery::sionna::literals;
@@ -13,27 +13,27 @@ std::string py::RadioDevice::name() const {
     return sionna::access<std::string>(bound_, "name");
 }
 
-mitsuba::Resolve::Point3f py::RadioDevice::position() const {
-    return sionna::access<mitsuba::Resolve::Point3f>(bound_, "position");
+mi::Point3f py::RadioDevice::position() const {
+    return sionna::access<mi::Point3f>(bound_, "position");
 }
 
-void py::RadioDevice::setPosition(const mitsuba::Resolve::Point3f& position) {
+void py::RadioDevice::setPosition(const mi::Point3f& position) {
     sionna::set(bound_, "position", position);
 }
 
-mitsuba::Resolve::Point3f py::RadioDevice::orientation() const {
-    return sionna::access<mitsuba::Resolve::Point3f>(bound_, "orientation");
+mi::Point3f py::RadioDevice::orientation() const {
+    return sionna::access<mi::Point3f>(bound_, "orientation");
 }
 
-void py::RadioDevice::setOrientation(const mitsuba::Resolve::Point3f& orientation) {
+void py::RadioDevice::setOrientation(const mi::Point3f& orientation) {
     sionna::set(bound_, "orientation", orientation);
 }
 
-mitsuba::Resolve::Vector3f py::RadioDevice::velocity() const {
-    return sionna::access<mitsuba::Resolve::Vector3f>(bound_, "velocity");
+mi::Vector3f py::RadioDevice::velocity() const {
+    return sionna::access<mi::Vector3f>(bound_, "velocity");
 }
 
-void py::RadioDevice::setVelocity(const mitsuba::Resolve::Vector3f& velocity) {
+void py::RadioDevice::setVelocity(const mi::Vector3f& velocity) {
     sionna::set(bound_, "velocity", velocity);
 }
 
@@ -45,7 +45,7 @@ void py::RadioDevice::setColor(TColor color) {
     sionna::set(bound_, "color", std::move(color));
 }
 
-void py::RadioDevice::lookAt(const mitsuba::Resolve::Point3f& target) {
+void py::RadioDevice::lookAt(const mi::Point3f& target) {
     sionna::call(bound_, "look_at", "target"_a = target);
 }
 
@@ -59,27 +59,25 @@ py::Transmitter::Transmitter(nanobind::object obj)
 
 py::Transmitter::Transmitter(
     const std::string& name,
-    const mitsuba::Resolve::Point3f& position,
-    std::optional<mitsuba::Resolve::Point3f> orientation,
-    std::optional<mitsuba::Resolve::Vector3f> velocity,
-    float powerDbm) {
+    const mi::Point3f& position,
+    std::optional<mi::Point3f> orientation,
+    std::optional<mi::Vector3f> velocity) {
     InitPythonClassCapability::init(
         "name"_a = name,
         "position"_a = position,
-        "orientation"_a = std::move(orientation),
-        "velocity"_a = std::move(velocity),
-        "power_dbm"_a = powerDbm);
+        "orientation"_a = orientation,
+        "velocity"_a = velocity);
 }
 
-maybe_diff_t<mitsuba::Resolve::Float> py::Transmitter::power() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(bound_, "power");
+maybe_diff_t<mi::Float> py::Transmitter::power() const {
+    return sionna::access<maybe_diff_t<mi::Float>>(bound_, "power");
 }
 
-maybe_diff_t<mitsuba::Resolve::Float> py::Transmitter::powerDbm() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(bound_, "power_dbm");
+maybe_diff_t<mi::Float> py::Transmitter::powerDbm() const {
+    return sionna::access<maybe_diff_t<mi::Float>>(bound_, "power_dbm");
 }
 
-void py::Transmitter::setPowerDbm(maybe_diff_t<mitsuba::Resolve::Float> powerDbm) {
+void py::Transmitter::setPowerDbm(maybe_diff_t<mi::Float> powerDbm) {
     sionna::set(bound_, "power_dbm", powerDbm);
 }
 
@@ -93,12 +91,12 @@ py::Receiver::Receiver(nanobind::object obj)
 
 py::Receiver::Receiver(
     const std::string& name,
-    const mitsuba::Resolve::Point3f& position,
-    std::optional<mitsuba::Resolve::Point3f> orientation,
-    std::optional<mitsuba::Resolve::Vector3f> velocity) {
+    const mi::Point3f& position,
+    std::optional<mi::Point3f> orientation,
+    std::optional<mi::Vector3f> velocity) {
     InitPythonClassCapability::init(
         "name"_a = name,
         "position"_a = position,
-        "orientation"_a = std::move(orientation),
-        "velocity"_a = std::move(velocity));
+        "orientation"_a = orientation,
+        "velocity"_a = velocity);
 }

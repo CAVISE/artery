@@ -34,7 +34,7 @@ namespace artery::sionna::py {
         // Assume passed object is of type SionnaScene.
         explicit SionnaScene(nanobind::object obj);
         // Wrap mitsuba scene.
-        explicit SionnaScene(mitsuba::ref<mitsuba::Resolve::Scene> scene);
+        explicit SionnaScene(mitsuba::ref<mi::Scene> scene);
 
         // Reconstruct the scene, adding objects from add array and removing objects by id. This
         // invalidates mi.Scene ref you may have accessed earlier, be careful.
@@ -58,7 +58,7 @@ namespace artery::sionna::py {
         // 3) paths are calculated signal paths to visualize
         // 4) showDevices adds big ball-like indications to tx and rx devices.
         void renderToFile(
-            std::variant<const std::string&, const Camera&> camera,
+            std::variant<std::string, Camera> camera,
             const std::string& filename,
             int numSamples = 512,
             int width = 655,
@@ -113,7 +113,7 @@ namespace artery::sionna::py {
         void setTemperature(maybe_diff_t<mi::Float> t);
 
         // Access current mitsuba scene. Each scene editing invalidates this ref.
-        mitsuba::ref<mitsuba::Resolve::Scene> miScene() const;
+        mitsuba::ref<mi::Scene> miScene() const;
     };
 
 } // namespace artery::sionna::py

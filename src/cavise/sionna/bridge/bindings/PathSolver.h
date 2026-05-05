@@ -1,5 +1,6 @@
 #pragma once
 
+// for ref.
 #include <nanobind/nanobind.h>
 
 #include <cavise/sionna/bridge/bindings/Modules.h>
@@ -9,18 +10,21 @@
 
 namespace artery::sionna::py {
 
+    // Sionna path solver. These solvers generate paths objects containing calculated
+    // signal paths, which may be visualized on render() call.
     class SIONNA_BRIDGE_API PathSolver
         : public SionnaRtModule
         , public InitPythonClassCapability {
     public:
+        // IPythonClassIdentityCapability implementation.
         const char* className() const override;
 
+        // Default constructor.
         PathSolver();
+        // Wrap existing object, assuming it's PathSolver.
         explicit PathSolver(nanobind::object obj);
 
-        std::string loopMode() const;
-        void setLoopMode(const std::string& mode);
-
+        // Calculate paths
         Paths solve(
             const SionnaScene& scene,
             int maxDepth = 3,

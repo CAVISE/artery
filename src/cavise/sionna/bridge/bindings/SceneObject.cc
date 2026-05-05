@@ -14,13 +14,13 @@ py::SceneObject::SceneObject(nanobind::object obj) {
     WrapPythonClassCapability::init(std::move(obj));
 }
 
-py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const py::RadioMaterial& material) {
+py::SceneObject::SceneObject(mitsuba::ref<mi::Mesh> mesh, const py::RadioMaterial& material) {
     this->InitPythonClassCapability::init(
         "mi_mesh"_a = mesh.get(),
         "radio_material"_a = material);
 }
 
-py::SceneObject::SceneObject(mitsuba::ref<mitsuba::Resolve::Mesh> mesh, const std::string& name, const py::RadioMaterial& material) {
+py::SceneObject::SceneObject(mitsuba::ref<mi::Mesh> mesh, const std::string& name, const py::RadioMaterial& material) {
     this->InitPythonClassCapability::init(
         "mi_mesh"_a = mesh.get(),
         "name"_a = name,
