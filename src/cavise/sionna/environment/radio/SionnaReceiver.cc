@@ -1,30 +1,21 @@
 #include "SionnaReceiver.h"
 
-#include <cavise/sionna/environment/PhysicalEnvironment.h>
-
 #include <omnetpp/cexception.h>
-
-#include <inet/physicallayer/contract/packetlevel/IRadioMedium.h>
 
 using namespace artery::sionna;
 
 Define_Module(SionnaReceiver);
 
-std::unordered_map<const inet::physicallayer::IRadio*, SionnaReceiver*> SionnaReceiver::registry_;
-
 void SionnaReceiver::bindIntoScene() {
-    auto* environment = physicalEnvironment();
-    auto& scene = const_cast<py::SionnaScene&>(environment->scene());
-    if (!std::holds_alternative<std::monostate>(scene.get(sceneName()))) {
-        throw omnetpp::cRuntimeError("Sionna scene already contains an item named %s", sceneName().c_str());
-    }
+    auto* api = this->api();
+    auto* sceneConfig = api->dynamicConfiguration();
 
     const auto rawPosition = mobility()->getCurrentPosition();
     const auto rawOrientation = mobility()->getCurrentAngularPosition();
     const auto rawVelocity = mobility()->getCurrentSpeed();
-    const auto position = scenePosition();
-    const auto orientation = sceneOrientation();
-    const auto velocity = sceneVelocity();
+    const auto position = this->position();
+    const auto orientation = this->orientation();
+    const auto velocity = this->velocity();
 
     EV_INFO << "Binding Sionna receiver " << sceneName()
             << ": mobility position=" << rawPosition
@@ -34,43 +25,37 @@ void SionnaReceiver::bindIntoScene() {
             << " orientation=" << orientation
             << " velocity=" << velocity << endl;
 
-    py::Receiver device(
-        sceneName(),
-        position,
-        orientation,
-        velocity);
-    scene.add(device);
+    auto device = py::Receiver(sceneName(), position, orientation, velocity);
+    if (!sceneConfig->addReceiver(device)) {
+        throw omnetpp::cRuntimeError("Sionna scene already contains an item named %s", sceneName().c_str());
+    }
 
     device_.emplace(std::move(device));
-    registry_.insert_or_assign(radio(), this);
-    environment->emit(sceneRadioDevicesEditedSignal, 1UL);
+    emit(sceneRadioDevicesEditedSignal, 1UL);
 }
 
 void SionnaReceiver::finish() {
-    if (device_.has_value() && physicalEnvironment_ != nullptr) {
-        auto& scene = const_cast<py::SionnaScene&>(physicalEnvironment_->scene());
-        scene.remove(sceneName());
+    if (device_.has_value()) {
+        auto* api = this->api();
+        api->dynamicConfiguration()->removeSceneItem(sceneName());
         device_.reset();
-        physicalEnvironment_->emit(sceneRadioDevicesEditedSignal, 1UL);
+        emit(sceneRadioDevicesEditedSignal, 1UL);
     }
 
-    registry_.erase(radio_);
-    omnetpp::cSimpleModule::finish();
+    SionnaRadioDeviceBase::finish();
 }
 
-void SionnaReceiver::sync() {
+void SionnaReceiver::updatePhysics() {
     auto& rx = device();
-    const auto rawPosition = mobility()->getCurrentPosition();
-    const auto rawOrientation = mobility()->getCurrentAngularPosition();
-    const auto rawVelocity = mobility()->getCurrentSpeed();
-    const auto position = scenePosition();
-    const auto orientation = sceneOrientation();
-    const auto velocity = sceneVelocity();
+
+    const auto position = this->position();
+    const auto orientation = this->orientation();
+    const auto velocity = this->velocity();
 
     EV_INFO << "Syncing Sionna receiver " << sceneName()
-            << ": mobility position=" << rawPosition
-            << " orientation=" << rawOrientation
-            << " velocity=" << rawVelocity
+            << ": mobility position=" << mobility()->getCurrentPosition()
+            << " orientation=" << mobility()->getCurrentAngularPosition()
+            << " velocity=" << mobility()->getCurrentSpeed()
             << " -> scene position=" << position
             << " orientation=" << orientation
             << " velocity=" << velocity << endl;
@@ -94,33 +79,4 @@ const py::Receiver& SionnaReceiver::device() const {
     }
 
     return *device_;
-}
-
-SionnaReceiver* SionnaReceiver::resolve(const inet::physicallayer::IRadio* radio) {
-    if (auto found = registry_.find(radio); found != registry_.end()) {
-        return found->second;
-    }
-
-    return nullptr;
-}
-
-SionnaReceiver* SionnaReceiver::resolve(
-    const inet::physicallayer::ITransmission* transmission,
-    const inet::physicallayer::IArrival* arrival) {
-    auto* medium = transmission->getTransmitter()->getMedium();
-    for (const auto& [radio, receiver] : registry_) {
-        if (radio->getMedium() != medium) {
-            continue;
-        }
-
-        if (medium->getArrival(radio, transmission) == arrival) {
-            return receiver;
-        }
-    }
-
-    return nullptr;
-}
-
-const std::unordered_map<const inet::physicallayer::IRadio*, SionnaReceiver*>& SionnaReceiver::registered() {
-    return registry_;
 }

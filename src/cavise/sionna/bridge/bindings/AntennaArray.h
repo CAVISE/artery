@@ -10,6 +10,8 @@
 
 namespace artery::sionna::py {
 
+    // Wrapper around Sionna antenna array objects. These describe antenna
+    // geometry/patterns used by transmitters, receivers, and solved Paths.
     class SIONNA_BRIDGE_API AntennaArray
         : public SionnaRtModule
         , public InitPythonClassCapability {
@@ -17,19 +19,30 @@ namespace artery::sionna::py {
         const char* className() const override;
 
         AntennaArray() = default;
+
+        // Wrap an existing Sionna antenna array python object.
         explicit AntennaArray(nanobind::object obj);
 
+        // Total number of antenna elements in the array.
         std::size_t numAntennas() const;
+
+        // Sionna array_size property, used when interpreting Paths tensor dimensions.
         std::size_t arraySize() const;
     };
 
+    // Wrapper around sionna.rt.PlanarArray.
     class SIONNA_BRIDGE_API PlanarArray
         : public AntennaArray {
     public:
         const char* className() const override;
 
         PlanarArray() = default;
+
+        // Wrap an existing Sionna PlanarArray python object.
         explicit PlanarArray(nanobind::object obj);
+
+        // Construct a rectangular planar array. Spacing values are in wavelength units,
+        // matching Sionna's PlanarArray API.
         PlanarArray(
             int numRows,
             int numCols,

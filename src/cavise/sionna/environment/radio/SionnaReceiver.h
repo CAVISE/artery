@@ -2,8 +2,6 @@
 
 #include "SionnaRadioDeviceBase.h"
 
-#include <unordered_map>
-
 namespace artery::sionna {
 
     class SionnaReceiver
@@ -13,22 +11,14 @@ namespace artery::sionna {
         void finish() override;
 
         // Sionna receiver access.
-        void sync();
         py::Receiver& device();
         const py::Receiver& device() const;
 
-        static SionnaReceiver* resolve(const inet::physicallayer::IRadio* radio);
-        static SionnaReceiver* resolve(
-            const inet::physicallayer::ITransmission* transmission,
-            const inet::physicallayer::IArrival* arrival);
-        static const std::unordered_map<const inet::physicallayer::IRadio*, SionnaReceiver*>& registered();
-
     protected:
+        void updatePhysics() override;
         void bindIntoScene() override;
 
     protected:
-        static std::unordered_map<const inet::physicallayer::IRadio*, SionnaReceiver*> registry_;
-
         std::optional<py::Receiver> device_;
     };
 

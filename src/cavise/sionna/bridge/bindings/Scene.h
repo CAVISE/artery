@@ -11,9 +11,11 @@
 #include <cavise/sionna/bridge/capabilities/Calling.h>
 
 #include <optional>
+#include <utility>
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 namespace artery::sionna::py {
 
@@ -25,6 +27,8 @@ namespace artery::sionna::py {
     public:
         // Result of scene objects query.
         using TSceneElement = std::variant<std::monostate, SceneObject, RadioMaterial, Transmitter, Receiver>;
+        using TTransmitters = std::vector<std::pair<std::string, Transmitter>>;
+        using TReceivers = std::vector<std::pair<std::string, Receiver>>;
 
         // IPythonClassIdentityCapability implementation.
         const char* className() const override;
@@ -79,8 +83,12 @@ namespace artery::sionna::py {
         std::unordered_map<std::string, SceneObject> sceneObjects() const;
         // Builds mapping from ID to tx devices. Don't call this often.
         std::unordered_map<std::string, Transmitter> transmitters() const;
+        // Builds ordered tx entries matching Sionna path tensor indices.
+        TTransmitters orderedTransmitters() const;
         // Builds mapping from ID to rx devices. Don't call this often.
         std::unordered_map<std::string, Receiver> receivers() const;
+        // Builds ordered rx entries matching Sionna path tensor indices.
+        TReceivers orderedReceivers() const;
 
         // Access tx array. If None, return std::nullopt.
         std::optional<AntennaArray> txArray() const;

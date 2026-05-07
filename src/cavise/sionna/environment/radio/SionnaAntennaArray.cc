@@ -1,6 +1,6 @@
 #include "SionnaAntennaArray.h"
 
-#include <cavise/sionna/environment/PhysicalEnvironment.h>
+#include <cavise/sionna/environment/api/SionnaAPI.h>
 
 #include <omnetpp/cexception.h>
 
@@ -11,10 +11,6 @@ using namespace artery::sionna;
 
 Define_Module(SionnaAntennaArray);
 
-SionnaAntennaArray::SionnaAntennaArray()
-    : inet::physicallayer::AntennaBase() {
-}
-
 int SionnaAntennaArray::numInitStages() const {
     return inet::NUM_INIT_STAGES;
 }
@@ -24,7 +20,25 @@ void SionnaAntennaArray::initialize(int stage) {
     if (stage == inet::INITSTAGE_LOCAL) {
         gain_ = inet::math::dB2fraction(par("gain"));
     } else if (stage == inet::INITSTAGE_LAST) {
-        bindIntoScene();
+        if (sceneArrayRole() == SceneArrayRole::None) {
+            return;
+        }
+
+        auto* api = ISionnaAPI::get(this);
+        switch (sceneArrayRole()) {
+            case SceneArrayRole::None:
+                return;
+            case SceneArrayRole::Tx:
+                if (!api->setTxArray(array())) {
+                    throw omnetpp::cRuntimeError("Sionna scene already has tx_array configured");
+                }
+                break;
+            case SceneArrayRole::Rx:
+                if (!api->setRxArray(array())) {
+                    throw omnetpp::cRuntimeError("Sionna scene already has rx_array configured");
+                }
+                break;
+        }
     }
 }
 
@@ -45,10 +59,6 @@ double SionnaAntennaArray::computeGain(const inet::EulerAngles /* direction */) 
     return gain_;
 }
 
-bool SionnaAntennaArray::hasArray() const {
-    return array_.has_value();
-}
-
 const py::AntennaArray& SionnaAntennaArray::array() const {
     if (!array_.has_value()) {
         throw omnetpp::cRuntimeError("SionnaAntennaArray has no bound Sionna array");
@@ -62,7 +72,7 @@ void SionnaAntennaArray::setArray(py::AntennaArray array) {
     array_.emplace(std::move(array));
 }
 
-SionnaAntennaArray::SceneArrayRole SionnaAntennaArray::sceneArrayRole() const {
+SceneArrayRole SionnaAntennaArray::sceneArrayRole() const {
     auto role = par("sceneArrayRole").stdstringValue();
     if (role.empty()) {
         return SceneArrayRole::None;
@@ -72,44 +82,5 @@ SionnaAntennaArray::SceneArrayRole SionnaAntennaArray::sceneArrayRole() const {
         return SceneArrayRole::Rx;
     } else {
         throw omnetpp::cRuntimeError("Unsupported sceneArrayRole '%s'", role.c_str());
-    }
-}
-
-void SionnaAntennaArray::bindIntoScene() {
-    if (sceneArrayRole() == SceneArrayRole::None) {
-        return;
-    }
-
-    auto path = par("physicalEnvironmentModule").stdstringValue();
-    if (path.empty()) {
-        throw omnetpp::cRuntimeError("physicalEnvironmentModule was not specified");
-    }
-
-    auto* module = getModuleByPath(path.c_str());
-    if (module == nullptr) {
-        throw omnetpp::cRuntimeError("No physical environment found at path %s", path.c_str());
-    }
-
-    auto* environment = dynamic_cast<PhysicalEnvironment*>(module);
-    if (environment == nullptr) {
-        throw omnetpp::cRuntimeError("Module at path %s is not a Sionna physical environment", path.c_str());
-    }
-
-    auto& scene = const_cast<py::SionnaScene&>(environment->scene());
-    switch (sceneArrayRole()) {
-        case SceneArrayRole::None:
-            return;
-        case SceneArrayRole::Tx:
-            if (scene.hasTxArray()) {
-                throw omnetpp::cRuntimeError("Sionna scene already has tx_array configured");
-            }
-            scene.setTxArray(array());
-            break;
-        case SceneArrayRole::Rx:
-            if (scene.hasRxArray()) {
-                throw omnetpp::cRuntimeError("Sionna scene already has rx_array configured");
-            }
-            scene.setRxArray(array());
-            break;
     }
 }

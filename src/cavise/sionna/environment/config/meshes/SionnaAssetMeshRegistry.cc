@@ -1,3 +1,4 @@
+// for ref.
 #include <nanobind/nanobind.h>
 
 #include "SionnaAssetMeshRegistry.h"
@@ -58,7 +59,7 @@ void SionnaDirectAssetMeshRegistry::initialize() {
     }
 }
 
-mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::asset(MeshAsset asset) const {
+mitsuba::ref<mi::Mesh> SionnaDirectAssetMeshRegistry::asset(MeshAsset asset) const {
     if (auto mesh = meshes.find(asset); mesh == meshes.end()) {
         throw omnetpp::cRuntimeError("could not access mesh: path for this asset is not defined");
     } else {
@@ -67,7 +68,7 @@ mitsuba::ref<mitsuba::Resolve::Mesh> SionnaDirectAssetMeshRegistry::asset(MeshAs
         mitsuba::Properties props("ply");
         props.set("filename", (root_ / suffix).string());
 
-        return mitsuba::PluginManager::instance()->create_object<mitsuba::Resolve::Mesh>(props);
+        return mitsuba::PluginManager::instance()->create_object<mi::Mesh>(props);
     }
 }
 
@@ -93,7 +94,7 @@ py::RadioMaterial SionnaDirectAssetMeshRegistry::material(MeshAsset asset) const
     }
 }
 
-mitsuba::Resolve::Vector3f SionnaDirectAssetMeshRegistry::scaling(MeshAsset asset) const {
+mi::Vector3f SionnaDirectAssetMeshRegistry::scaling(MeshAsset asset) const {
     // Do not cache the vectors, they may be only allowed to be created after proper setup.
     switch (asset) {
         case MeshAsset::LowPolyCar:

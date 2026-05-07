@@ -3,7 +3,25 @@
 #include <cavise/sionna/bridge/Compat.h>
 #include <cavise/sionna/bridge/Helpers.h>
 
+#include <drjit/tensor.h>
+
 using namespace artery::sionna;
+
+namespace {
+
+    template <typename Tensor>
+    Tensor takeAxis(const Tensor& tensor, std::size_t index, int axis) {
+        using Index = typename Tensor::Index;
+        return drjit::take(tensor, Index(static_cast<std::uint32_t>(index)), axis);
+    }
+
+    double pathGainFromTensors(const mi::TensorXf::MaskType& mask, const mi::TensorXf& r, const mi::TensorXf& i) {
+        const auto magnitude = r * r + i * i;
+        const auto masked = mi::TensorXf(mask) * magnitude;
+        return artery::sionna::toScalar<double>(drjit::sum(masked.array()));
+    }
+
+} // namespace
 
 const char* py::Paths::className() const {
     return "Paths";
@@ -33,78 +51,26 @@ py::AntennaArray py::Paths::rxArray() const {
     return sionna::access<py::AntennaArray>(bound_, "rx_array");
 }
 
-nanobind::object py::Paths::valid() const {
-    return sionna::access<nanobind::object>(bound_, "valid");
+mi::TensorXf::MaskType py::Paths::valid() const {
+    return sionna::access<mi::TensorXf::MaskType>(bound_, "valid");
 }
 
-std::tuple<nanobind::object, nanobind::object> py::Paths::coefficients() const {
-    auto value = sionna::access<nanobind::tuple>(bound_, "a");
-    return {
-        nanobind::borrow<nanobind::object>(value[0]),
-        nanobind::borrow<nanobind::object>(value[1])};
-}
-
-nanobind::object py::Paths::delays() const {
-    return sionna::access<nanobind::object>(bound_, "tau");
-}
-
-nanobind::object py::Paths::sources() const {
-    return sionna::access<nanobind::object>(bound_, "sources");
-}
-
-nanobind::object py::Paths::targets() const {
-    return sionna::access<nanobind::object>(bound_, "targets");
+std::tuple<mitsuba::Resolve::TensorXf, mitsuba::Resolve::TensorXf> py::Paths::coefficients() const {
+    return artery::sionna::access<std::tuple<mi::TensorXf, mi::TensorXf>>(bound_, "a");
 }
 
 double py::Paths::pathGain() const {
-    nanobind::gil_scoped_acquire gil;
-
-    auto dr = nanobind::module_::import_("drjit");
-    auto op = nanobind::module_::import_("operator");
-
-    auto mask = valid();
-    auto [real, imag] = coefficients();
-
-    auto realSquared = op.attr("mul")(real, real);
-    auto imagSquared = op.attr("mul")(imag, imag);
-    auto magnitudeSquared = op.attr("add")(realSquared, imagSquared);
-    auto masked = op.attr("mul")(mask, magnitudeSquared);
-    auto summed = dr.attr("sum")(masked.attr("array"));
-
-    return sionna::toScalar<double>(nanobind::cast<maybe_diff_t<mitsuba::Resolve::Float>>(summed));
+    auto [r, i] = coefficients();
+    return pathGainFromTensors(valid(), r, i);
 }
 
 double py::Paths::pathGain(std::size_t rxIndex, std::size_t txIndex) const {
-    nanobind::gil_scoped_acquire gil;
+    auto mask = valid();
+    auto [r, i] = coefficients();
 
-    auto dr = nanobind::module_::import_("drjit");
-    auto op = nanobind::module_::import_("operator");
-    auto builtins = nanobind::module_::import_("builtins");
+    mask = takeAxis(takeAxis(mask, rxIndex, 0), txIndex, 1);
+    r = takeAxis(takeAxis(r, rxIndex, 0), txIndex, 1);
+    i = takeAxis(takeAxis(i, rxIndex, 0), txIndex, 1);
 
-    auto all = builtins.attr("slice")(nanobind::none(), nanobind::none(), nanobind::none());
-    auto [real, imag] = coefficients();
-    nanobind::object mask;
-    nanobind::object realSlice;
-    nanobind::object imagSlice;
-
-    if (syntheticArray()) {
-        auto maskSelector = nanobind::make_tuple(rxIndex, txIndex, all);
-        auto coeffSelector = nanobind::make_tuple(rxIndex, all, txIndex, all, all);
-        mask = op.attr("getitem")(valid(), maskSelector);
-        realSlice = op.attr("getitem")(real, coeffSelector);
-        imagSlice = op.attr("getitem")(imag, coeffSelector);
-    } else {
-        auto selector = nanobind::make_tuple(rxIndex, all, txIndex, all, all);
-        mask = op.attr("getitem")(valid(), selector);
-        realSlice = op.attr("getitem")(real, selector);
-        imagSlice = op.attr("getitem")(imag, selector);
-    }
-
-    auto realSquared = op.attr("mul")(realSlice, realSlice);
-    auto imagSquared = op.attr("mul")(imagSlice, imagSlice);
-    auto magnitudeSquared = op.attr("add")(realSquared, imagSquared);
-    auto masked = op.attr("mul")(mask, magnitudeSquared);
-    auto summed = dr.attr("sum")(masked.attr("array"));
-
-    return sionna::toScalar<double>(nanobind::cast<maybe_diff_t<mitsuba::Resolve::Float>>(summed));
+    return pathGainFromTensors(mask, r, i);
 }

@@ -9,12 +9,11 @@ Define_Module(SionnaPlanarAntennaArray);
 namespace {
 
     std::optional<std::string> optionalStringParameter(omnetpp::cModule* module, const char* name) {
-        auto value = module->par(name).stdstringValue();
-        if (value.empty()) {
+        if (auto value = module->par(name).stdstringValue(); value.empty()) {
             return std::nullopt;
+        } else {
+            return value;
         }
-
-        return value;
     }
 
 } // namespace

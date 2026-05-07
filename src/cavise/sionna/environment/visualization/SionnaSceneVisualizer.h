@@ -1,12 +1,12 @@
 #pragma once
 
+#include <cavise/sionna/environment/api/SionnaAPI.h>
 #include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
 #include <cavise/sionna/bridge/bindings/Camera.h>
 
 #include <omnetpp/ccomponent.h>
 #include <omnetpp/csimplemodule.h>
 
-#include <optional>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -30,7 +30,6 @@ namespace artery::sionna {
         void finish() override;
 
         // ISceneVisualizer implementation.
-        void setScene(py::SionnaScene scene) override;
         void renderFrame() override;
 
         // omnetpp::cListener implementation.
@@ -41,7 +40,7 @@ namespace artery::sionna {
         std::filesystem::path framePath(const std::string& cameraId) const;
 
     private:
-        std::optional<py::SionnaScene> scene_;
+        ISionnaAPI* api_ = nullptr;
         TraciDynamicSceneConfigProvider* dynamicSceneConfigProvider_ = nullptr;
         PathLoss* pathLossModule_ = nullptr;
 

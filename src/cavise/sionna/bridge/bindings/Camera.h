@@ -14,16 +14,22 @@ namespace artery::sionna::py {
         const char* className() const override;
 
         Camera() = default;
+
+        // Wrap an existing Sionna Camera python object.
         explicit Camera(nanobind::object obj);
+
+        // Construct a camera from Sionna-local position and Euler orientation.
         Camera(
-            const mitsuba::Resolve::Point3f& position,
-            const mitsuba::Resolve::Point3f& orientation = mitsuba::Resolve::Point3f(0.f, 0.f, 0.f));
+            const mi::Point3f& position,
+            const mi::Point3f& orientation = mi::Point3f(0.f, 0.f, 0.f));
 
-        mitsuba::Resolve::Point3f position() const;
-        void setPosition(const mitsuba::Resolve::Point3f& position);
+        // Camera position in Sionna coordinates.
+        mi::Point3f position() const;
+        void setPosition(const mi::Point3f& position);
 
-        mitsuba::Resolve::Point3f orientation() const;
-        void setOrientation(const mitsuba::Resolve::Point3f& orientation);
+        // Camera orientation in Sionna Euler angles.
+        mi::Point3f orientation() const;
+        void setOrientation(const mi::Point3f& orientation);
     };
 
 } // namespace artery::sionna::py

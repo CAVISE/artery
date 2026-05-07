@@ -37,26 +37,12 @@ py::PlanarArray::PlanarArray(
     float horizontalSpacing,
     std::optional<std::string> polarization,
     std::optional<std::string> polarizationModel) {
-    if (!polarization.has_value()) {
-        throw std::invalid_argument("PlanarArray requires a polarization");
-    }
-
-    if (polarizationModel.has_value()) {
-        InitPythonClassCapability::init(
-            "num_rows"_a = numRows,
-            "num_cols"_a = numCols,
-            "pattern"_a = pattern,
-            "vertical_spacing"_a = verticalSpacing,
-            "horizontal_spacing"_a = horizontalSpacing,
-            "polarization"_a = *polarization,
-            "polarization_model"_a = *polarizationModel);
-    } else {
-        InitPythonClassCapability::init(
-            "num_rows"_a = numRows,
-            "num_cols"_a = numCols,
-            "pattern"_a = pattern,
-            "vertical_spacing"_a = verticalSpacing,
-            "horizontal_spacing"_a = horizontalSpacing,
-            "polarization"_a = *polarization);
-    }
+    InitPythonClassCapability::init(
+        "num_rows"_a = numRows,
+        "num_cols"_a = numCols,
+        "pattern"_a = pattern,
+        "vertical_spacing"_a = verticalSpacing,
+        "horizontal_spacing"_a = horizontalSpacing,
+        "polarization"_a = polarization,
+        "polarization_model"_a = polarizationModel);
 }

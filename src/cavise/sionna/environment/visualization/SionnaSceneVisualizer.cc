@@ -17,6 +17,7 @@ using namespace artery::sionna;
 Define_Module(SionnaSceneVisualizer);
 
 void SionnaSceneVisualizer::initialize() {
+    api_ = ISionnaAPI::get(this);
     outputDir_ = par("outputDir").stdstringValue();
     camera_ = par("camera").stdstringValue();
     spp_ = par("spp").intValue();
@@ -49,23 +50,11 @@ void SionnaSceneVisualizer::finish() {
         pathLossModule_ = nullptr;
     }
 
-    scene_.reset();
-}
-
-void SionnaSceneVisualizer::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
-    if (signal != TraciDynamicSceneConfigProvider::sceneEditedSignal) {
-        throw omnetpp::cRuntimeError("SionnaSceneVisualizer received unknown signal");
-    }
-
-    renderFrame();
-}
-
-void SionnaSceneVisualizer::setScene(py::SionnaScene scene) {
-    scene_ = std::move(scene);
+    api_ = nullptr;
 }
 
 void SionnaSceneVisualizer::renderFrame() {
-    if (!scene_.has_value()) {
+    if (api_ == nullptr) {
         return;
     }
 
@@ -79,19 +68,26 @@ void SionnaSceneVisualizer::renderFrame() {
         const auto filename = framePath(cameraId);
         std::filesystem::create_directories(filename.parent_path());
 
-        scene_->renderToFile(
+        api_->scene().renderToFile(
             camera,
             filename.string(),
             spp_,
             width_,
             height_,
             std::nullopt,
-            std::nullopt,
             paths,
             false);
     }
 
     ++frameIndex_;
+}
+
+void SionnaSceneVisualizer::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
+    if (signal != TraciDynamicSceneConfigProvider::sceneEditedSignal) {
+        throw omnetpp::cRuntimeError("SionnaSceneVisualizer received unknown signal");
+    }
+
+    renderFrame();
 }
 
 std::vector<std::pair<std::string, py::Camera>> SionnaSceneVisualizer::resolveCameras() const {

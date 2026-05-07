@@ -6,18 +6,15 @@
 
 using namespace artery::sionna;
 
-Define_Module(BaseSionnaAPI);
+ISionnaAPI* ISionnaAPI::get(const omnetpp::cModule* module) {
+    auto* current = const_cast<omnetpp::cModule*>(module);
+    while (current != nullptr) {
+        if (auto* api = dynamic_cast<ISionnaAPI*>(current); api != nullptr) {
+            return api;
+        }
 
-BaseSionnaAPI* BaseSionnaAPI::get(const omnetpp::cModule* module) {
-    constexpr const char* path = "^.sionnaApi";
-    if (auto* api = module->getModuleByPath(path); api == nullptr) {
-        throw omnetpp::cRuntimeError("could not resolve Sionna API at path %s", path);
-    } else if (auto* typed = dynamic_cast<ISionnaAPI*>(api); typed == nullptr) {
-        throw omnetpp::cRuntimeError("Sionna API submodule does not implement ISionnaAPI");
-    } else {
-        return typed;
+        current = current->getParentModule();
     }
-}
 
-void ISionnaAPI::initialize() {
+    throw omnetpp::cRuntimeError("could not resolve Sionna API from module %s", module != nullptr ? module->getFullPath().c_str() : "<null>");
 }

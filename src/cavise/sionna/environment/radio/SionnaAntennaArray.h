@@ -11,10 +11,14 @@
 
 namespace artery::sionna {
 
+    enum class SceneArrayRole { None,
+                                Tx,
+                                Rx };
+
     class SionnaAntennaArray
         : public inet::physicallayer::AntennaBase {
     public:
-        SionnaAntennaArray();
+        SionnaAntennaArray() = default;
 
         // omnetpp::cSimpleModule implementation.
         int numInitStages() const override;
@@ -26,15 +30,11 @@ namespace artery::sionna {
         double computeGain(const inet::EulerAngles direction) const override;
 
         // Sionna antenna array access.
-        bool hasArray() const;
         const py::AntennaArray& array() const;
 
     protected:
-        enum class SceneArrayRole { None, Tx, Rx };
-
         void setArray(py::AntennaArray array);
         SceneArrayRole sceneArrayRole() const;
-        void bindIntoScene();
 
     protected:
         std::optional<py::AntennaArray> array_;

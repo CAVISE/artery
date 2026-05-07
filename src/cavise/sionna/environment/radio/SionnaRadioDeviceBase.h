@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cavise/sionna/bridge/SionnaBridge.h>
-#include <cavise/sionna/environment/config/dynamic/TraciCoordinateTransformer.h>
+#include <cavise/sionna/environment/api/SionnaAPI.h>
 
+#include <omnetpp/clistener.h>
 #include <omnetpp/csimplemodule.h>
 
 #include <inet/common/INETDefs.h>
@@ -11,36 +12,33 @@
 
 namespace artery::sionna {
 
-    class PhysicalEnvironment;
-
     class SionnaRadioDeviceBase
-        : public omnetpp::cSimpleModule {
+        : public omnetpp::cSimpleModule
+        , public omnetpp::cListener {
     public:
         static omnetpp::simsignal_t sceneRadioDevicesEditedSignal;
 
         // omnetpp::cSimpleModule implementation.
         int numInitStages() const override;
         void initialize(int stage) override;
+        void finish() override;
+
+        // omnetpp::cListener implementation.
+        void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, omnetpp::cObject* object, omnetpp::cObject* details) override;
 
         std::string sceneName() const;
+        const inet::physicallayer::IRadio* radio() const;
 
     protected:
-        const inet::physicallayer::IRadio* radio() const;
         inet::IMobility* mobility() const;
-        PhysicalEnvironment* physicalEnvironment() const;
-        ITraciCoordinateTransformer* coordinateTransformer() const;
+        ISionnaAPI* api() const;
 
-        mitsuba::Resolve::Point3f scenePosition() const;
-        mitsuba::Resolve::Point3f sceneOrientation() const;
-        mitsuba::Resolve::Vector3f sceneVelocity() const;
+        mitsuba::Resolve::Point3f position() const;
+        mitsuba::Resolve::Point3f orientation() const;
+        mitsuba::Resolve::Vector3f velocity() const;
 
         virtual void bindIntoScene() = 0;
-
-    protected:
-        mutable const inet::physicallayer::IRadio* radio_ = nullptr;
-        mutable inet::IMobility* mobility_ = nullptr;
-        mutable PhysicalEnvironment* physicalEnvironment_ = nullptr;
-        mutable ITraciCoordinateTransformer* coordinateTransformer_ = nullptr;
+        virtual void updatePhysics() = 0;
     };
 
 } // namespace artery::sionna

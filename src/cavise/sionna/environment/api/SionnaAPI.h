@@ -1,18 +1,20 @@
 #pragma once
 
-#include "cavise/sionna/bridge/Fwd.h"
-#include "cavise/sionna/bridge/bindings/SceneObject.h"
-#include "omnetpp/cexception.h"
-#include <cstdint>
 #include <memory>
-#include <omnetpp/csimplemodule.h>
+#include <string>
+#include <cstdint>
+#include <functional>
 
+#include <omnetpp/cexception.h>
+#include <omnetpp/cmodule.h>
+
+#include <cavise/sionna/bridge/Fwd.h>
+#include <cavise/sionna/bridge/bindings/AntennaArray.h>
+#include <cavise/sionna/bridge/bindings/RadioDevice.h>
 #include <cavise/sionna/bridge/bindings/Scene.h>
-#include <type_traits>
+#include <cavise/sionna/bridge/bindings/SceneObject.h>
 
 namespace artery::sionna {
-
-    using mi = mitsuba::Resolve;
 
     // Coordinate systems present in sim.
     enum class CoordinateSystem : std::uint8_t {
@@ -37,29 +39,35 @@ namespace artery::sionna {
         class ITransformProxy {
         public:
             // Apply post-edit transform to object, mainly used for scene geometry.
-            void transform(std::function<void(py::SceneObject&)> function);
+            virtual void transform(std::function<void(py::SceneObject&)> function) = 0;
+
+            virtual ~ITransformProxy() = default;
         };
 
         // Queues object to add.
         virtual std::unique_ptr<ITransformProxy> addObject(py::SceneObject object) = 0;
 
-        // Queues object to remove.
-        virtual std::unique_ptr<ITransformProxy> removeObject(py::SceneObject object) = 0;
+        // Queues transmitter to add if no scene item with the same ID exists.
+        virtual bool addTransmitter(py::Transmitter transmitter) = 0;
+
+        // Queues receiver to add if no scene item with the same ID exists.
+        virtual bool addReceiver(py::Receiver receiver) = 0;
+
+        // Queues existing object update.
+        virtual std::unique_ptr<ITransformProxy> updateObject(const std::string& id) = 0;
+
+        // Removes scene item by scene ID. Physical objects are queued, radio devices are removed immediately.
+        virtual void removeSceneItem(const std::string& id) = 0;
 
         // Flush pending changes. All queued objects to add are added, all queued
         // objects to remove are removed. Then all transforms are called. Invalidates
         // mi.Scene, since mitsuba scene is rebuilt on this action.
         virtual void edit() = 0;
 
-        // Faster path to access mitsuba scene, currently used by Sionna. Note,
-        // on scene edits it changes.
-        mitsuba::ref<mi::Scene> miScene();
-
         virtual ~IDynamicSceneConfigProxy() = default;
     };
 
     // This proxy handles coordinate transforms. Coordinates consist of 3 components (x, y, z).
-    // Return type maybe one of DrJit arrays with 3 components, like Vector or Point.
     // When extending, prefer chaining transforms to achieve more robust approach.
     class ICoordinateTransformProxy {
     public:
@@ -69,35 +77,38 @@ namespace artery::sionna {
         // 3) Local Sionna coordinates. Sionna coordinates may be inverted, causing axes changing places, so (Z, Y, Z) or (Y, Z, X) all might be valid.
         // Local coordinates are guaranteed to be in a form of (X, Y, Z), so the third component is always responsible for vertical position, etc.
         // 4) Sionna coordinates - returned by scene objects, and passed to them. Failing to cast to these will result in broken scene.
-        template <CoordinateSystem from, CoordinateSystem to, typename T>
-        T convertCoordinates();
-    };
+        virtual mi::Vector3f convertCoordinates(CoordinateSystem from, CoordinateSystem to, const mi::Vector3f& v) = 0;
 
-    // This proxy additionally exports operations on coordinates in scene.
-    class ICoordinateOperationsProxy {
         // When transferring object from SUMO or other 2D simulators, use this function
         // to place object on terrain or other mesh, like road for example.
-        void adjustVerticalComponent(py::SceneObject& object);
+        virtual void adjustVerticalComponent(py::SceneObject& object) = 0;
+
+        virtual ~ICoordinateTransformProxy() = default;
     };
 
     // This proxy handles ID conversions.
     class IIDConverterProxy {
+    public:
         // Currently, we need to be able to convert IDs between SUMO and Sionna, since
         // requirements for those IDs differ a bit. Ideally, use the same ID everywhere for single entity
         // if possible. Commonly ID transforms are implemented as bidirectional maps.
-        template <IDNamespace from, IDNamespace to>
-        std::string convertID();
+        virtual std::string convertID(IDNamespace from, IDNamespace to, const std::string& id) = 0;
+
+        // Remove cached ID mapping by ID namespace.
+        virtual void removeID(IDNamespace ns, const std::string& id) = 0;
+
+        virtual ~IIDConverterProxy() = default;
     };
 
     // This is an API class for common utility methods, used while
-    // interacting with Sionna. This class may be extended further or replaced
-    // if needed.
-    class BaseSionnaAPI
-        : public omnetpp::cModule {
+    // interacting with Sionna. This class may be configured via proxy
+    // classes to alter common behavior. The reason why this exists is because
+    // replacing NED modules via config is not very convenient, so instead
+    // this can be done by overloading a single initialize() here.
+    class ISionnaAPI {
     public:
-
-        // Gets API module, errors in case it was not found.
-        static BaseSionnaAPI* get(const omnetpp::cModule* module);
+        // Gets API owner module, errors in case it was not found.
+        static ISionnaAPI* get(const omnetpp::cModule* module);
 
         /****************
          * Scene basics *
@@ -105,15 +116,33 @@ namespace artery::sionna {
          */
 
         // Access sionna scene object.
-        py::SionnaScene& scene();
+        virtual py::SionnaScene& scene() = 0;
+
+        // Faster path to access mitsuba scene, currently used by Sionna. Note,
+        // on scene edits it changes.
+        virtual mitsuba::ref<mi::Scene> miScene() = 0;
+
+        // Configure scene-wide transmitter array if not configured yet.
+        virtual bool setTxArray(const py::AntennaArray& array) = 0;
+
+        // Configure scene-wide receiver array if not configured yet.
+        virtual bool setRxArray(const py::AntennaArray& array) = 0;
+
+        /**************************************
+         * Scene configuration and operations *
+         **************************************
+         */
 
         // Access proxy class to make dynamic changes to the scene.
-        std::unique_ptr<IDynamicSceneConfigProxy> dynamicConfiguration();
+        virtual IDynamicSceneConfigProxy* dynamicConfiguration() = 0;
 
+        // Access proxy class to complete various coordinate operations.
+        virtual ICoordinateTransformProxy* coordinateTransform() = 0;
 
+        // Access proxy class for converting object IDs.
+        virtual IIDConverterProxy* IDConversion() = 0;
 
-    protected:
-        void initialize() override;
+        virtual ~ISionnaAPI() = default;
     };
 
 } // namespace artery::sionna

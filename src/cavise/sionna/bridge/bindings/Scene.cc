@@ -1,5 +1,5 @@
-
 #include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <mitsuba/render/scene.h>
 #include <cavise/sionna/bridge/Helpers.h>
@@ -8,6 +8,23 @@
 
 using namespace artery::sionna;
 using namespace artery::sionna::literals;
+
+namespace {
+
+    template <typename T>
+    std::vector<std::pair<std::string, T>> orderedItems(const nanobind::object& object, const char* attribute) {
+        std::vector<std::pair<std::string, T>> result;
+        nanobind::dict items(object.attr(attribute));
+        result.reserve(items.size());
+
+        for (const auto& [key, value] : items) {
+            result.emplace_back(nanobind::cast<std::string>(key), nanobind::cast<T>(value));
+        }
+
+        return result;
+    }
+
+} // namespace
 
 py::SionnaScene::SionnaScene() {
     InitPythonClassCapability::init();
@@ -92,8 +109,16 @@ std::unordered_map<std::string, py::Transmitter> py::SionnaScene::transmitters()
     return sionna::access<std::unordered_map<std::string, py::Transmitter>>(bound_, "_transmitters");
 }
 
+py::SionnaScene::TTransmitters py::SionnaScene::orderedTransmitters() const {
+    return orderedItems<py::Transmitter>(bound_, "_transmitters");
+}
+
 std::unordered_map<std::string, py::Receiver> py::SionnaScene::receivers() const {
     return sionna::access<std::unordered_map<std::string, py::Receiver>>(bound_, "_receivers");
+}
+
+py::SionnaScene::TReceivers py::SionnaScene::orderedReceivers() const {
+    return orderedItems<py::Receiver>(bound_, "_receivers");
 }
 
 std::optional<py::AntennaArray> py::SionnaScene::txArray() const {

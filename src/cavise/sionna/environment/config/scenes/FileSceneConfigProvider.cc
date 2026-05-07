@@ -15,16 +15,16 @@ Define_Module(FileSceneConfigProvider);
 
 namespace {
 
-    mitsuba::ref<mitsuba::Resolve::Scene> instantiateScene(mitsuba::parser::ParserConfig& config, mitsuba::parser::ParserState& state) {
+    mitsuba::ref<mi::Scene> instantiateScene(mitsuba::parser::ParserConfig& config, mitsuba::parser::ParserState& state) {
         std::vector<mitsuba::ref<mitsuba::Object>> objects = mitsuba::parser::instantiate(config, state);
         if (objects.empty()) {
             throw wrapRuntimeError("sionna: parser did not instantiate any object");
         }
 
-        if (auto* scene = dynamic_cast<mitsuba::Resolve::Scene*>(objects.front().get()); scene == nullptr) {
+        if (auto* scene = dynamic_cast<mi::Scene*>(objects.front().get()); scene == nullptr) {
             throw wrapRuntimeError("sionna: root object is not a Mitsuba scene");
         } else {
-            return mitsuba::ref<mitsuba::Resolve::Scene>(scene);
+            return mitsuba::ref<mi::Scene>(scene);
         }
     }
 
@@ -45,7 +45,7 @@ void FileSceneConfigProvider::initializeFromPathAndConfig(const mitsuba::fs::pat
     config_ = std::move(cfg);
 }
 
-mitsuba::ref<mitsuba::Resolve::Scene> FileSceneConfigProvider::getSceneConfig() {
+mitsuba::ref<mi::Scene> FileSceneConfigProvider::getSceneConfig() {
     if (path_.empty()) {
         auto path = mitsuba::fs::path(par("scenePath").stringValue());
 

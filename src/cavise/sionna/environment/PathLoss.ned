@@ -16,9 +16,9 @@ module SionnaPathLoss like IPathLoss
         @class(PathLoss);
 
         string physicalEnvironmentModule = default(absPath("^.^.physicalEnvironment"));
-        bool requirePhysicalEnvironment = default(true);
-        bool updateDynamicObjectsOnQuery = default(false);
 
+        double alpha = default(2);
+        double systemLoss @unit(dB) = default(0dB);
         bool includeLineOfSight = default(true);
         bool includeReflections = default(true);
         bool includeDiffractions = default(false);

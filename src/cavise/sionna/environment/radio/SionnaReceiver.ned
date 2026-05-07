@@ -6,5 +6,4 @@ simple SionnaReceiver like ISionnaReceiver
 {
     parameters:
         @class(SionnaReceiver);
-        string physicalEnvironmentModule = default(absPath("^.^.^.^.physicalEnvironment"));
 }

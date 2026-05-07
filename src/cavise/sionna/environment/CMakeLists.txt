@@ -9,6 +9,9 @@ target_sources(sionna-phy
         Material.cc
         PathLoss.cc
         PhysicalEnvironment.cc
+        api/CoordinateTransform.cc
+        api/DynamicSceneConfig.cc
+        api/IDConverter.cc
         api/SionnaAPI.cc
         radio/SionnaAntennaArray.cc
         radio/SionnaPlanarAntennaArray.cc
@@ -18,9 +21,6 @@ target_sources(sionna-phy
         config/scenes/FileSceneConfigProvider.cc
         config/meshes/SionnaAssetMeshRegistry.cc
         config/dynamic/TraciDynamicSceneConfigProvider.cc
-        config/dynamic/TraciIDConverter.cc
-        config/dynamic/TraciCoordinateTransformer.cc
-        config/dynamic/TraciRelaxedCoordinateTransformer.cc
         visualization/SionnaSceneVisualizer.cc
     PUBLIC
         Compat.h
@@ -31,21 +31,20 @@ target_sources(sionna-phy
         Material.h
         PathLoss.h
         PhysicalEnvironment.h
+        api/CoordinateTransform.h
+        api/DynamicSceneConfig.h
+        api/IDConverter.h
         api/SionnaAPI.h
         radio/SionnaAntennaArray.h
         radio/SionnaPlanarAntennaArray.h
         radio/SionnaRadioDeviceBase.h
         radio/SionnaTransmitter.h
         radio/SionnaReceiver.h
-        config/dynamic/IDynamicSceneConfigProvider.h
         config/meshes/IMeshRegistry.h
         config/scenes/IStaticSceneProvider.h
         config/scenes/FileSceneConfigProvider.h
         config/meshes/SionnaAssetMeshRegistry.h
         config/dynamic/TraciDynamicSceneConfigProvider.h
-        config/dynamic/TraciIDConverter.h
-        config/dynamic/TraciCoordinateTransformer.h
-        config/dynamic/TraciRelaxedCoordinateTransformer.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
 )

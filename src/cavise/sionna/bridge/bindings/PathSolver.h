@@ -24,7 +24,15 @@ namespace artery::sionna::py {
         // Wrap existing object, assuming it's PathSolver.
         explicit PathSolver(nanobind::object obj);
 
-        // Calculate paths
+        // Calculate propagation paths for the current scene. For full doc, please
+        // refer to Sionna's PathSolver call, but basically:
+        // 1) scene must contain bound transmitters, receivers, scene objects, and radio materials
+        // 2) maxDepth limits the number of interactions along each path
+        // 3) maxNumPathsPerSrc and samplesPerSrc control search budget and runtime
+        // 4) syntheticArray toggles Sionna's synthetic-array approximation
+        // 5) los, specularReflection, diffuseReflection, refraction, diffraction, edgeDiffraction,
+        // and diffractionLitRegion select which propagation mechanisms are considered
+        // 6) seed makes the stochastic path search reproducible
         Paths solve(
             const SionnaScene& scene,
             int maxDepth = 3,

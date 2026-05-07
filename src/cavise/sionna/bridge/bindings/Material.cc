@@ -33,9 +33,9 @@ py::RadioMaterial::RadioMaterial(nanobind::object obj) {
 
 py::RadioMaterial::RadioMaterial(
     const std::string& name,
-    mitsuba::Resolve::Float64 conductivity,
-    mitsuba::Resolve::Float64 relativePermittivity,
-    typename Defaulted<mitsuba::Resolve::Float64>::Argument thickness) {
+    mi::Float64 conductivity,
+    mi::Float64 relativePermittivity,
+    typename Defaulted<mi::Float64>::Argument thickness) {
     this->InitPythonClassCapability::init(
         "name"_a = name,
         "thickness"_a = std::move(thickness),
@@ -43,26 +43,26 @@ py::RadioMaterial::RadioMaterial(
         "conductivity"_a = conductivity);
 }
 
-maybe_diff_t<mitsuba::Resolve::Float> py::RadioMaterial::relativePermittivity() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(this->bound_, "relative_permittivity");
+maybe_diff_t<mi::Float> py::RadioMaterial::relativePermittivity() const {
+    return sionna::access<maybe_diff_t<mi::Float>>(this->bound_, "relative_permittivity");
 }
 
-void py::RadioMaterial::setRelativePermittivity(maybe_diff_t<mitsuba::Resolve::Float> relativePermittivity) {
+void py::RadioMaterial::setRelativePermittivity(maybe_diff_t<mi::Float> relativePermittivity) {
     sionna::set(this->bound_, "relative_permittivity", relativePermittivity);
 }
 
-maybe_diff_t<mitsuba::Resolve::Float> py::RadioMaterial::conductivity() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(this->bound_, "conductivity");
+maybe_diff_t<mi::Float> py::RadioMaterial::conductivity() const {
+    return sionna::access<maybe_diff_t<mi::Float>>(this->bound_, "conductivity");
 }
 
-void py::RadioMaterial::setConductivity(maybe_diff_t<mitsuba::Resolve::Float> conductivity) {
+void py::RadioMaterial::setConductivity(maybe_diff_t<mi::Float> conductivity) {
     sionna::set(this->bound_, "conductivity", conductivity);
 }
 
-maybe_diff_t<mitsuba::Resolve::Float> py::RadioMaterial::thickness() const {
-    return sionna::access<maybe_diff_t<mitsuba::Resolve::Float>>(this->bound_, "thickness");
+maybe_diff_t<mi::Float> py::RadioMaterial::thickness() const {
+    return sionna::access<maybe_diff_t<mi::Float>>(this->bound_, "thickness");
 }
 
-void py::RadioMaterial::setThickness(maybe_diff_t<mitsuba::Resolve::Float> thickness) {
+void py::RadioMaterial::setThickness(maybe_diff_t<mi::Float> thickness) {
     sionna::set(this->bound_, "thickness", thickness);
 }
