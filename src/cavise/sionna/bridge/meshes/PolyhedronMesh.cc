@@ -1,28 +1,22 @@
 #include <cavise/sionna/bridge/EnvironmentMeshGenerator.h>
 #include <cavise/sionna/bridge/Fwd.h>
+#include <cavise/sionna/bridge/Compat.h>
 #include <cavise/sionna/bridge/Helpers.h>
 #include <cmath>
 
-using Float = float;
-using Spectrum = mitsuba::Color<Float, 3>;
-
-namespace dr = drjit;
-
-MI_IMPORT_CORE_TYPES()
-
 namespace artery::sionna::meshes {
 
-Vector3f normalized(const Vector3f& p) {
-        float n = norm(p);
+mitsuba::Resolve::Vector3f normalized(const mitsuba::Resolve::Vector3f& p) {
+        float n = toScalar(norm(p));
         if (n < 1e-9F) {
-            return Vector3f(0.F);
+            return mitsuba::Resolve::Vector3f(0.F);
         }
         return normalize(p);
 }
 
 // Centroid of a list of points
-Vector3f centroid(const std::vector<Vector3f>& pts) {
-    Vector3f c(0.F);
+mitsuba::Resolve::Vector3f centroid(const std::vector<mitsuba::Resolve::Vector3f>& pts) {
+    mitsuba::Resolve::Vector3f c(0.F);
     for (const auto& p : pts) {
         c += p;
     }
@@ -37,20 +31,15 @@ Vector3f centroid(const std::vector<Vector3f>& pts) {
 
 struct Face {
     int a{}, b{}, c{}; // indices into the global point array
-    Vector3f normal{}; // outward normal
+    mitsuba::Resolve::Vector3f normal{}; // outward normal
 };
 
-// Signed volume of tetrahedron formed by face (a,b,c) and point d
-float signedVolume(const Vector3f& a, const Vector3f& b, const Vector3f& c, const Vector3f& d) {
-    return dot(cross(b - a, c - a), d - a);
-}
-
 // Returns true if point p is strictly above face (i.e. on the outward side)
-bool isVisible(const Face& f, const Vector3f& p, const std::vector<Vector3f>& pts) {
-    return dot(f.normal, p - pts[f.a]) > 1e-7F;
+bool isVisible(const Face& f, const mitsuba::Resolve::Vector3f& p, const std::vector<mitsuba::Resolve::Vector3f>& pts) {
+    return toScalar(dot(f.normal, p - pts[f.a])) > 1e-7F;
 }
 
-std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
+std::vector<Face> buildConvexHull(const std::vector<mitsuba::Resolve::Vector3f>& pts) {
     int n = static_cast<int>(pts.size());
     if (n < 4) {
         throw wrapRuntimeError("Need at least 4 non-coplanar points for a convex hull");
@@ -65,20 +54,20 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
     int p3 = -1;
 
     for (int i = 1; i < n && p1 < 0; ++i) {
-        if (norm(pts[i] - pts[p0]) > 1e-7F) {
+        if (toScalar(norm(pts[i] - pts[p0])) > 1e-7F) {
             p1 = i;
         }
     }
 
     for (int i = 1; i < n && p2 < 0; ++i) {
-        if (i != p1 && norm(cross(pts[i] - pts[p0], pts[p1] - pts[p0])) > 1e-7F) {
+        if (i != p1 && toScalar(norm(cross(pts[i] - pts[p0], pts[p1] - pts[p0]))) > 1e-7F) {
             p2 = i;
         }
     }
 
     for (int i = 1; i < n && p3 < 0; ++i) {
         if (i != p1 && i != p2 &&
-            std::abs(dot(pts[i] - pts[p0], cross(pts[p1] - pts[p0], pts[p2] - pts[p0]))) > 1e-7F) {
+            std::abs(toScalar(dot(pts[i] - pts[p0], cross(pts[p1] - pts[p0], pts[p2] - pts[p0])))) > 1e-7F) {
             p3 = i;
         }
     }
@@ -89,12 +78,12 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
 
     // Orient initial tetrahedron so all normals point outward
     // Use the centroid of the tetrahedron as the interior reference point
-    Vector3f innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25F;
+    mitsuba::Resolve::Vector3f innerPoint = (pts[p0] + pts[p1] + pts[p2] + pts[p3]) * 0.25F;
 
     auto makeFace = [&](int a, int b, int c) -> Face {
-        Vector3f n = normalized(cross(pts[b] - pts[a], pts[c] - pts[a]));
+        mitsuba::Resolve::Vector3f n = normalized(cross(pts[b] - pts[a], pts[c] - pts[a]));
         // Flip if normal points inward
-        if (dot(n, pts[a] - innerPoint) < 0) {
+        if (toScalar(dot(n, pts[a] - innerPoint)) < 0) {
             n = n * -1.0F, std::swap(b, c);
         }
         return {a, b, c, n};
@@ -111,7 +100,7 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
             continue;
         }
 
-        const Vector3f& p = pts[i];
+        const mitsuba::Resolve::Vector3f& p = pts[i];
 
         // Collect visible faces and horizon edges
         std::vector<bool> visible(hull.size(), false);
@@ -173,8 +162,8 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
         }
 
         // Add new cone faces from horizon edges to the new point
-        Vector3f innerPt = centroid([&]() {
-            std::vector<Vector3f> tmp;
+        mitsuba::Resolve::Vector3f innerPt = centroid([&]() {
+            std::vector<mitsuba::Resolve::Vector3f> tmp;
             for (const auto& ff : newHull) {
                 tmp.push_back(pts[ff.a]);
                 tmp.push_back(pts[ff.b]);
@@ -184,9 +173,9 @@ std::vector<Face> buildConvexHull(const std::vector<Vector3f>& pts) {
         }());
 
         for (const auto& e : horizon) {
-            Vector3f n = normalized(cross(pts[e.b] - pts[e.a], p - pts[e.a]));
+            mitsuba::Resolve::Vector3f n = normalized(cross(pts[e.b] - pts[e.a], p - pts[e.a]));
             // Ensure outward orientation
-            if (dot(n, pts[e.a] - innerPt) < 0) {
+            if (toScalar(dot(n, pts[e.a] - innerPt)) < 0) {
                 n = n * -1.0F;
                 newHull.push_back({e.b, e.a, i, n});
             } else {
@@ -211,7 +200,7 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
     const int n = static_cast<int>(vertices.size()) / 3;
 
     // Build Vector3f point list
-    std::vector<Vector3f> pts;
+    std::vector<mitsuba::Resolve::Vector3f> pts;
     pts.reserve(n);
     for (int i = 0; i < n; ++i) {
         pts.push_back({vertices[3 * i], vertices[3 * i + 1], vertices[3 * i + 2]});
@@ -224,7 +213,7 @@ std::string generateObjPolyhedron(const std::vector<float>& vertices) {
     // Build deduplicated vertex list for the OBJ output.
     // We collect only the hull vertices (some input points may be interior).
     // -----------------------------------------------------------------------
-    std::vector<Vector3f> outVerts;
+    std::vector<mitsuba::Resolve::Vector3f> outVerts;
     // Map from original index -> output index (1-based)
     std::unordered_map<int, int> indexMap;
 
