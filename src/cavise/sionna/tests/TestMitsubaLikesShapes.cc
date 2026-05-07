@@ -1,6 +1,9 @@
-#include <memory>
+#include <functional>
+#include <ios>
+#include <iostream>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
-#include <optional>
 #include <filesystem>
 
 #include <gtest/gtest.h>
@@ -26,15 +29,135 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/bind_vector.h>
 
+#include <cavise/sionna/bridge/EnvironmentMeshGenerator.h>
+#include <string>
+
 namespace nb = nanobind;
 
 static std::function<void()> develop_callback_fn = nullptr;
 static void develop_callback() {
-    if (develop_callback_fn)
+    if (develop_callback_fn) {
         develop_callback_fn();
+    }
 }
 
-TEST(SceneTest, Scalar_RGB) {
+class SceneTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        std::filesystem::create_directories("meshes");
+    }
+
+    static void SaveObjToFile(const std::string& obj_content, const std::string& filename) {
+        std::filesystem::path filepath = std::filesystem::path("meshes") / filename;
+        
+        std::ofstream out(filepath, std::ios::trunc);
+        ASSERT_TRUE(out.is_open()) << true << filepath;
+
+        out << obj_content;
+        out.close();
+
+        EXPECT_TRUE(std::filesystem::exists(filepath)) << true << filepath;
+        EXPECT_GT(std::filesystem::file_size(filepath), 0) << true << filepath;
+
+        std::cout << "Saved: " << filepath << " (" << std::filesystem::file_size(filepath) << " bytes)\n";
+    }
+};
+
+// ============================================================================
+// CUBE TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Cube_Unit) {
+    std::string const obj = artery::sionna::meshes::generateObjCube(1.0F, 1.0F, 1.0F);
+    SaveObjToFile(obj, "cube_unit.obj");
+}
+
+TEST_F(SceneTest, Cube_Rectangular) {
+    std::string const obj = artery::sionna::meshes::generateObjCube(10.0F, 5.0F, 2.0F);
+    SaveObjToFile(obj, "cube_rect.obj");
+}
+
+// ============================================================================
+// SPHERE TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Sphere_Radius1) {
+    std::string const obj = artery::sionna::meshes::generateObjSphere(1.0F);
+    SaveObjToFile(obj, "sphere_r1.obj");
+}
+
+TEST_F(SceneTest, Sphere_Radius10) {
+    std::string const obj = artery::sionna::meshes::generateObjSphere(10.0F);
+    SaveObjToFile(obj, "sphere_r10.obj");
+}
+
+// ============================================================================
+// PRISM TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Prism_Hexagon) {
+    // INET: shape="prism 100 -86.6 -50 0 -100 86.6 -50 86.6 50 0 100 -86.6 50"
+    float const height = 100.0F;
+    std::vector<float> base = {
+        -86.6F, -50.0F,  0.0F, -100.0F,  86.6F, -50.0F,
+         86.6F,  50.0F,  0.0F,  100.0F, -86.6F,  50.0F
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_hex.obj");
+}
+
+TEST_F(SceneTest, Prism_Triangle) {
+    // INET: shape="prism 100 0 0 150 0 75 129.9"
+    float const height = 100.0F;
+    std::vector<float> base = {0.0F, 0.0F, 150.0F, 0.0F, 75.0F, 129.9F};
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_tri.obj");
+}
+
+TEST_F(SceneTest, Prism_Quad) {
+    // INET: shape="prism 10 -5 -5 5 -5 5 5 -5 5"
+    float const height = 10.0F;
+    std::vector<float> base = {-5, -5, 5, -5, 5, 5, -5, 5};
+
+    std::string obj = artery::sionna::meshes::generateObjPrism(height, base);
+    SaveObjToFile(obj, "prism_quad.obj");
+}
+
+// ============================================================================
+// POLYHEDRON TESTS
+// ============================================================================
+
+TEST_F(SceneTest, Polyhedron_Cube8Vertices) {
+    std::vector<float> verts = {
+        0,0,0, 100,0,0, 0,0,100, 100,0,100,
+        0,100,0, 100,100,0, 0,100,100, 100,100,100
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_cube.obj");
+}
+
+TEST_F(SceneTest, Polyhedron_Tetrahedron) {
+    std::vector<float> verts = {
+        0,100,100, 100,100,0, 0,0,0, 100,0,100
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_tetra.obj");
+}
+
+TEST_F(SceneTest, Polyhedron_Pyramid) {
+    std::vector<float> verts = {
+        0,0,0, 100,0,0, 0,0,100, 100,0,100, 50,250,50
+    };
+
+    std::string obj = artery::sionna::meshes::generateObjPolyhedron(verts);
+    SaveObjToFile(obj, "polyhedron_pyramid.obj");
+}
+
+TEST_F(SceneTest, Render_Simple_xml) {
     using Float = float;
     using Spectrum = mitsuba::Color<Float, 3>;
 
@@ -43,8 +166,8 @@ TEST(SceneTest, Scalar_RGB) {
 
     ASSERT_EQ(MI_DEFAULT_VARIANT, "scalar_rgb");
 
-    bool parallel{true}; // Common flags
-    bool optimize{true};
+    bool const parallel{true}; // Common flags
+    bool const optimize{true};
     std::string name{"./simple.xml"}; // Relative path !!!PREPARE SCENE AND MESHES
     std::string name_out{"./simple.exr"};
 
@@ -52,8 +175,9 @@ TEST(SceneTest, Scalar_RGB) {
     mi.attr("set_variant")(MI_DEFAULT_VARIANT); // curr_variant hiden inside library, can't change without memory fuckery. Too dangerous to change via callback, but possible, check alias.cpp:162
 
     nb::object variant = mi.attr("variant")(); // Verification + posible expansion of variants to test
-    if (variant.is_none())
+    if (variant.is_none()) {
         Throw("No variant was set!");
+    }
 
     parser::ParameterList params; // maybe params.reserve(0) ???
     nb::str variant_str = nb::borrow<nb::str>(std::move(variant));
@@ -66,8 +190,9 @@ TEST(SceneTest, Scalar_RGB) {
 
     // Set up FileResolver like the old parser does
     fs::path filename(name);
-    if (!fs::exists(filename))
+    if (!fs::exists(filename)) {
         Throw("\"%s\": file does not exist!", filename);
+    }
 
     ref<FileResolver> fs_backup = file_resolver(); // better to prepare new file_resolver to avoid conflicts
     ref<FileResolver> fs = new FileResolver(*fs_backup);
@@ -76,7 +201,7 @@ TEST(SceneTest, Scalar_RGB) {
 
     std::vector<ref<Object>> objects;
     try {
-        nb::gil_scoped_release release;
+        nb::gil_scoped_release const release;
         parser::ParserState state = parser::parse_file(config, name, params);
         parser::transform_all(config, state);
         objects = parser::instantiate(config, state);
@@ -88,17 +213,21 @@ TEST(SceneTest, Scalar_RGB) {
     
     //MI_INVOKE_VARIANT(variant_str.c_str(), render, objects[0].get(), sensor_i, filename);
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(objects[0].get());
-    if (!scene)
+    if (scene == nullptr) {
         Throw("Root element of the input file must be a <scene> tag!");
-    if (scene->sensors().empty())
+    }
+    if (scene->sensors().empty()) {
         Throw("No sensor specified for scene: %s", scene);
-    if (sensor_i >= scene->sensors().size())
+    }
+    if (sensor_i >= scene->sensors().size()) {
         Throw("Specified sensor index is out of bounds!");
+    }
     auto film = scene->sensors()[sensor_i]->film();
 
     auto integrator = scene->integrator();
-    if (!integrator)
+    if (integrator == nullptr) {
         Throw("No integrator specified for scene: %s", scene);
+    }
 
     develop_callback_fn = [film]() { film->develop(); };
 
