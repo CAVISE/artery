@@ -170,19 +170,43 @@ std::filesystem::path SionnaSceneVisualizer::framePath(const std::string& camera
 nanobind::object SionnaSceneVisualizer::resolvePythonRenderer(const std::string& rendererSpec) const {
     nanobind::gil_scoped_acquire gil;
 
-    // Parse "module.function" format
-    auto dotPos = rendererSpec.find_last_of('.');
-    if (dotPos == std::string::npos) {
+    // Parse "module:function" or "path/to/file.py:function" format
+    auto pos = rendererSpec.find_last_of(':');
+    if (pos == std::string::npos) {
         throw omnetpp::cRuntimeError(
-            "SionnaSceneVisualizer: Invalid pythonRenderer format '%s'. Expected 'module.function'",
+            "SionnaSceneVisualizer: Invalid pythonRenderer format '%s'. Expected 'module:function' or 'path/to/file.py:function'",
             rendererSpec.c_str());
     }
 
-    std::string moduleName = rendererSpec.substr(0, dotPos);
-    std::string functionName = rendererSpec.substr(dotPos + 1);
+    std::string moduleName = rendererSpec.substr(0, pos);
+    std::string functionName = rendererSpec.substr(pos + 1);
 
     try {
-        nanobind::module_ module = nanobind::module_::import_(moduleName.c_str());
+        nanobind::object module;
+
+        // Check if moduleName is a file path (contains path separators or .py extension)
+        bool isFilePath = (moduleName.find('/') != std::string::npos ||
+                           moduleName.find('\\') != std::string::npos ||
+                           moduleName.ends_with(".py"));
+
+        if (isFilePath) {
+            // Extract directory and module name from file path
+            std::filesystem::path modulePath(moduleName);
+            std::string dirPath = modulePath.parent_path().string();
+            std::string pureModuleName = modulePath.stem().string();  // removes .py extension
+
+            // Add directory to sys.path so Python can find the module
+            auto sys = nanobind::module_::import_("sys");
+            auto path = nanobind::getattr(sys, "path");
+            path.attr("append")(dirPath);
+
+            // Import the module by name (without path and extension)
+            module = nanobind::module_::import_(pureModuleName.c_str());
+        } else {
+            // Traditional module import (e.g., "my_package.my_module")
+            module = nanobind::module_::import_(moduleName.c_str());
+        }
+
         nanobind::object func = nanobind::getattr(module, functionName.c_str());
 
         if (!nanobind::isinstance<nanobind::callable>(func)) {

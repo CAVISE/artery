@@ -5,7 +5,7 @@ This module demonstrates how to create a custom Python renderer callback
 that can be used with the SionnaSceneVisualizer's pythonRenderer parameter.
 
 Usage in omnetpp.ini:
-    *.physicalEnvironment.sceneVisualizer.pythonRenderer = "scenarios.sionna.scripts.example_renderer.render_callback"
+    *.physicalEnvironment.sceneVisualizer.pythonRenderer = "scenarios/sionna/scripts/example_renderer.py:render_callback"
 """
 
 import os
