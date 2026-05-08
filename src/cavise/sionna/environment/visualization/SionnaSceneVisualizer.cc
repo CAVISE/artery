@@ -190,24 +190,47 @@ nanobind::object SionnaSceneVisualizer::resolvePythonRenderer(const std::string&
                            moduleName.ends_with(".py"));
 
         if (isFilePath) {
-            // Extract directory and module name from file path
+            // Convert to absolute path to ensure we can find the file
             std::filesystem::path modulePath(moduleName);
-            std::string dirPath = modulePath.parent_path().string();
-            std::string pureModuleName = modulePath.stem().string();  // removes .py extension
+            if (!modulePath.is_absolute()) {
+                // Resolve relative to the current working directory
+                modulePath = std::filesystem::absolute(modulePath);
+            }
 
-            // Add directory to sys.path so Python can find the module
-            auto sys = nanobind::module_::import_("sys");
-            auto path = nanobind::getattr(sys, "path");
-            path.attr("append")(dirPath);
+            if (!std::filesystem::exists(modulePath)) {
+                throw omnetpp::cRuntimeError(
+                    "SionnaSceneVisualizer: Python renderer file not found: '%s' (resolved to '%s')",
+                    moduleName.c_str(), modulePath.string().c_str());
+            }
 
-            // Import the module by name (without path and extension)
-            module = nanobind::module_::import_(pureModuleName.c_str());
+            // Use importlib.util to load module from file path
+            auto importlib = nanobind::module_::import_("importlib");
+            auto util = importlib.attr("util");
+
+            // Create module spec from file location
+            auto spec_from_file = util.attr("spec_from_file_location");
+            auto spec = spec_from_file("sionna_dynamic_renderer", modulePath.string());
+
+            if (spec.is_none()) {
+                throw omnetpp::cRuntimeError(
+                    "SionnaSceneVisualizer: Failed to create module spec for '%s'",
+                    modulePath.string().c_str());
+            }
+
+            // Create module from spec
+            auto module_from_spec = util.attr("module_from_spec");
+            module = module_from_spec(spec);
+
+            // Execute the module
+            auto loader = spec.attr("loader");
+            loader.attr("exec_module")(module);
+
         } else {
-            // Traditional module import (e.g., "my_package.my_module")
+            // Traditional module import (e.g., "my_package:my_module")
             module = nanobind::module_::import_(moduleName.c_str());
         }
 
-        nanobind::object func = nanobind::getattr(module, functionName.c_str());
+        nanobind::object func = module.attr(functionName.c_str());
 
         if (!nanobind::isinstance<nanobind::callable>(func)) {
             throw omnetpp::cRuntimeError(

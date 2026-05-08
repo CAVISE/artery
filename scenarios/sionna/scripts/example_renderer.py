@@ -5,7 +5,7 @@ This module demonstrates how to create a custom Python renderer callback
 that can be used with the SionnaSceneVisualizer's pythonRenderer parameter.
 
 Usage in omnetpp.ini:
-    *.physicalEnvironment.sceneVisualizer.pythonRenderer = "scenarios/sionna/scripts/example_renderer.py:render_callback"
+    *.physicalEnvironment.sceneVisualizer.pythonRenderer = "scripts/example_renderer.py:render_callback"
 """
 
 import os
@@ -18,25 +18,6 @@ import sionna.rt as rt
 
 
 def render_callback(scene, sim_time, output_dir, frame_index):
-    """
-    Custom render callback for SionnaSceneVisualizer.
-
-    Parameters:
-    -----------
-    scene : sionna.rt.Scene
-        The Sionna scene object to render
-    sim_time : float
-        Current simulation time in seconds
-    output_dir : str
-        Output directory path for rendered frames
-    frame_index : int
-        Current frame index
-
-    Returns:
-    --------
-    None
-    """
-
     # Create output directory if it doesn't exist
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -78,12 +59,6 @@ def render_callback(scene, sim_time, output_dir, frame_index):
 
 
 def render_callback_with_multiple_cameras(scene, sim_time, output_dir, frame_index):
-    """
-    Example callback that renders from multiple camera angles.
-
-    This demonstrates how you can render multiple views in a single callback.
-    """
-
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
