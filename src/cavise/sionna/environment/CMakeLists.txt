@@ -23,6 +23,7 @@ target_sources(sionna-phy
         config/dynamic/SionnaVehicleActor.cc
         config/dynamic/TraciDynamicSceneConfigProvider.cc
         visualization/SionnaSceneVisualizer.cc
+        hook/SionnaPythonHook.cc
     PUBLIC
         Compat.h
         PathLoss.h
@@ -50,6 +51,8 @@ target_sources(sionna-phy
         config/dynamic/TraciDynamicSceneConfigProvider.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
+        hook/ISionnaPythonHook.h
+        hook/SionnaPythonHook.h
 )
 
 set_target_properties(sionna-phy

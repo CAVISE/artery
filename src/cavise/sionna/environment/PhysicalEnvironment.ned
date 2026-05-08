@@ -5,6 +5,7 @@ import cavise.sionna.environment.config.dynamic.TraciDynamicSceneConfigProvider;
 import cavise.sionna.environment.config.meshes.IMeshRegistry;
 import cavise.sionna.environment.config.scenes.IStaticSceneProvider;
 import cavise.sionna.environment.visualization.ISceneVisualizer;
+import cavise.sionna.environment.hook.ISionnaPythonHook;
 
 //
 // Extension of INET PhysicalEnvironment that mirrors the configured physical
@@ -26,6 +27,7 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
         string meshRegistryType = default("cavise.sionna.environment.config.meshes.SionnaDirectAssetMeshRegistry");
         string sceneVisualizerType = default("cavise.sionna.environment.visualization.SionnaSceneVisualizer");
         string traciNodeManagerModule = default("^.traci.nodes");
+        string pythonHookType = default("");  // Set to "cavise.sionna.environment.hook.SionnaPythonHook" to enable Python hook
         xml remapMatrix = default(xmldoc("transforms.xml", "/transforms/identity"));
         xml rotationMatrix = default(xmldoc("transforms.xml", "/transforms/identity"));
         xml translationVector = default(xmldoc("transforms.xml", "/transforms/zero"));
@@ -45,5 +47,9 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
 
         sceneVisualizer: <sceneVisualizerType> like ISceneVisualizer if sceneVisualizerType != "" {
             @display("p=140,220");
+        }
+
+        pythonHook: <pythonHookType> like ISionnaPythonHook if pythonHookType != "" {
+            @display("p=140,250");
         }
 }
