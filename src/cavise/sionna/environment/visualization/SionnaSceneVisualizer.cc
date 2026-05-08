@@ -3,6 +3,8 @@
 #include <omnetpp/cexception.h>
 #include <omnetpp/cxmlelement.h>
 
+#include <nanobind/nanobind.h>
+
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -20,6 +22,11 @@ void SionnaSceneVisualizer::initialize() {
     width_ = par("width").intValue();
     height_ = par("height").intValue();
     renderInterval_ = par("renderInterval");
+    pythonRendererSpec_ = par("pythonRenderer").stdstringValue();
+
+    if (!pythonRendererSpec_.empty()) {
+        pythonRenderer_ = resolvePythonRenderer(pythonRendererSpec_);
+    }
 
     renderTimer_ = new omnetpp::cMessage("sionna-render-timer");
 }
@@ -57,6 +64,26 @@ void SionnaSceneVisualizer::renderFrame() {
         return;
     }
 
+    if (pythonRenderer_) {
+        // Use custom Python renderer callback
+        try {
+            nanobind::gil_scoped_acquire gil;
+            nanobind::dict kwargs;
+            kwargs["scene"] = scene_->object();
+            kwargs["sim_time"] = omnetpp::simTime().dbl();
+            kwargs["output_dir"] = outputDir_;
+            kwargs["frame_index"] = frameIndex_;
+
+            pythonRenderer_(**kwargs);
+        } catch (const nanobind::python_error& error) {
+            throw omnetpp::cRuntimeError("SionnaSceneVisualizer: Python renderer callback failed: %s", error.what());
+        }
+
+        ++frameIndex_;
+        return;
+    }
+
+    // Default rendering logic
     const auto cameras = resolveCameras();
     for (const auto& [cameraId, camera] : cameras) {
         const auto filename = framePath(cameraId);
@@ -138,6 +165,38 @@ std::filesystem::path SionnaSceneVisualizer::framePath(const std::string& camera
     std::ostringstream name;
     name << "frame-" << std::setw(6) << std::setfill('0') << frameIndex_ << ".png";
     return std::filesystem::path(outputDir_) / cameraId / name.str();
+}
+
+nanobind::object SionnaSceneVisualizer::resolvePythonRenderer(const std::string& rendererSpec) const {
+    nanobind::gil_scoped_acquire gil;
+
+    // Parse "module.function" format
+    auto dotPos = rendererSpec.find_last_of('.');
+    if (dotPos == std::string::npos) {
+        throw omnetpp::cRuntimeError(
+            "SionnaSceneVisualizer: Invalid pythonRenderer format '%s'. Expected 'module.function'",
+            rendererSpec.c_str());
+    }
+
+    std::string moduleName = rendererSpec.substr(0, dotPos);
+    std::string functionName = rendererSpec.substr(dotPos + 1);
+
+    try {
+        nanobind::module_ module = nanobind::module_::import_(moduleName.c_str());
+        nanobind::object func = nanobind::getattr(module, functionName.c_str());
+
+        if (!nanobind::isinstance<nanobind::callable>(func)) {
+            throw omnetpp::cRuntimeError(
+                "SionnaSceneVisualizer: '%s' is not callable in module '%s'",
+                functionName.c_str(), moduleName.c_str());
+        }
+
+        return func;
+    } catch (const nanobind::python_error& error) {
+        throw omnetpp::cRuntimeError(
+            "SionnaSceneVisualizer: Failed to resolve pythonRenderer '%s': %s",
+            rendererSpec.c_str(), error.what());
+    }
 }
 
 void SionnaSceneVisualizer::scheduleNextRender() {
