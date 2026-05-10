@@ -5,8 +5,7 @@ import cavise.application.CosimService;
 simple Spamming extends CosimService
 {
     parameters:
-        @namespace(cavise);
-        @class(Spamming);
+        @class(::cavise::Spamming);
 
         int burstCount = default(5);
 }

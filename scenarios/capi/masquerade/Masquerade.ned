@@ -5,8 +5,7 @@ import cavise.application.CosimService;
 simple Masquerade extends CosimService
 {
     parameters:
-        @namespace(cavise);
-        @class(Masquerade);
+        @class(::cavise::Masquerade);
 
         string masqueradeStrategy @enum("first", "swap", "random") = default("first");
 }
