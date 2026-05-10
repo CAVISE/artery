@@ -1,12 +1,14 @@
 #pragma once
 
+// for ref.
+#include <nanobind/nanobind.h>
+
 #include <cavise/sionna/bridge/Compat.h>
 #include <cavise/sionna/bridge/bindings/Constants.h>
 #include <cavise/sionna/bridge/capabilities/Core.h>
 #include <cavise/sionna/bridge/capabilities/Calling.h>
 
 #include <drjit/array_traits.h>
-#include <nanobind/nanobind.h>
 
 #include <string>
 #include <tuple>
@@ -17,6 +19,8 @@ namespace artery::sionna::py {
         : public SionnaRtModule
         , public InitPythonClassCapability {
     public:
+        // RGB color used by Sionna/Mitsuba for visualization. This is separate
+        // from the radio propagation parameters below.
         using TColor = std::tuple<float, float, float>;
 
         // IPythonClassIdentityCapability implementation.
@@ -25,10 +29,13 @@ namespace artery::sionna::py {
         // Returns material name.
         std::string materialName() const;
 
+        // Access material visualization color.
         TColor color() const;
         void setColor(TColor newColor);
     };
 
+    // Wrapper around sionna.rt.RadioMaterial. RadioMaterial is the material type
+    // expected by Sionna path solvers for scene objects.
     class SIONNA_BRIDGE_API RadioMaterial
         : public DefaultedClassProviderCapability
         , public RadioMaterialBase {
@@ -36,23 +43,31 @@ namespace artery::sionna::py {
         // IPythonClassIdentityCapability implementation.
         const char* className() const override;
 
+        // Construct Sionna's default radio material.
         RadioMaterial();
+
+        // Wrap an existing Sionna RadioMaterial python object.
         explicit RadioMaterial(nanobind::object obj);
 
+        // Construct a named material from radio parameters:
+        // conductivity [S/m], relativePermittivity [-], and thickness [m].
         RadioMaterial(
             const std::string& name,
-            mitsuba::Resolve::Float64 conductivity = 0.0,
-            mitsuba::Resolve::Float64 relativePermittivity = 1.0,
-            typename Defaulted<mitsuba::Resolve::Float64>::Argument thickness = Constants::defaultThickness);
+            mi::Float64 conductivity = 0.0,
+            mi::Float64 relativePermittivity = 1.0,
+            typename Defaulted<mi::Float64>::Argument thickness = Constants::defaultThickness);
 
-        maybe_diff_t<mitsuba::Resolve::Float> relativePermittivity() const;
-        void setRelativePermittivity(maybe_diff_t<mitsuba::Resolve::Float> relativePermittivity);
+        // Relative permittivity controls dielectric response in propagation.
+        maybe_diff_t<mi::Float> relativePermittivity() const;
+        void setRelativePermittivity(maybe_diff_t<mi::Float> relativePermittivity);
 
-        maybe_diff_t<mitsuba::Resolve::Float> conductivity() const;
-        void setConductivity(maybe_diff_t<mitsuba::Resolve::Float> conductivity);
+        // Electrical conductivity in S/m.
+        maybe_diff_t<mi::Float> conductivity() const;
+        void setConductivity(maybe_diff_t<mi::Float> conductivity);
 
-        maybe_diff_t<mitsuba::Resolve::Float> thickness() const;
-        void setThickness(maybe_diff_t<mitsuba::Resolve::Float> thickness);
+        // Effective material thickness in meters, used by Sionna penetration/refraction logic.
+        maybe_diff_t<mi::Float> thickness() const;
+        void setThickness(maybe_diff_t<mi::Float> thickness);
     };
 
 } // namespace artery::sionna::py

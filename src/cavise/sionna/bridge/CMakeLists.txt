@@ -28,9 +28,13 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
 
     target_sources(${_target}
             PRIVATE
+                bindings/AntennaArray.cc
                 bindings/Camera.cc
                 bindings/Constants.cc
                 bindings/Material.cc
+                bindings/PathSolver.cc
+                bindings/Paths.cc
+                bindings/RadioDevice.cc
                 bindings/Scene.cc
                 bindings/SceneObject.cc
                 meshes/CubeMesh.cc
@@ -46,9 +50,13 @@ foreach(_mode IN ITEMS ${SIONNA_BRIDGE_COMPILATION_MODES})
                 capabilities/Calling.h
                 capabilities/Core.h
                 capabilities/Defaulted.h
+                bindings/AntennaArray.h
                 bindings/Camera.h
                 bindings/Constants.h
                 bindings/Material.h
+                bindings/PathSolver.h
+                bindings/Paths.h
+                bindings/RadioDevice.h
                 bindings/Scene.h
                 bindings/SceneObject.h
         )

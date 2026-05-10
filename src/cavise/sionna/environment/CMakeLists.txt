@@ -2,38 +2,52 @@ add_artery_feature(sionna-phy)
 
 target_sources(sionna-phy
     PRIVATE
-        Ground.cc
-        MaterialRegistry.cc
-        MitsubaShape.cc
-        PhysicalObject.cc
-        Material.cc
         PathLoss.cc
         PhysicalEnvironment.cc
+        SionnaScalarAnalogModel.cc
+        api/CoordinateTransform.cc
+        api/DynamicSceneConfig.cc
+        api/IDConverter.cc
+        api/SionnaAPI.cc
+        radio/SionnaAntennaArray.cc
+        radio/SionnaPlanarAntennaArray.cc
+        radio/SionnaRadioDeviceBase.cc
+        radio/SionnaVanetTransmitter.cc
+        radio/SionnaVanetReceiver.cc
         config/scenes/FileSceneConfigProvider.cc
+        config/scenes/SionnaBuiltinSceneConfigProvider.cc
         config/meshes/SionnaAssetMeshRegistry.cc
+        config/dynamic/DynamicSceneConfigListener.cc
+        config/dynamic/SionnaActorBase.cc
+        config/dynamic/SionnaPersonActor.cc
+        config/dynamic/SionnaVehicleActor.cc
         config/dynamic/TraciDynamicSceneConfigProvider.cc
-        config/dynamic/TraciIDConverter.cc
-        config/dynamic/TraciCoordinateTransformer.cc
-        config/dynamic/TraciRelaxedCoordinateTransformer.cc
         visualization/SionnaSceneVisualizer.cc
     PUBLIC
         Compat.h
-        Ground.h
-        MaterialRegistry.h
-        MitsubaShape.h
-        PhysicalObject.h
-        Material.h
         PathLoss.h
         PhysicalEnvironment.h
-        config/dynamic/IDynamicSceneConfigProvider.h
+        SionnaScalarAnalogModel.h
+        api/CoordinateTransform.h
+        api/DynamicSceneConfig.h
+        api/IDConverter.h
+        api/SionnaAPI.h
+        radio/SionnaAntennaArray.h
+        radio/SionnaPlanarAntennaArray.h
+        radio/SionnaRadioDeviceBase.h
+        radio/SionnaVanetTransmitter.h
+        radio/SionnaVanetReceiver.h
         config/meshes/IMeshRegistry.h
         config/scenes/IStaticSceneProvider.h
         config/scenes/FileSceneConfigProvider.h
+        config/scenes/SionnaBuiltinSceneConfigProvider.h
         config/meshes/SionnaAssetMeshRegistry.h
+        config/dynamic/DynamicSceneConfigListener.h
+        config/dynamic/ISionnaActor.h
+        config/dynamic/SionnaActorBase.h
+        config/dynamic/SionnaPersonActor.h
+        config/dynamic/SionnaVehicleActor.h
         config/dynamic/TraciDynamicSceneConfigProvider.h
-        config/dynamic/TraciIDConverter.h
-        config/dynamic/TraciCoordinateTransformer.h
-        config/dynamic/TraciRelaxedCoordinateTransformer.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
 )

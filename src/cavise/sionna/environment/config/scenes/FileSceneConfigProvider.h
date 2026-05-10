@@ -14,8 +14,6 @@ namespace artery::sionna {
         : public IStaticSceneProvider
         , public omnetpp::cSimpleModule {
     public:
-        using VariantName = mitsuba::detail::variant<mitsuba::Resolve::Float, mitsuba::Resolve::Spectrum>;
-
         FileSceneConfigProvider() = default;
 
         // omnetpp::cSimpleModule implementation.
@@ -23,7 +21,7 @@ namespace artery::sionna {
         void initializeFromPathAndConfig(const mitsuba::fs::path& path, mitsuba::parser::ParserConfig cfg);
 
         // IStaticSceneProvider implementation.
-        mitsuba::ref<mitsuba::Resolve::Scene> getSceneConfig() override;
+        mitsuba::ref<mi::Scene> getSceneConfig() override;
 
     private:
         mitsuba::fs::path path_;

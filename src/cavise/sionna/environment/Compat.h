@@ -5,6 +5,7 @@
 #include <mitsuba/core/fwd.h>
 #include <inet/common/geometry/common/Coord.h>
 #include <inet/common/geometry/common/EulerAngles.h>
+#include <artery/traci/Cast.h>
 #include <traci/Angle.h>
 #include <traci/Position.h>
 
@@ -63,6 +64,36 @@ namespace artery::sionna {
     };
 
     template <>
+    struct impl<mitsuba::Resolve::Point3f, inet::Coord, void> {
+        static mitsuba::Resolve::Point3f convert(const inet::Coord& value) {
+            return mitsuba::Resolve::Point3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x),
+                fromScalar<mitsuba::Resolve::Float>(value.y),
+                fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Vector3f, inet::Coord, void> {
+        static mitsuba::Resolve::Vector3f convert(const inet::Coord& value) {
+            return mitsuba::Resolve::Vector3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x),
+                fromScalar<mitsuba::Resolve::Float>(value.y),
+                fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Point3f, inet::EulerAngles, void> {
+        static mitsuba::Resolve::Point3f convert(const inet::EulerAngles& value) {
+            return mitsuba::Resolve::Point3f(
+                fromScalar<mitsuba::Resolve::Float>(value.alpha),
+                fromScalar<mitsuba::Resolve::Float>(value.beta),
+                fromScalar<mitsuba::Resolve::Float>(value.gamma));
+        }
+    };
+
+    template <>
     struct impl<mitsuba::Resolve::Point3f, traci::TraCIPosition, void> {
         static mitsuba::Resolve::Point3f convert(const traci::TraCIPosition& value) {
             return mitsuba::Resolve::Point3f(
@@ -79,6 +110,62 @@ namespace artery::sionna {
                 fromScalar<mitsuba::Resolve::Float>(value.x),
                 fromScalar<mitsuba::Resolve::Float>(value.y),
                 fromScalar<mitsuba::Resolve::Float>(value.z));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Point3f, artery::Position, void> {
+        static mitsuba::Resolve::Point3f convert(const artery::Position& value) {
+            return mitsuba::Resolve::Point3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x.value()),
+                fromScalar<mitsuba::Resolve::Float>(value.y.value()),
+                fromScalar<mitsuba::Resolve::Float>(0.0));
+        }
+    };
+
+    template <>
+    struct impl<mitsuba::Resolve::Vector3f, artery::Position, void> {
+        static mitsuba::Resolve::Vector3f convert(const artery::Position& value) {
+            return mitsuba::Resolve::Vector3f(
+                fromScalar<mitsuba::Resolve::Float>(value.x.value()),
+                fromScalar<mitsuba::Resolve::Float>(value.y.value()),
+                fromScalar<mitsuba::Resolve::Float>(0.0));
+        }
+    };
+
+    template <typename Value>
+    struct impl<artery::Position, mitsuba::Point<Value, 3>, void> {
+        static artery::Position convert(const mitsuba::Point<Value, 3>& value) {
+            return artery::Position(toScalar(value[0]), toScalar(value[1]));
+        }
+    };
+
+    template <typename Value>
+    struct impl<artery::Position, mitsuba::Vector<Value, 3>, void> {
+        static artery::Position convert(const mitsuba::Vector<Value, 3>& value) {
+            return artery::Position(toScalar(value[0]), toScalar(value[1]));
+        }
+    };
+
+    template <typename Value>
+    struct impl<libsumo::TraCIPosition, mitsuba::Point<Value, 3>, void> {
+        static libsumo::TraCIPosition convert(const mitsuba::Point<Value, 3>& value) {
+            libsumo::TraCIPosition result;
+            result.x = toScalar(value[0]);
+            result.y = toScalar(value[1]);
+            result.z = toScalar(value[2]);
+            return result;
+        }
+    };
+
+    template <typename Value>
+    struct impl<libsumo::TraCIPosition, mitsuba::Vector<Value, 3>, void> {
+        static libsumo::TraCIPosition convert(const mitsuba::Vector<Value, 3>& value) {
+            libsumo::TraCIPosition result;
+            result.x = toScalar(value[0]);
+            result.y = toScalar(value[1]);
+            result.z = toScalar(value[2]);
+            return result;
         }
     };
 

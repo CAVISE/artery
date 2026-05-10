@@ -56,6 +56,10 @@ namespace mitsuba {
 #endif
 
 namespace artery::sionna {
-    // Statci access to current variant name.
+
+    // Convenient alias.
+    using mi = mitsuba::Resolve;
+
+    // Static access to current variant name.
     using VariantName = mitsuba::detail::variant<mitsuba::Resolve::Float, mitsuba::Resolve::Spectrum>;
 }
