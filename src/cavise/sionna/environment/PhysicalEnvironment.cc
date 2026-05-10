@@ -1,5 +1,6 @@
 #include "PhysicalEnvironment.h"
 
+#include <inet/common/ModuleAccess.h>
 #include <inet/environment/common/MaterialRegistry.h>
 
 #include <cavise/sionna/environment/api/DynamicSceneConfig.h>
@@ -49,6 +50,7 @@ int PhysicalEnvironment::numInitStages() const {
 void PhysicalEnvironment::initialize(int stage) {
     switch (stage) {
         case inet::InitStages::INITSTAGE_LOCAL:
+            subscribeTraCI(getSystemModule());
             initializePythonRuntime();
             break;
         case inet::InitStages::INITSTAGE_PHYSICAL_ENVIRONMENT:
@@ -61,6 +63,7 @@ void PhysicalEnvironment::initialize(int stage) {
 }
 
 void PhysicalEnvironment::finish() {
+    unsubscribeTraCI();
     scene_.reset();
     interpreter_.reset();
     omnetpp::cSimpleModule::finish();
@@ -92,14 +95,16 @@ void PhysicalEnvironment::initializePythonRuntime() {
 }
 
 void PhysicalEnvironment::initializeScene() {
-    auto* provider = getSubmoduleAsType<IStaticSceneProvider>("sceneConfigProvider");
+    auto* provider = omnetpp::check_and_cast<IStaticSceneProvider*>(getSubmodule("sceneConfigProvider"));
     scene_.emplace(provider->getSceneConfig());
 }
 
 void PhysicalEnvironment::initializeSionnaAPI() {
     dynamicConfiguration_ = std::make_shared<DynamicSceneConfigProxy>(this);
     IDConversion_ = std::make_shared<TraciIDConverterProxy>();
+}
 
+void PhysicalEnvironment::initializeCoordinateTransform() {
     auto traciNodeManagerPath = par("traciNodeManagerModule").stdstringValue();
     auto* traciNodeManagerModule = getModuleByPath(traciNodeManagerPath.c_str());
     auto* traciNodeManager = dynamic_cast<traci::BasicNodeManager*>(traciNodeManagerModule);
@@ -115,30 +120,20 @@ void PhysicalEnvironment::initializeSionnaAPI() {
         traci::Boundary(traciNodeManager->getAPI()->simulation.getNetBoundary()),
         this);
 
-    if (auto roadMeshName = par("roadMeshName").stdstringValue(); !roadMeshName.empty()) {
-        transform->meshResolver().addMesh(roadMeshName);
-    }
-
     coordinateTransform_ = std::move(transform);
 }
 
-void PhysicalEnvironment::handleParameterChange(const char* /* parname */) {
-}
-
-void PhysicalEnvironment::refreshDisplay() const {
-}
-
-void PhysicalEnvironment::buildSceneFromEnvironment() {
-}
-
-void PhysicalEnvironment::updateDynamicObjects() {
+void PhysicalEnvironment::traciInit() {
+    initializeCoordinateTransform();
 }
 
 inet::physicalenvironment::IObjectCache* PhysicalEnvironment::getObjectCache() const {
+    // NOTE: Probably useless for sionna.
     return nullptr;
 }
 
 inet::physicalenvironment::IGround* PhysicalEnvironment::getGround() const {
+    // NOTE: Not too hard to implement, just useless.
     return nullptr;
 }
 
@@ -168,49 +163,15 @@ const inet::physicalenvironment::IPhysicalObject* PhysicalEnvironment::getObject
     return nullptr;
 }
 
-void PhysicalEnvironment::visitObjects(
-    const inet::IVisitor* visitor,
-    const inet::LineSegment& lineSegment) const {
-    if (!visitor) {
-        return;
-    }
-
-    const int count = getNumObjects();
-    for (int i = 0; i < count; ++i) {
-        const auto* object = getObject(i);
-        if (!object) {
-            continue;
-        }
-
-        const auto* shape = object->getShape();
-        if (!shape) {
-            continue;
-        }
-
-        inet::Coord intersection1;
-        inet::Coord intersection2;
-        inet::Coord normal1;
-        inet::Coord normal2;
-
-        if (shape->computeIntersection(lineSegment, intersection1, intersection2, normal1, normal2)) {
-            visitor->visit(dynamic_cast<const omnetpp::cObject*>(object));
-        }
-    }
+void PhysicalEnvironment::visitObjects(const inet::IVisitor* visitor, const inet::LineSegment& lineSegment) const {
+    // NOTE: do nothing.
 }
 
 const artery::sionna::py::SionnaScene& PhysicalEnvironment::scene() const {
-    if (!scene_.has_value()) {
-        throw omnetpp::cRuntimeError("physical environment scene is not initialized");
-    }
-
     return scene_.value();
 }
 
 artery::sionna::py::SionnaScene& PhysicalEnvironment::scene() {
-    if (!scene_.has_value()) {
-        throw omnetpp::cRuntimeError("physical environment scene is not initialized");
-    }
-
     return scene_.value();
 }
 

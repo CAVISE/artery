@@ -49,8 +49,8 @@ namespace artery::sionna::py {
             const std::string& pattern,
             float verticalSpacing = 0.5f,
             float horizontalSpacing = 0.5f,
-            std::optional<std::string> polarization = std::nullopt,
-            std::optional<std::string> polarizationModel = std::nullopt);
+            const std::string& polarization = "V",
+            const std::string& polarizationModel = "tr38901_2");
     };
 
 } // namespace artery::sionna::py

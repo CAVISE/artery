@@ -1,100 +1,83 @@
 #include "SionnaRadioDeviceBase.h"
 
-#include <artery/traci/Cast.h>
-
-#include <cavise/sionna/environment/Compat.h>
-
 #include <omnetpp/cmodule.h>
 #include <omnetpp/cexception.h>
-
 #include <inet/common/InitStages.h>
+
+#include <mitsuba/render/mesh.h>
 
 using namespace artery::sionna;
 
-namespace {
+void SionnaRadioDeviceBase::initializeSionnaRadioDevice(omnetpp::cModule* owner) {
+    owner_ = owner;
 
-    traci::TraCIAngle reverseMobilityHeading(inet::IMobility* mobility) {
-        const auto orientation = mobility->getCurrentAngularPosition();
-        return traci::angle_cast(artery::Angle::from_radian(-orientation.alpha));
+    if (mobility_ = radio()->getAntenna()->getMobility(); mobility_ == nullptr) {
+        auto* module = dynamic_cast<const omnetpp::cModule*>(radio());
+        throw omnetpp::cRuntimeError("Radio %s has no antenna mobility", module ? module->getFullPath().c_str() : "<unknown>");
     }
 
-} // namespace
+    if (actor_ = dynamic_cast<ISionnaActor*>(mobility_); actor_ == nullptr) {
+        auto* module = dynamic_cast<omnetpp::cModule*>(mobility_);
+        throw omnetpp::cRuntimeError("Sionna radio device mobility %s is not a Sionna actor", module ? module->getFullPath().c_str() : "<unknown>");
+    }
 
-omnetpp::simsignal_t SionnaRadioDeviceBase::sceneRadioDevicesEditedSignal = omnetpp::cComponent::registerSignal("sionnaSceneRadioDevicesEdited");
-
-int SionnaRadioDeviceBase::numInitStages() const {
-    return inet::NUM_INIT_STAGES;
+    bindIntoScene();
+    subscribeToDynamicSceneUpdates(owner_);
 }
 
-void SionnaRadioDeviceBase::initialize(int stage) {
-    if (stage == inet::INITSTAGE_LAST) {
-        bindIntoScene();
-
-        if (auto* component = dynamic_cast<omnetpp::cComponent*>(mobility()); component == nullptr) {
-            throw omnetpp::cRuntimeError("Sionna radio device mobility is not an OMNeT++ component");
-        } else {
-            component->subscribe(inet::IMobility::mobilityStateChangedSignal, this);
-        }
-    }
+void SionnaRadioDeviceBase::finishSionnaRadioDevice() {
+    unsubscribeFromDynamicSceneUpdates();
+    actor_ = nullptr;
+    mobility_ = nullptr;
+    owner_ = nullptr;
 }
 
-void SionnaRadioDeviceBase::finish() {
-    if (auto* component = dynamic_cast<omnetpp::cComponent*>(mobility()); component != nullptr) {
-        component->unsubscribe(inet::IMobility::mobilityStateChangedSignal, this);
-    }
-
-    omnetpp::cSimpleModule::finish();
-}
-
-void SionnaRadioDeviceBase::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, omnetpp::cObject* /* object */, omnetpp::cObject* /* details */) {
-    if (signal != inet::IMobility::mobilityStateChangedSignal) {
-        throw omnetpp::cRuntimeError("SionnaRadioDeviceBase received unknown signal");
-    }
-
+void SionnaRadioDeviceBase::onDynamicSceneEdited() {
     updatePhysics();
-    emit(sceneRadioDevicesEditedSignal, 1UL);
 }
 
 const inet::physicallayer::IRadio* SionnaRadioDeviceBase::radio() const {
-    if (auto* radio = dynamic_cast<const inet::physicallayer::IRadio*>(getParentModule()); radio == nullptr) {
-        throw omnetpp::cRuntimeError("%s has no bound parent radio", getClassName());
+    if (auto* radio = dynamic_cast<const inet::physicallayer::IRadio*>(owner_->getParentModule()); radio == nullptr) {
+        throw omnetpp::cRuntimeError("%s has no bound parent radio", owner_->getClassName());
     } else {
         return radio;
     }
 }
 
 inet::IMobility* SionnaRadioDeviceBase::mobility() const {
-    if (auto* mobility = radio()->getAntenna()->getMobility(); mobility == nullptr) {
-        auto* module = dynamic_cast<const omnetpp::cModule*>(radio());
-        throw omnetpp::cRuntimeError("Radio %s has no antenna mobility", module ? module->getFullPath().c_str() : "<unknown>");
-    } else {
-        return mobility;
-    }
+    return mobility_;
 }
 
 ISionnaAPI* SionnaRadioDeviceBase::api() const {
-    return ISionnaAPI::get(this);
+    return ISionnaAPI::get(owner_);
 }
 
-std::string SionnaRadioDeviceBase::sceneName() const {
-    return api()->IDConversion()->convertID(IDNamespace::SUMO, IDNamespace::SIONNA, getFullPath());
+ISionnaActor* SionnaRadioDeviceBase::actor() const {
+    return actor_;
+}
+
+std::string SionnaRadioDeviceBase::sceneID() const {
+    return api()->IDConversion()->convertID(IDNamespace::SUMO, IDNamespace::SIONNA, owner_->getFullPath());
 }
 
 mi::Point3f SionnaRadioDeviceBase::position() const {
-    using c = CoordinateSystem;
-    return api()->coordinateTransform()->convertCoordinates(c::INET, c::SIONNA_LOCAL, convert<mi::Vector3f>(mobility()->getCurrentPosition()));
+    auto* transform = api()->coordinateTransform();
+    auto position = actor_->position();
+
+    const auto bbox = actor_->mesh()->bbox();
+    const auto min = transform->fromSionnaScene(bbox.min);
+    const auto max = transform->fromSionnaScene(bbox.max);
+
+    // NOTE: place device slightly above bbox, so it will not hit vehicle itself on transmission.
+    position.z() = drjit::maximum(min.z(), max.z()) + mi::Float(1e-3);
+
+    return transform->toSionnaScene(position);
 }
 
 mi::Point3f SionnaRadioDeviceBase::orientation() const {
-    using c = CoordinateSystem;
-    const auto orientation = convert<mi::Point3f>(reverseMobilityHeading(mobility()));
-    return api()->coordinateTransform()->convertCoordinates(c::SIONNA_SCENE, c::SIONNA_LOCAL, orientation);
+    return actor_->orientation();
 }
 
 mi::Vector3f SionnaRadioDeviceBase::velocity() const {
-    using c = CoordinateSystem;
-    auto* transform = api()->coordinateTransform();
-    const auto canonical = transform->convertCoordinates(c::INET, c::SIONNA_SCENE, convert<mi::Vector3f>(mobility()->getCurrentSpeed())) -
-                           transform->convertCoordinates(c::INET, c::SIONNA_SCENE, mi::Vector3f(0.0, 0.0, 0.0));
-    return transform->convertCoordinates(c::SIONNA_SCENE, c::SIONNA_LOCAL, canonical);
+    return actor_->velocity();
 }

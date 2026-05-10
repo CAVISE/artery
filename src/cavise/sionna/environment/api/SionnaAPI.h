@@ -8,21 +8,20 @@
 #include <omnetpp/cexception.h>
 #include <omnetpp/cmodule.h>
 
+#include <drjit/array.h>
+
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/bindings/AntennaArray.h>
 #include <cavise/sionna/bridge/bindings/RadioDevice.h>
 #include <cavise/sionna/bridge/bindings/Scene.h>
 #include <cavise/sionna/bridge/bindings/SceneObject.h>
 
+#include <traci/Angle.h>
+#include <traci/Position.h>
+
 namespace artery::sionna {
 
-    // Coordinate systems present in sim.
-    enum class CoordinateSystem : std::uint8_t {
-        SUMO,
-        INET,
-        SIONNA_LOCAL,
-        SIONNA_SCENE,
-    };
+    using CoordinateArray3f = drjit::Array<mi::Float, 3>;
 
     // Different places that define IDs. Note, these
     // are created mainly to sync objects in various simulators.
@@ -68,16 +67,19 @@ namespace artery::sionna {
     };
 
     // This proxy handles coordinate transforms. Coordinates consist of 3 components (x, y, z).
-    // When extending, prefer chaining transforms to achieve more robust approach.
     class ICoordinateTransformProxy {
     public:
-        // There are 4 coordinate systems in total when simulation runs on par with SUMO:
-        // 1) SUMO coordinates, used by Node Manager when propagating events from SUMO
-        // 2) INET coordinates, used by mobility module. Actually, this is the most robust way to acquire coordinates.
-        // 3) Local Sionna coordinates. Sionna coordinates may be inverted, causing axes changing places, so (Z, Y, Z) or (Y, Z, X) all might be valid.
-        // Local coordinates are guaranteed to be in a form of (X, Y, Z), so the third component is always responsible for vertical position, etc.
-        // 4) Sionna coordinates - returned by scene objects, and passed to them. Failing to cast to these will result in broken scene.
-        virtual mi::Vector3f convertCoordinates(CoordinateSystem from, CoordinateSystem to, const mi::Vector3f& v) = 0;
+        // Converts SUMO position coordinates into remapped Sionna scene coordinates used by scene objects.
+        virtual mi::Point3f fromSumo(const libsumo::TraCIPosition& position) = 0;
+
+        // Converts SUMO heading into remapped Sionna scene orientation coordinates.
+        virtual mi::Point3f fromSumo(traci::TraCIAngle heading) = 0;
+
+        // Applies the Sionna scene remap to canonical scene coordinates.
+        virtual CoordinateArray3f toSionnaScene(const CoordinateArray3f& v) = 0;
+
+        // Reverses the Sionna scene remap, returning canonical scene coordinates.
+        virtual CoordinateArray3f fromSionnaScene(const CoordinateArray3f& v) = 0;
 
         // When transferring object from SUMO or other 2D simulators, use this function
         // to place object on terrain or other mesh, like road for example.

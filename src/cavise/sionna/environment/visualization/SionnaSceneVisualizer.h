@@ -26,7 +26,6 @@ namespace artery::sionna {
 
         // omnetpp::cSimpleModule implementation.
         void initialize() override;
-        void handleMessage(omnetpp::cMessage* msg) override;
         void finish() override;
 
         // ISceneVisualizer implementation.
@@ -41,15 +40,16 @@ namespace artery::sionna {
 
     private:
         ISionnaAPI* api_ = nullptr;
-        TraciDynamicSceneConfigProvider* dynamicSceneConfigProvider_ = nullptr;
-        PathLoss* pathLossModule_ = nullptr;
-
-        std::string outputDir_;
-        std::string camera_;
+        PathLoss* pathLoss_ = nullptr;
         int frameIndex_ = 0;
-        int spp_ = 16;
-        int width_ = 1280;
-        int height_ = 720;
+
+        struct {
+            std::string outputDir;
+            std::string camera;
+            int spp = 16;
+            int width = 1280;
+            int height = 720;
+        } renderParams_;
     };
 
 } // namespace artery::sionna

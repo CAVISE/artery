@@ -35,8 +35,8 @@ py::PlanarArray::PlanarArray(
     const std::string& pattern,
     float verticalSpacing,
     float horizontalSpacing,
-    std::optional<std::string> polarization,
-    std::optional<std::string> polarizationModel) {
+    const std::string& polarization,
+    const std::string& polarizationModel) {
     InitPythonClassCapability::init(
         "num_rows"_a = numRows,
         "num_cols"_a = numCols,

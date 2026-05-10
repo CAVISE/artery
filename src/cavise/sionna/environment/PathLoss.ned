@@ -23,6 +23,6 @@ module SionnaPathLoss like IPathLoss
         bool includeReflections = default(true);
         bool includeDiffractions = default(false);
         int maxReflectionDepth = default(1);
-        int maxDiffractionDepth = default(0);
+        int maxDiffractionDepth = default(1);
         double maxRange @unit(m) = default(1000m);
 }

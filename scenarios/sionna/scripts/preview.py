@@ -93,3 +93,5 @@ test_cam = rt.Camera(position=mi.Point3f(origin))
 test_cam.look_at(mi.Point3f(quat_target))
 
 print(f"orientation: {test_cam.orientation}")
+
+# %%

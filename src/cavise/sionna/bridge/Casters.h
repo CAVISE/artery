@@ -6,6 +6,7 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/map.h>
+#include <nanobind/stl/variant.h>
 #include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/optional.h>
 

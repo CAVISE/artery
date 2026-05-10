@@ -6,18 +6,6 @@ using namespace artery::sionna;
 
 Define_Module(SionnaPlanarAntennaArray);
 
-namespace {
-
-    std::optional<std::string> optionalStringParameter(omnetpp::cModule* module, const char* name) {
-        if (auto value = module->par(name).stdstringValue(); value.empty()) {
-            return std::nullopt;
-        } else {
-            return value;
-        }
-    }
-
-} // namespace
-
 void SionnaPlanarAntennaArray::initialize(int stage) {
     SionnaAntennaArray::initialize(stage);
     if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT_2) {
@@ -27,8 +15,8 @@ void SionnaPlanarAntennaArray::initialize(int stage) {
             par("pattern").stdstringValue(),
             static_cast<float>(par("verticalSpacing").doubleValue()),
             static_cast<float>(par("horizontalSpacing").doubleValue()),
-            optionalStringParameter(this, "polarization"),
-            optionalStringParameter(this, "polarizationModel"));
+            par("polarization").stdstringValue(),
+            par("polarizationModel").stdstringValue());
         setArray(std::move(array));
     }
 }

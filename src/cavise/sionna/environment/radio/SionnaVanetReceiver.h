@@ -2,23 +2,27 @@
 
 #include "SionnaRadioDeviceBase.h"
 
+#include <artery/inet/VanetReceiver.h>
+
+#include <optional>
+
 namespace artery::sionna {
 
-    class SionnaReceiver
-        : public SionnaRadioDeviceBase {
+    class SionnaVanetReceiver
+        : public artery::VanetReceiver
+        , public SionnaRadioDeviceBase {
     public:
-        // omnetpp::cSimpleModule implementation.
         void finish() override;
 
-        // Sionna receiver access.
         py::Receiver& device();
         const py::Receiver& device() const;
 
     protected:
+        void initialize(int stage) override;
         void updatePhysics() override;
         void bindIntoScene() override;
 
-    protected:
+    private:
         std::optional<py::Receiver> device_;
     };
 

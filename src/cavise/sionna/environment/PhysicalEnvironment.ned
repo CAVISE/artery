@@ -26,7 +26,6 @@ module SionnaPhysicalEnvironment extends PhysicalEnvironment
         string meshRegistryType = default("cavise.sionna.environment.config.meshes.SionnaDirectAssetMeshRegistry");
         string sceneVisualizerType = default("cavise.sionna.environment.visualization.SionnaSceneVisualizer");
         string traciNodeManagerModule = default("^.traci.nodes");
-        string roadMeshName = default("");
         xml remapMatrix = default(xmldoc("transforms.xml", "/transforms/identity"));
         xml rotationMatrix = default(xmldoc("transforms.xml", "/transforms/identity"));
         xml translationVector = default(xmldoc("transforms.xml", "/transforms/zero"));

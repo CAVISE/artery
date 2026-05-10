@@ -5,6 +5,7 @@
 #include <cavise/sionna/environment/api/SionnaAPI.h>
 #include <cavise/sionna/environment/config/dynamic/TraciDynamicSceneConfigProvider.h>
 #include <cavise/sionna/environment/config/scenes/IStaticSceneProvider.h>
+#include <traci/Listener.h>
 
 #include <omnetpp/csimplemodule.h>
 
@@ -17,6 +18,7 @@ namespace artery::sionna {
 
     class PhysicalEnvironment : public inet::physicalenvironment::IPhysicalEnvironment
         , public omnetpp::cSimpleModule
+        , public traci::Listener
         , public ISionnaAPI {
     public:
         PhysicalEnvironment() = default;
@@ -51,27 +53,13 @@ namespace artery::sionna {
         void initialize(int stage) override;
         void finish() override;
 
-        void handleParameterChange(const char* parname) override;
-        void refreshDisplay() const override;
-
-        virtual void buildSceneFromEnvironment();
-        virtual void updateDynamicObjects();
-
     private:
-        template <typename T>
-        T* getSubmoduleAsType(const std::string& submodule) {
-            if (auto* mod = getSubmodule(submodule.c_str()); !mod) {
-                throw omnetpp::cRuntimeError("missing %s submodule", submodule);
-            } else if (auto* casted = dynamic_cast<T*>(mod); !casted) {
-                throw omnetpp::cRuntimeError("%s does not implement %s", submodule, typeid(T).name());
-            } else {
-                return casted;
-            }
-        }
-
         void initializePythonRuntime();
         void initializeScene();
         void initializeSionnaAPI();
+        void initializeCoordinateTransform();
+        void traciInit() override;
+
         std::unique_ptr<ScopedInterpreter> interpreter_;
         std::optional<py::SionnaScene> scene_;
         std::shared_ptr<IDynamicSceneConfigProxy> dynamicConfiguration_;

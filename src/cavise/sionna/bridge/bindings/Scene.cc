@@ -2,6 +2,7 @@
 #include <nanobind/stl/string.h>
 
 #include <mitsuba/render/scene.h>
+#include <cavise/sionna/bridge/Casters.h>
 #include <cavise/sionna/bridge/Helpers.h>
 
 #include "Scene.h"
@@ -75,7 +76,7 @@ void py::SionnaScene::renderToFile(
         "num_samples"_a = numSamples,
         "resolution"_a = std::make_tuple(width, height),
         "fov"_a = fov,
-        "paths"_a = *paths,
+        "paths"_a = paths,
         "show_devices"_a = showDevices);
 }
 

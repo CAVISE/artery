@@ -2,25 +2,29 @@
 
 #include "SionnaRadioDeviceBase.h"
 
+#include <inet/physicallayer/ieee80211/packetlevel/Ieee80211ScalarTransmitter.h>
+
+#include <optional>
+
 namespace artery::sionna {
 
-    class SionnaTransmitter
-        : public SionnaRadioDeviceBase {
+    class SionnaVanetTransmitter
+        : public inet::physicallayer::Ieee80211ScalarTransmitter
+        , public SionnaRadioDeviceBase {
     public:
-        // omnetpp::cSimpleModule implementation.
         void finish() override;
 
-        // Sionna transmitter access.
         py::Transmitter& device();
         const py::Transmitter& device() const;
 
         void setPowerDbm(float powerDbm);
 
     protected:
+        void initialize(int stage) override;
         void updatePhysics() override;
         void bindIntoScene() override;
 
-    protected:
+    private:
         std::optional<py::Transmitter> device_;
     };
 
