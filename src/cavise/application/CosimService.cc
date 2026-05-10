@@ -15,17 +15,14 @@
 #include <cavise_msgs/CosimMessage_m.h>
 
 #include "CosimService.h"
-#include "omnetpp/cexception.h"
-#include "omnetpp/cparsimcomm.h"
 
 using namespace cavise;
 
 Define_Module(CosimService)
 
-CosimService::CosimService() = default;
+    CosimService::CosimService() = default;
 
-void CosimService::initialize()
-{
+void CosimService::initialize() {
     ItsG5Service::initialize();
 
     const auto* capiCoreModulePath = par("capiCoreModule").stringValue();
@@ -38,14 +35,12 @@ void CosimService::initialize()
     EV_INFO << "CosimService subscribed to CAPICore signals\n";
 }
 
-void CosimService::finish()
-{
+void CosimService::finish() {
     cUnsubscribe();
     ItsG5Service::finish();
 }
 
-void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnetpp::cPacket* packet, const artery::NetworkInterface& /* interface */)
-{
+void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnetpp::cPacket* packet, const artery::NetworkInterface& /* interface */) {
     const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
     if (!strcmp(packet->getClassName(), "CosimMessage")) {
         EV_DEBUG << "receiving message (type=CosimMessage) on vehicle " << vehicle.getVehicleId();
@@ -67,14 +62,16 @@ void CosimService::indicate(const vanetza::btp::DataIndication& /* ind */, omnet
         return;
     }
 
-    accumulated_.push_back(std::move(receivedMessage));
-    EV_INFO << "stored cosim payload on vehicle " << vehicle.getVehicleId()
-            << ", accumulated entities=" << accumulated_.size() << "\n";
+    if (process(receivedMessage)) {
+        accumulated_.push_back(std::move(receivedMessage));
+        EV_INFO << "stored cosim payload on vehicle " << vehicle.getVehicleId()
+                << ", accumulated entities=" << accumulated_.size() << "\n";
+    }
+
     delete packet;
 }
 
-void CosimService::trigger()
-{
+void CosimService::trigger() {
     static const vanetza::ItsAid itsAid = 16480;
     const auto& mco = getFacilities().get_const<artery::MultiChannelPolicy>();
     const auto& networks = getFacilities().get_const<artery::NetworkInterfaceTable>();
@@ -83,6 +80,7 @@ void CosimService::trigger()
         std::shared_ptr<artery::NetworkInterface> network = networks.select(channel);
         if (!network) {
             EV_DEBUG << "no network interface available for channel " << channel << '\n';
+            continue;
         }
 
         vanetza::btp::DataRequestB req;
@@ -94,8 +92,14 @@ void CosimService::trigger()
         req.gn.its_aid = itsAid;
 
         auto* message = new CosimMessage;
+        auto current = make(network);
+        if (current == nullptr) {
+            delete message;
+            continue;
+        }
+
         std::string payload;
-        if (auto status = google::protobuf::util::MessageToJsonString(current_, &payload); !status.ok()) {
+        if (auto status = google::protobuf::util::MessageToJsonString(*current, &payload); !status.ok()) {
             EV_ERROR << "error serializing message contents: " << status.ToString() << "\n";
             delete message;
             continue;
@@ -106,6 +110,7 @@ void CosimService::trigger()
         EV_INFO << "sending cosim payload from vehicle " << vehicle.getVehicleId()
                 << " on channel " << channel
                 << ", payload bytes=" << payload.size() << "\n";
+
         request(req, message, network.get());
     }
 }
@@ -142,4 +147,20 @@ void CosimService::cStep(CAPI* api) {
     }
 
     EV_DEBUG << "no matching OpenCDA entity found for vehicle " << id << "\n";
+}
+
+bool CosimService::process(capi::Entity& /* message */) {
+    return true;
+}
+
+std::unique_ptr<capi::Entity> CosimService::make(std::shared_ptr<artery::NetworkInterface>& /* iface */) {
+    return std::make_unique<capi::Entity>(current_);
+}
+
+capi::Entity& CosimService::current() {
+    return current_;
+}
+
+const capi::Entity& CosimService::current() const {
+    return current_;
 }
