@@ -74,19 +74,19 @@ void PathLoss::initialize(int stage) {
             configureInt("seed", solverOptions_.seed);
         }
 
-        solvedLinksByType_[-1].setName("sionna.solvedLinks.missing");
-        solvedLinksByType_[py::InteractionTypes::none.value()].setName("sionna.solvedLinks.los");
-        solvedLinksByType_[py::InteractionTypes::specular.value()].setName("sionna.solvedLinks.specular");
-        solvedLinksByType_[py::InteractionTypes::diffuse.value()].setName("sionna.solvedLinks.diffuse");
-        solvedLinksByType_[py::InteractionTypes::refraction.value()].setName("sionna.solvedLinks.refraction");
-        solvedLinksByType_[py::InteractionTypes::diffraction.value()].setName("sionna.solvedLinks.diffraction");
-
         // Max range defines range where communication is not possible at all.
         maxRange_ = par("maxRange").doubleValue();
         api_ = ISionnaAPI::get(getModuleByPath(par("physicalEnvironmentModule").stringValue()));
         subscribeToDynamicSceneUpdates(getSystemModule());
     } else if (stage == inet::INITSTAGE_PHYSICAL_ENVIRONMENT_2) {
         solver_.emplace();
+
+        solvedLinksByType_[-1].setName("sionna.solvedLinks.missing");
+        solvedLinksByType_[py::InteractionTypes::none.value()].setName("sionna.solvedLinks.los");
+        solvedLinksByType_[py::InteractionTypes::specular.value()].setName("sionna.solvedLinks.specular");
+        solvedLinksByType_[py::InteractionTypes::diffuse.value()].setName("sionna.solvedLinks.diffuse");
+        solvedLinksByType_[py::InteractionTypes::refraction.value()].setName("sionna.solvedLinks.refraction");
+        solvedLinksByType_[py::InteractionTypes::diffraction.value()].setName("sionna.solvedLinks.diffraction");
     }
 }
 
