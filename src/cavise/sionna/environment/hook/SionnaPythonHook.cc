@@ -21,11 +21,6 @@ using namespace nanobind;
 
 Define_Module(SionnaPythonHook);
 
-// Define static signal members for TraCI
-omnetpp::simsignal_t SionnaPythonHook::traciInitSignal_ = omnetpp::cComponent::registerSignal("traci.init");
-omnetpp::simsignal_t SionnaPythonHook::traciStepSignal_ = omnetpp::cComponent::registerSignal("traci.step");
-omnetpp::simsignal_t SionnaPythonHook::traciCloseSignal_ = omnetpp::cComponent::registerSignal("traci.close");
-
 // Define static signal members for scene edit
 omnetpp::simsignal_t SionnaPythonHook::sceneEditBeginSignal_ = omnetpp::cComponent::registerSignal("sceneEditBegin");
 omnetpp::simsignal_t SionnaPythonHook::sceneEditEndSignal_ = omnetpp::cComponent::registerSignal("sceneEditEnd");
@@ -39,13 +34,7 @@ void SionnaPythonHook::initialize(int stage) {
         // Get parameters.
         pythonModulePath_ = par("pythonModulePath").stdstringValue();
 
-        // Get references to modules for signal subscription.
-        traciCoreModule_ = getModuleByPath(par("traciCoreModule").stringValue());
-        if (!traciCoreModule_) {
-            throw omnetpp::cRuntimeError("SionnaPythonHook: traciCoreModule not found at path '%s'",
-                                         par("traciCoreModule").stringValue());
-        }
-
+        // Get reference to scene config provider module for signal subscription.
         sceneConfigProviderModule_ = getModuleByPath(par("sceneConfigProviderModule").stringValue());
         if (!sceneConfigProviderModule_) {
             throw omnetpp::cRuntimeError("SionnaPythonHook: sceneConfigProviderModule not found at path '%s'",
@@ -56,10 +45,13 @@ void SionnaPythonHook::initialize(int stage) {
         // Load the Python module.
         loadPythonModule();
 
-        // Subscribe to TraCI signals.
-        traciCoreModule_->subscribe(traciInitSignal_, this);
-        traciCoreModule_->subscribe(traciStepSignal_, this);
-        traciCoreModule_->subscribe(traciCloseSignal_, this);
+        // Subscribe to TraCI signals using traci::Listener.
+        omnetpp::cModule* traciCoreModule = getModuleByPath(par("traciCoreModule").stringValue());
+        if (!traciCoreModule) {
+            throw omnetpp::cRuntimeError("SionnaPythonHook: traciCoreModule not found at path '%s'",
+                                         par("traciCoreModule").stringValue());
+        }
+        subscribeTraCI(traciCoreModule);
 
         // Subscribe to scene edit signals.
         sceneConfigProviderModule_->subscribe(sceneEditBeginSignal_, this);
@@ -68,13 +60,10 @@ void SionnaPythonHook::initialize(int stage) {
 }
 
 void SionnaPythonHook::finish() {
-    // Unsubscribe from signals.
-    if (traciCoreModule_) {
-        traciCoreModule_->unsubscribe(traciInitSignal_, this);
-        traciCoreModule_->unsubscribe(traciStepSignal_, this);
-        traciCoreModule_->unsubscribe(traciCloseSignal_, this);
-    }
+    // Unsubscribe from TraCI signals using traci::Listener.
+    unsubscribeTraCI();
 
+    // Unsubscribe from scene edit signals.
     if (sceneConfigProviderModule_) {
         sceneConfigProviderModule_->unsubscribe(sceneEditBeginSignal_, this);
         sceneConfigProviderModule_->unsubscribe(sceneEditEndSignal_, this);
@@ -184,26 +173,37 @@ void SionnaPythonHook::callPythonMethod(const std::string& methodName) {
 
         // Call the method.
         hook.attr(methodName.c_str())();
-        EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
+        //EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
+        EV_INFO << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
 
     } catch (const nanobind::python_error& e) {
         EV_ERROR << "SionnaPythonHook: Error calling Python method '" << methodName << "': " << e.what() << std::endl;
     }
 }
 
-void SionnaPythonHook::receiveSignal(omnetpp::cComponent* /*source*/, omnetpp::simsignal_t signal,
-                                    const omnetpp::SimTime& /*value*/, omnetpp::cObject* /*details*/) {
-    if (signal == traciInitSignal_) {
-        callPythonMethod("on_traci_init");
-    } else if (signal == traciStepSignal_) {
-        callPythonMethod("on_traci_step");
-    } else if (signal == traciCloseSignal_) {
-        callPythonMethod("on_traci_close");
-    } else if (signal == sceneEditBeginSignal_) {
+void SionnaPythonHook::receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal,
+                                     const omnetpp::SimTime& value, omnetpp::cObject* details) {
+    // Let traci::Listener handle TraCI signals (traciInit, traciStep, traciClose).
+    traci::Listener::receiveSignal(source, signal, value, details);
+
+    // Handle scene edit signals.
+    if (signal == sceneEditBeginSignal_) {
         onSceneEditBegin();
     } else if (signal == sceneEditEndSignal_) {
         onSceneEditEnd();
     }
+}
+
+void SionnaPythonHook::traciInit() {
+    callPythonMethod("on_traci_init");
+}
+
+void SionnaPythonHook::traciStep() {
+    callPythonMethod("on_traci_step");
+}
+
+void SionnaPythonHook::traciClose() {
+    callPythonMethod("on_traci_close");
 }
 
 void SionnaPythonHook::onSceneEditBegin() {

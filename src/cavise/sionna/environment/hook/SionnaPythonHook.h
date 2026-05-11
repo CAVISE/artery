@@ -3,7 +3,8 @@
 #include <cavise/sionna/environment/hook/ISionnaPythonHook.h>
 #include <cavise/sionna/bridge/Helpers.h>
 
-#include <omnetpp/clistener.h>
+#include <traci/Listener.h>
+
 #include <omnetpp/csimplemodule.h>
 #include <omnetpp/simtime.h>
 
@@ -41,7 +42,7 @@ namespace artery::sionna {
     //         """Called when TraCI closes"""
     //         pass
     //
-    class SionnaPythonHook : public ISionnaPythonHook, public omnetpp::cListener {
+    class SionnaPythonHook : public ISionnaPythonHook, public traci::Listener {
     public:
         SionnaPythonHook() = default;
         ~SionnaPythonHook() override = default;
@@ -56,9 +57,14 @@ namespace artery::sionna {
         void onSceneEditBegin() override;
         void onSceneEditEnd() override;
 
-        // omnetpp::cListener override.
+        // traci::Listener override.
         void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal,
-                          const omnetpp::SimTime& value, omnetpp::cObject* details) override;
+                           const omnetpp::SimTime& value, omnetpp::cObject* details) override;
+
+        // traci::Listener virtual methods.
+        void traciInit() override;
+        void traciStep() override;
+        void traciClose() override;
 
     private:
         // Load the Python module specified by the user.
@@ -77,17 +83,9 @@ namespace artery::sionna {
         // The Python hook class instance (if the module contains a class).
         std::unique_ptr<nanobind::object> pythonHookInstance_;
 
-        // Cached signal IDs for TraCI.
-        static omnetpp::simsignal_t traciInitSignal_;
-        static omnetpp::simsignal_t traciStepSignal_;
-        static omnetpp::simsignal_t traciCloseSignal_;
-
         // Cached signal IDs for scene edit.
         static omnetpp::simsignal_t sceneEditBeginSignal_;
         static omnetpp::simsignal_t sceneEditEndSignal_;
-
-        // Reference to the TraCI Core module (for subscribing to signals).
-        omnetpp::cModule* traciCoreModule_ = nullptr;
 
         // Reference to the TraciDynamicSceneConfigProvider (for subscribing to scene edit signals).
         omnetpp::cModule* sceneConfigProviderModule_ = nullptr;
