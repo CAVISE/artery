@@ -10,6 +10,7 @@
 #include <inet/common/INETDefs.h>
 #include <inet/physicallayer/pathloss/FreeSpacePathLoss.h>
 
+#include <memory>
 #include <optional>
 #include <unordered_map>
 
@@ -41,6 +42,7 @@ namespace artery::sionna {
     protected:
         void invalidateCachedPaths() const;
         void solveCachedPaths() const;
+        void recordPathStatistics() const;
 
     private:
         mutable ISionnaAPI* api_ = nullptr;
@@ -54,6 +56,11 @@ namespace artery::sionna {
 
         py::PathSolverOptions solverOptions_;
         double maxRange_ = 1000.0;
+
+        // Stats stuff.
+        mutable std::unordered_map<std::string, std::unique_ptr<omnetpp::cOutVector>> sionnaGainVectors_;
+        mutable std::unordered_map<std::string, std::unique_ptr<omnetpp::cOutVector>> strongestPathTypeVectors_;
+        mutable std::unordered_map<int, omnetpp::cOutVector> solvedLinksByType_;
 
     };
 

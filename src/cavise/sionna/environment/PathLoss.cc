@@ -12,8 +12,6 @@
 #include <inet/common/INETMath.h>
 #include <inet/common/InitStages.h>
 #include <inet/physicallayer/contract/packetlevel/IRadio.h>
-#include <inet/physicallayer/contract/packetlevel/IRadioMedium.h>
-#include <inet/physicallayer/contract/packetlevel/IRadioSignal.h>
 
 #include <algorithm>
 #include <string>
@@ -75,6 +73,13 @@ void PathLoss::initialize(int stage) {
             configureBool("diffractionLitRegion", solverOptions_.diffractionLitRegion);
             configureInt("seed", solverOptions_.seed);
         }
+
+        solvedLinksByType_[-1].setName("sionna.solvedLinks.missing");
+        solvedLinksByType_[py::InteractionTypes::none.value()].setName("sionna.solvedLinks.los");
+        solvedLinksByType_[py::InteractionTypes::specular.value()].setName("sionna.solvedLinks.specular");
+        solvedLinksByType_[py::InteractionTypes::diffuse.value()].setName("sionna.solvedLinks.diffuse");
+        solvedLinksByType_[py::InteractionTypes::refraction.value()].setName("sionna.solvedLinks.refraction");
+        solvedLinksByType_[py::InteractionTypes::diffraction.value()].setName("sionna.solvedLinks.diffraction");
 
         // Max range defines range where communication is not possible at all.
         maxRange_ = par("maxRange").doubleValue();
@@ -140,8 +145,42 @@ void PathLoss::solveCachedPaths() const {
         paths_.rxIndices.insert_or_assign(rxDevices[i].first, i);
     }
 
+    recordPathStatistics();
+
     // Yeah I know, but how to emit differently?
     const_cast<PathLoss*>(this)->emit(pathsSolved, 1UL);
+}
+
+void PathLoss::recordPathStatistics() const {
+    std::unordered_map<int, std::size_t> counts;
+    for (const auto& [type, vector] : solvedLinksByType_) {
+        counts[type] = 0;
+    }
+
+    for (const auto& [rxId, rxIndex] : paths_.rxIndices) {
+        for (const auto& [txId, txIndex] : paths_.txIndices) {
+            const std::string linkId = sionna::format("%s -> %s", txId.c_str(), rxId.c_str());
+
+            auto& strongestLinkVec = strongestPathTypeVectors_[linkId];
+            if (strongestLinkVec == nullptr) {
+                strongestLinkVec = std::make_unique<omnetpp::cOutVector>();
+                strongestLinkVec->setName(sionna::format("sionna.strongestPathType: %s", linkId.c_str()).c_str());
+            }
+
+            if (auto interaction = paths_.object->strongestPathInteraction(rxIndex, txIndex); interaction.has_value()) {
+                const auto type = interaction.value();
+                strongestLinkVec->record(type);
+                ++counts[type];
+            } else {
+                strongestLinkVec->record(-1);
+                ++counts[-1];
+            }
+        }
+    }
+
+    for (auto& [type, vector] : solvedLinksByType_) {
+        vector.record(static_cast<double>(counts[type]));
+    }
 }
 
 double PathLoss::computePathLoss(const inet::physicallayer::ITransmission* /* transmission */, const inet::physicallayer::IArrival* /* arrival */) const {
@@ -155,15 +194,6 @@ double PathLoss::computePathLoss(const inet::physicallayer::ITransmission* /* tr
 }
 
 double PathLoss::computePathLoss(const inet::physicallayer::IRadio* receiverRadio, const inet::physicallayer::ITransmission* transmission, const inet::physicallayer::IArrival* arrival) const {
-    const auto start = transmission->getStartPosition();
-    const auto end = arrival->getStartPosition();
-    const auto distance = inet::m(start.distance(end));
-
-    // Do not waste time calculating transmission if rx and tx are too far away.
-    if (distance.get() > maxRange_) {
-        return 0.0;
-    }
-
     // Use sionna tx/rx devices to get their indices
     const SionnaVanetReceiver* sionnaRx = nullptr;
     const SionnaVanetTransmitter* sionnaTx = nullptr;
@@ -179,6 +209,25 @@ double PathLoss::computePathLoss(const inet::physicallayer::IRadio* receiverRadi
         throw omnetpp::cRuntimeError("Radio %s has no Sionna receiver", (module != nullptr) ? module->getFullPath().c_str() : "<unknown>");
     }
 
+    const auto start = transmission->getStartPosition();
+    const auto end = arrival->getStartPosition();
+    const auto distance = inet::m(start.distance(end));
+
+    const std::string linkId = sionna::format("%s -> %s", sionnaTx->sceneID().c_str(), sionnaRx->sceneID().c_str());
+
+    // This output vector stores gains per-link, which means tx, rx pair.
+    auto& gainVec = sionnaGainVectors_[linkId];
+    if (gainVec == nullptr) {
+        gainVec = std::make_unique<omnetpp::cOutVector>();
+        gainVec->setName(sionna::format("sionna.gain: %s", linkId.c_str()).c_str());
+    }
+
+    // Do not waste time calculating transmission if rx and tx are too far away.
+    if (distance.get() > maxRange_) {
+        gainVec->record(0.0);
+        return 0.0;
+    }
+
     solveCachedPaths();
 
     if (auto txIndex = paths_.txIndices.find(sionnaTx->sceneID()); txIndex == paths_.txIndices.end()) {
@@ -186,7 +235,8 @@ double PathLoss::computePathLoss(const inet::physicallayer::IRadio* receiverRadi
     } else if (auto rxIndex = paths_.rxIndices.find(sionnaRx->sceneID()); rxIndex == paths_.rxIndices.end()) {
         throw omnetpp::cRuntimeError("Solved paths are missing receiver index for %s", sionnaRx->sceneID().c_str());
     } else {
-        double gain = paths_.object->pathGain(rxIndex->second, txIndex->second);
-        return std::clamp(gain, 0.0, 1.0);
+        const double gain = std::clamp(paths_.object->pathGain(rxIndex->second, txIndex->second), 0.0, 1.0);
+        gainVec->record(gain);
+        return gain;
     }
 }

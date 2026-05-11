@@ -5,9 +5,12 @@
 
 #include <drjit/tensor.h>
 
+#include <limits>
+
 using namespace artery::sionna;
 
 namespace {
+    using TensorXu = drjit::Tensor<mitsuba::DynamicBuffer<mi::UInt32>>;
 
     template <typename Tensor>
     Tensor takeAxis(const Tensor& tensor, std::size_t index, int axis) {
@@ -20,6 +23,11 @@ namespace {
         return Tensor(typename Tensor::Array(tensor.array()), std::move(shape));
     }
 
+    template <typename Tensor>
+    int lastAxis(const Tensor& tensor) {
+        return static_cast<int>(tensor.shape().size()) - 1;
+    }
+
     template <typename... Dims>
     mi::TensorXf::MaskType::Shape maskShape(Dims... dims) {
         mi::TensorXf::MaskType::Shape shape;
@@ -30,7 +38,18 @@ namespace {
     double pathGainFromTensors(const mi::TensorXf::MaskType& mask, const mi::TensorXf& r, const mi::TensorXf& i) {
         const auto magnitude = r * r + i * i;
         const auto masked = mi::TensorXf(mask) * magnitude;
-        return artery::sionna::toScalar<double>(drjit::sum(masked.array()));
+        return toScalar<double>(drjit::sum(masked.array()));
+    }
+
+    int classifyPathInteraction(const TensorXu& pathInteractions) {
+        const auto none = py::InteractionTypes::none.value();
+        for (std::size_t depth = 0; depth < pathInteractions.shape(0); ++depth) {
+            const int interaction = toScalar<int>(takeAxis(pathInteractions, depth, 0).array());
+            if (interaction != none) {
+                return interaction;
+            }
+        }
+        return none;
     }
 
 } // namespace
@@ -97,4 +116,46 @@ double py::Paths::pathGain(std::size_t rxIndex, std::size_t txIndex) const {
     i = takeAxis(takeAxis(i, rxIndex, 0), txIndex, 1);
 
     return pathGainFromTensors(mask, r, i);
+}
+
+std::optional<int> py::Paths::strongestPathInteraction(std::size_t rxIndex, std::size_t txIndex) const {
+    auto mask = valid();
+    auto interactions = sionna::access<TensorXu>(bound_, "interactions");
+    auto [r, i] = coefficients();
+
+    if (syntheticArray()) {
+        mask = takeAxis(takeAxis(mask, rxIndex, 0), txIndex, 0);
+        interactions = takeAxis(takeAxis(interactions, rxIndex, 1), txIndex, 1);
+    } else {
+        mask = takeAxis(takeAxis(mask, rxIndex, 0), txIndex, 2);
+        interactions = takeAxis(takeAxis(interactions, rxIndex, 1), txIndex, 4);
+    }
+
+    r = takeAxis(takeAxis(r, rxIndex, 0), txIndex, 1);
+    i = takeAxis(takeAxis(i, rxIndex, 0), txIndex, 1);
+
+    const std::size_t numPaths = mask.shape(lastAxis(mask));
+    double strongestGain = -std::numeric_limits<double>::infinity();
+    std::optional<std::size_t> strongestPath;
+
+    for (std::size_t path = 0; path < numPaths; ++path) {
+        const auto pathMask = takeAxis(mask, path, lastAxis(mask));
+        if (toScalar<int>(drjit::sum(pathMask.array())) == 0) {
+            continue;
+        }
+
+        const auto pathR = takeAxis(r, path, lastAxis(r));
+        const auto pathI = takeAxis(i, path, lastAxis(i));
+
+        if (const double gain = pathGainFromTensors(pathMask, pathR, pathI); gain > strongestGain) {
+            strongestGain = gain;
+            strongestPath = path;
+        }
+    }
+
+    if (!strongestPath.has_value()) {
+        return std::nullopt;
+    }
+
+    return classifyPathInteraction(takeAxis(interactions, strongestPath.value(), lastAxis(interactions)));
 }
