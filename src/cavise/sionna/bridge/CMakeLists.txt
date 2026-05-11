@@ -10,6 +10,7 @@ set(SIONNA_BRIDGE_TARGET_TRIPLETS
     "llvm-detached|drjit::LLVMArray<float>|mitsuba::Color<drjit::LLVMArray<float>,3>"
     "llvm-ad|drjit::LLVMDiffArray<float>|mitsuba::Color<drjit::LLVMDiffArray<float>,3>"
     "llvm-ad-mono-polarized|drjit::LLVMDiffArray<float>|mitsuba::MuellerMatrix<mitsuba::Color<drjit::LLVMDiffArray<float>,1>>"
+    "cuda-ad-mono-polarized|drjit::DiffArray<JitBackend::CUDA, float>|mitsuba::MuellerMatrix<mitsuba::Color<drjit::DiffArray<JitBackend::CUDA, float>, 1>>"
 )
 
 # Main target(s). There is a separate library for each compilation mode and
