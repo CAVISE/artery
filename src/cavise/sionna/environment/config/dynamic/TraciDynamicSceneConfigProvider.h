@@ -15,6 +15,8 @@ namespace artery::sionna {
         , public omnetpp::cListener {
     public:
         static omnetpp::simsignal_t sceneEdited;
+        static omnetpp::simsignal_t sceneEditBeginSignal;
+        static omnetpp::simsignal_t sceneEditEndSignal;
 
         TraciDynamicSceneConfigProvider() = default;
 
@@ -32,8 +34,6 @@ namespace artery::sionna {
         ISionnaAPI* api_ = nullptr;
         traci::BasicNodeManager* traciNodeManager_ = nullptr;
         // Signals for notifying scene edit operations.
-        static omnetpp::simsignal_t sceneEditBeginSignal;
-        static omnetpp::simsignal_t sceneEditEndSignal;
     };
 
 } // namespace artery::sionna
