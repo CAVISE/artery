@@ -4,7 +4,7 @@ add_subdirectory(gemv2)
 add_subdirectory(highway-police)
 add_subdirectory(transfusion)
 
-add_opp_run(capi WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capi NED_FOLDERS ${CMAKE_SOURCE_DIR}/src/cavise)
+add_subdirectory(capi)
 
 if(WITH_ENVMOD)
     add_subdirectory(envmod)
