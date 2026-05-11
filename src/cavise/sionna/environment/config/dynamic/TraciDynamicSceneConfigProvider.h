@@ -14,7 +14,6 @@ namespace artery::sionna {
         : public omnetpp::cSimpleModule
         , public omnetpp::cListener {
     public:
-        static omnetpp::simsignal_t sceneEdited;
         static omnetpp::simsignal_t sceneEditBeginSignal;
         static omnetpp::simsignal_t sceneEditEndSignal;
 
