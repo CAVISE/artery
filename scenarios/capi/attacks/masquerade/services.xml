@@ -4,7 +4,7 @@
         <listener port="2001"/>
     </service>
 
-    <service type="masquerade.Masquerade">
+    <service type="attacks.masquerade.Masquerade">
         <listener port="2002"/>
         <filters>
             <name pattern="cav-0"/>

@@ -4,17 +4,9 @@
         <listener port="2001"/>
     </service>
 
-    <service type="spamming.Spamming">
+    <service type="attacks.flooding.Flooding">
         <listener port="2002"/>
         <filters>
-            <name pattern="cav-0"/>
-        </filters>
-    </service>
-
-    <service type="cavise.application.CosimService">
-        <listener port="2002"/>
-        <filters>
-            <name pattern="cav-0" match="inverse"/>
             <name pattern="(cav|rsu)-.*"/>
         </filters>
     </service>

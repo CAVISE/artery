@@ -1,11 +1,11 @@
-package flooding;
+package attacks.flooding;
 
 import cavise.application.CosimService;
 
 simple Flooding extends CosimService
 {
     parameters:
-        @class(::cavise::Flooding);
+        @class(Flooding);
 
         string floodingStrategy @enum("random", "periods") = default("random");
         double dropProbability = default(0.25);
