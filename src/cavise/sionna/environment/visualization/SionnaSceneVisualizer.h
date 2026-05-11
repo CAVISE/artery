@@ -3,12 +3,14 @@
 #include <cavise/sionna/environment/api/SionnaAPI.h>
 #include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
 #include <cavise/sionna/bridge/bindings/Camera.h>
+#include <cavise/sionna/bridge/bindings/Constants.h>
 
 #include <omnetpp/ccomponent.h>
 #include <omnetpp/csimplemodule.h>
 
 #include <string>
 #include <filesystem>
+#include <variant>
 #include <vector>
 #include <utility>
 
@@ -22,6 +24,8 @@ namespace artery::sionna {
         , public omnetpp::cListener
         , public omnetpp::cSimpleModule {
     public:
+        using TCameraVariant = std::variant<std::string, std::pair<std::string, py::Camera>>;
+
         SionnaSceneVisualizer() = default;
 
         // omnetpp::cSimpleModule implementation.
@@ -35,7 +39,6 @@ namespace artery::sionna {
         void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, unsigned long value, omnetpp::cObject* details) override;
 
     private:
-        std::vector<std::pair<std::string, py::Camera>> resolveCameras() const;
         std::filesystem::path framePath(const std::string& cameraId) const;
 
     private:
@@ -43,13 +46,12 @@ namespace artery::sionna {
         PathLoss* pathLoss_ = nullptr;
         int frameIndex_ = 0;
 
-        struct {
-            std::string outputDir;
-            std::string camera;
-            int spp = 16;
-            int width = 1280;
-            int height = 720;
-        } renderParams_;
+        std::vector<TCameraVariant> cameras_;
+
+        std::string outputDir_;
+        py::RenderOptions renderOptions_;
+
+        py::InteractionTypeColors interactionTypeColors_;
     };
 
 } // namespace artery::sionna

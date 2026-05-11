@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <memory>
+#include <tuple>
 
 using namespace artery::sionna;
 
@@ -32,18 +33,41 @@ TEST_F(ConstantsLLVMFixture, DefaultThicknessViaBridgeResolves) {
 }
 
 TEST_F(ConstantsLLVMFixture, InteractionTypesViaBridgeResolve) {
-    using TIntersection = py::IntersectionTypes;
+    using TInteraction = py::InteractionTypes;
 
     // clang-format off
     for (const auto& var : {
-             TIntersection::none,
-             TIntersection::specular,
-             TIntersection::diffuse,
-             TIntersection::refraction,
-             TIntersection::diffraction
+             TInteraction::none,
+             TInteraction::specular,
+             TInteraction::diffuse,
+             TInteraction::refraction,
+             TInteraction::diffraction
         }
     ) {
         EXPECT_NO_FATAL_FAILURE(toScalar<int>(var.value()));
     }
     // clang-format on
+}
+
+TEST_F(ConstantsLLVMFixture, InteractionTypeColorsCanBeChanged) {
+    py::InteractionTypeColors colors;
+    const auto original = colors.color(py::InteractionTypes::specular);
+    const auto originalLos = colors.color(py::InteractionTypes::none);
+
+    colors.setColor(py::InteractionTypes::specular, {0.1f, 0.2f, 0.3f});
+    const auto changed = colors.color(py::InteractionTypes::specular);
+
+    EXPECT_FLOAT_EQ(std::get<0>(changed), 0.1f);
+    EXPECT_FLOAT_EQ(std::get<1>(changed), 0.2f);
+    EXPECT_FLOAT_EQ(std::get<2>(changed), 0.3f);
+
+    colors.setColor(py::InteractionTypes::none, {0.4f, 0.5f, 0.6f});
+    const auto changedLos = colors.color(py::InteractionTypes::none);
+
+    EXPECT_FLOAT_EQ(std::get<0>(changedLos), 0.4f);
+    EXPECT_FLOAT_EQ(std::get<1>(changedLos), 0.5f);
+    EXPECT_FLOAT_EQ(std::get<2>(changedLos), 0.6f);
+
+    colors.setColor(py::InteractionTypes::specular, original);
+    colors.setColor(py::InteractionTypes::none, originalLos);
 }

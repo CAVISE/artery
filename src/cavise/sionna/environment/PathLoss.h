@@ -42,7 +42,7 @@ namespace artery::sionna {
         void invalidateCachedPaths() const;
         void solveCachedPaths() const;
 
-    protected:
+    private:
         mutable ISionnaAPI* api_ = nullptr;
         std::optional<py::PathSolver> solver_;
 
@@ -52,14 +52,8 @@ namespace artery::sionna {
             std::unordered_map<std::string, std::size_t> rxIndices;
         } paths_;
 
-        struct {
-            double maxRange;
-            bool includeLineOfSight;
-            bool includeReflections;
-            bool includeDiffractions;
-            int maxReflectionDepth;
-            int maxDiffractionDepth;
-        } solverParams_;
+        py::PathSolverOptions solverOptions_;
+        double maxRange_ = 1000.0;
 
     };
 

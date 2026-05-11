@@ -3,8 +3,11 @@
 #include <cavise/sionna/bridge/Defaulted.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
 #include <cavise/sionna/bridge/capabilities/Defaulted.h>
+#include <cavise/sionna/bridge/capabilities/Core.h>
 
 #include <mitsuba/core/fwd.h>
+
+#include <tuple>
 
 namespace artery::sionna::py {
 
@@ -24,31 +27,49 @@ namespace artery::sionna::py {
 
     // Wrapper for Sionna interaction type constants used by Paths.interactions.
     // These classify what happened at each path vertex.
-    class SIONNA_BRIDGE_API IntersectionTypes
+    class SIONNA_BRIDGE_API InteractionTypes
         : public Constants
         , public DefaultedClassProviderCapability {
     public:
         // Deferred wrapper for one interaction-type value.
-        template <typename T>
-        using TIntersection = DefaultedWithDeferredResolution<T, ModuleAndClassResolver<IntersectionTypes>>;
+        using TInteraction = DefaultedWithDeferredResolution<int, ModuleAndClassResolver<InteractionTypes>>;
 
         // IPythonClassIdentityCapability implementation.
         const char* className() const override;
 
         // No interaction at this depth, usually terminates the path.
-        static const TIntersection<mi::Int32> none;
+        static const TInteraction none;
 
         // Specular reflection interaction.
-        static const TIntersection<mi::Int32> specular;
+        static const TInteraction specular;
 
         // Diffuse reflection interaction.
-        static const TIntersection<mi::Int32> diffuse;
+        static const TInteraction diffuse;
 
         // Transmission/refraction through a material.
-        static const TIntersection<mi::Int32> refraction;
+        static const TInteraction refraction;
 
         // Diffraction interaction around an edge.
-        static const TIntersection<mi::Int32> diffraction;
+        static const TInteraction diffraction;
+    };
+
+    // Accessor and mutator for path interaction colors used by Sionna's
+    // visualization helpers.
+    class SIONNA_BRIDGE_API InteractionTypeColors
+        : public Constants
+        , public BasePythonImportCapability {
+    public:
+        using TColor = std::tuple<float, float, float>;
+        using TDeferredColor = DefaultedWithDeferredResolution<TColor, ModuleResolver<Constants>>;
+
+        static const TDeferredColor los;
+        static const TDeferredColor specular;
+        static const TDeferredColor diffuse;
+        static const TDeferredColor refraction;
+        static const TDeferredColor diffraction;
+
+        TColor color(const InteractionTypes::TInteraction& interaction);
+        void setColor(const InteractionTypes::TInteraction& interaction, const TColor& color);
     };
 
 } // namespace artery::sionna::py

@@ -19,10 +19,6 @@ module SionnaPathLoss like IPathLoss
 
         double alpha = default(2);
         double systemLoss @unit(dB) = default(0dB);
-        bool includeLineOfSight = default(true);
-        bool includeReflections = default(true);
-        bool includeDiffractions = default(false);
-        int maxReflectionDepth = default(1);
-        int maxDiffractionDepth = default(1);
+        xml solverConfig = default(null);
         double maxRange @unit(m) = default(1000m);
 }
