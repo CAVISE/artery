@@ -153,15 +153,9 @@ void SionnaPythonHook::callPythonMethod(const std::string& methodName) {
     try {
         gil_scoped_acquire gil;
         object hook = *pythonHookInstance_;
-
-        // Check if the method exists.
-        if (!nanobind::hasattr(hook, methodName.c_str())) {
-            EV_DEBUG << "SionnaPythonHook: Method '" << methodName << "' not found in Python hook, skipping" << std::endl;
-            return;
-        }
-
-        // Call the method.
-        hook.attr(methodName.c_str())();
+        
+        // Use call from SB helpers
+        call<object>(hook, methodName);
         EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
 
     } catch (const nanobind::python_error& e) {
