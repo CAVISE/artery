@@ -8,7 +8,6 @@ Usage in omnetpp.ini:
     *.physicalEnvironment.pythonHookType = "cavise.sionna.environment.hook.SionnaPythonHook"
     *.physicalEnvironment.pythonHook.pythonModulePath = "${ARTERY_ROOT}/src/cavise/sionna/environment/hook/example_hook.py"
     *.physicalEnvironment.pythonHook.traciCoreModule = "traci.core"
-    *.physicalEnvironment.pythonHook.sceneConfigProviderModule = "physicalEnvironment.dynamicSceneConfigProvider"
 """
 
 class MyHook:

@@ -86,9 +86,6 @@ namespace artery::sionna {
         // Cached signal IDs for scene edit.
         static omnetpp::simsignal_t sceneEditBeginSignal_;
         static omnetpp::simsignal_t sceneEditEndSignal_;
-
-        // Reference to the TraciDynamicSceneConfigProvider (for subscribing to scene edit signals).
-        omnetpp::cModule* sceneConfigProviderModule_ = nullptr;
     };
 
 } // namespace artery::sionna

@@ -18,7 +18,7 @@ namespace artery::sionna {
         void unsubscribeFromDynamicSceneUpdates();
 
         // omnetpp::cListener implementation.
-        void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, unsigned long value, omnetpp::cObject* details) override;
+        void receiveSignal(omnetpp::cComponent* source, omnetpp::simsignal_t signal, const omnetpp::SimTime& value, omnetpp::cObject* details) override;
 
     protected:
 

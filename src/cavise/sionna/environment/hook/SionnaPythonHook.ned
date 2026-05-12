@@ -40,7 +40,6 @@ simple SionnaPythonHook like ISionnaPythonHook
     parameters:
         string pythonModulePath;  // Path to the Python module (file path or import path)
         string traciCoreModule;     // Path to the TraCI Core module (for subscribing to signals)
-        string sceneConfigProviderModule;  // Path to the TraciDynamicSceneConfigProvider module
 
         @display("i=block/function");
 }

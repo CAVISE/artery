@@ -26,7 +26,7 @@ void DynamicSceneConfigListener::unsubscribeFromDynamicSceneUpdates() {
     }
 }
 
-void DynamicSceneConfigListener::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
+void DynamicSceneConfigListener::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const omnetpp::SimTime& /* value */, omnetpp::cObject* /* details */) {
     if (signal == TraciDynamicSceneConfigProvider::sceneEditEndSignal) {
         onDynamicSceneEdited();
     }

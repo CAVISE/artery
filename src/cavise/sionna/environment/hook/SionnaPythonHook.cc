@@ -1,7 +1,5 @@
 #include "SionnaPythonHook.h"
 
-#include <cavise/sionna/environment/config/dynamic/TraciDynamicSceneConfigProvider.h>
-
 #include <traci/Core.h>
 
 #include <nanobind/nanobind.h>
@@ -33,13 +31,6 @@ void SionnaPythonHook::initialize(int stage) {
     if (stage == inet::InitStages::INITSTAGE_LOCAL) {
         // Get parameters.
         pythonModulePath_ = par("pythonModulePath").stdstringValue();
-
-        // Get reference to scene config provider module for signal subscription.
-        sceneConfigProviderModule_ = getModuleByPath(par("sceneConfigProviderModule").stringValue());
-        if (!sceneConfigProviderModule_) {
-            throw omnetpp::cRuntimeError("SionnaPythonHook: sceneConfigProviderModule not found at path '%s'",
-                                         par("sceneConfigProviderModule").stringValue());
-        }
     } else if (stage == inet::InitStages::INITSTAGE_PHYSICAL_ENVIRONMENT) {
         // Python runtime should be initialized by now (done at INITSTAGE_LOCAL by PhysicalEnvironment).
         // Load the Python module.
@@ -53,9 +44,9 @@ void SionnaPythonHook::initialize(int stage) {
         }
         subscribeTraCI(traciCoreModule);
 
-        // Subscribe to scene edit signals.
-        sceneConfigProviderModule_->subscribe(sceneEditBeginSignal_, this);
-        sceneConfigProviderModule_->subscribe(sceneEditEndSignal_, this);
+        // Subscribe to scene edit signals via system module (signals propagate to top).
+        getSystemModule()->subscribe(sceneEditBeginSignal_, this);
+        getSystemModule()->subscribe(sceneEditEndSignal_, this);
     }
 }
 
@@ -63,11 +54,9 @@ void SionnaPythonHook::finish() {
     // Unsubscribe from TraCI signals using traci::Listener.
     unsubscribeTraCI();
 
-    // Unsubscribe from scene edit signals.
-    if (sceneConfigProviderModule_) {
-        sceneConfigProviderModule_->unsubscribe(sceneEditBeginSignal_, this);
-        sceneConfigProviderModule_->unsubscribe(sceneEditEndSignal_, this);
-    }
+    // Unsubscribe from scene edit signals via system module.
+    getSystemModule()->unsubscribe(sceneEditBeginSignal_, this);
+    getSystemModule()->unsubscribe(sceneEditEndSignal_, this);
 
     // Clear Python objects (they will be destroyed when the interpreter shuts down).
     pythonHookInstance_.reset();
@@ -173,8 +162,7 @@ void SionnaPythonHook::callPythonMethod(const std::string& methodName) {
 
         // Call the method.
         hook.attr(methodName.c_str())();
-        //EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
-        EV_INFO << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
+        EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
 
     } catch (const nanobind::python_error& e) {
         EV_ERROR << "SionnaPythonHook: Error calling Python method '" << methodName << "': " << e.what() << std::endl;
