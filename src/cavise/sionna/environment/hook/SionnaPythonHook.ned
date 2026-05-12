@@ -6,40 +6,46 @@ import inet.common.InitStages;
 @class(SionnaPythonHook);
 
 //
-// A module that loads a user-specified Python module and calls its methods
-// in response to various simulation events (TraCI signals, scene edits, etc.).
+// A module that loads a user-specified Python module or package and calls
+// its methods in response to various simulation events (TraCI signals,
+// scene edits, etc.).
 //
-// The Python module should define a class or functions with the following methods:
+// The pythonModulePath parameter can be:
+// 1. A single Python file path (e.g., "/path/to/my_hook.py")
+// 2. A Python package directory containing multiple hook modules
 //
-// class MyHook:
-//     def on_traci_init(self):
-//         """Called when TraCI initializes"""
-//         pass
+// Hook classes can be defined in several ways:
 //
-//     def on_traci_step(self):
-//         """Called on each TraCI step"""
-//         pass
+// 1. Using the @sionna_hook decorator (recommended):
+//    from cavise.sionna.environment.hook.decorators import sionna_hook
 //
-//     def on_scene_edit_begin(self):
-//         """Called before scene edit"""
-//         pass
+//    @sionna_hook
+//    class MyHook:
+//        def on_traci_init(self):
+//            print("TraCI initialized")
 //
-//     def on_scene_edit_end(self):
-//         """Called after scene edit"""
-//         pass
+// 2. Defining a class named 'Hook' (backward compatible)
 //
-//     def on_traci_close(self):
-//         """Called when TraCI closes"""
-//         pass
+// 3. Defining a module-level 'hook' attribute (backward compatible)
 //
-// Alternatively, you can define a module-level 'hook' attribute that points to
-// an instance of your hook class, or just define the functions at module level.
+// 4. Defining functions at module level (backward compatible)
+//
+// When loading a package directory, all Python files (except __init__.py)
+// are imported and scanned for @sionna_hook decorated classes. All decorated
+// classes are instantiated and their methods are called in sequence.
+//
+// Required hook methods:
+//     def on_traci_init(self):      # Called when TraCI initializes
+//     def on_traci_step(self):      # Called on each TraCI step
+//     def on_scene_edit_begin(self): # Called before scene edit
+//     def on_scene_edit_end(self):   # Called after scene edit
+//     def on_traci_close(self):     # Called when TraCI closes
 //
 simple SionnaPythonHook like ISionnaPythonHook
 {
     parameters:
-        string pythonModulePath;  // Path to the Python module (file path or import path)
-        string traciCoreModule;     // Path to the TraCI Core module (for subscribing to signals)
+        string pythonModulePath;  // Path to Python module file or package directory
+        string traciCoreModule;   // Path to the TraCI Core module (for subscribing to signals)
 
         @display("i=block/function");
 }

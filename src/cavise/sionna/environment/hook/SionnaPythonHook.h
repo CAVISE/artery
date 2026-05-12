@@ -12,6 +12,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace artery::sionna {
 
@@ -67,21 +68,30 @@ namespace artery::sionna {
         void traciClose() override;
 
     private:
-        // Load the Python module specified by the user.
+        // Load the Python module(s) or package specified by the user.
         void loadPythonModule();
 
-        // Call a method on the Python hook object.
+        // Load a single Python module and discover hook classes.
+        void loadSingleModule(const std::string& modulePath);
+
+        // Load all Python modules from a package directory.
+        void loadPackage(const std::string& packagePath);
+
+        // Discover and instantiate hook classes in a module.
+        void discoverHooksInModule(const nanobind::object& module);
+
+        // Call a method on all Python hook instances.
         void callPythonMethod(const std::string& methodName);
 
     private:
-        // Path to the Python module (parameter).
+        // Path to the Python module or package (parameter).
         std::string pythonModulePath_;
 
-        // The Python module object (imported).
-        std::unique_ptr<nanobind::object> pythonModule_;
+        // The Python module objects (imported).
+        std::vector<std::unique_ptr<nanobind::object>> pythonModules_;
 
-        // The Python hook class instance (if the module contains a class).
-        std::unique_ptr<nanobind::object> pythonHookInstance_;
+        // The Python hook class instances.
+        std::vector<std::unique_ptr<nanobind::object>> pythonHookInstances_;
 
         // Cached signal IDs for scene edit.
         static omnetpp::simsignal_t sceneEditBeginSignal_;

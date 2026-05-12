@@ -33,7 +33,7 @@ void SionnaPythonHook::initialize(int stage) {
         pythonModulePath_ = par("pythonModulePath").stdstringValue();
     } else if (stage == inet::InitStages::INITSTAGE_PHYSICAL_ENVIRONMENT) {
         // Python runtime should be initialized by now (done at INITSTAGE_LOCAL by PhysicalEnvironment).
-        // Load the Python module.
+        // Load the Python module(s).
         loadPythonModule();
 
         // Subscribe to TraCI signals using traci::Listener.
@@ -59,8 +59,8 @@ void SionnaPythonHook::finish() {
     getSystemModule()->unsubscribe(sceneEditEndSignal_, this);
 
     // Clear Python objects (they will be destroyed when the interpreter shuts down).
-    pythonHookInstance_.reset();
-    pythonModule_.reset();
+    pythonHookInstances_.clear();
+    pythonModules_.clear();
 }
 
 void SionnaPythonHook::loadPythonModule() {
@@ -68,16 +68,27 @@ void SionnaPythonHook::loadPythonModule() {
         throw omnetpp::cRuntimeError("SionnaPythonHook: pythonModulePath parameter is empty");
     }
 
+    std::filesystem::path path(pythonModulePath_);
+
+    // Check if it's a directory (package) or a file (module)
+    if (std::filesystem::is_directory(path)) {
+        loadPackage(pythonModulePath_);
+    } else {
+        loadSingleModule(pythonModulePath_);
+    }
+
+    // Notify that Python module(s) are loaded.
+    onPythonModuleLoaded();
+
+    EV_INFO << "SionnaPythonHook: Loaded " << pythonHookInstances_.size() << " hook instance(s)" << std::endl;
+}
+
+void SionnaPythonHook::loadSingleModule(const std::string& modulePath) {
     try {
         gil_scoped_acquire gil;
 
-        // The pythonModulePath_ can be:
-        // 1. A module path like "myapp.hooks.my_hook" (Python import path)
-        // 2. A file path like "/path/to/my_hook.py"
-        // For file paths, we need to add the parent directory to sys.path.
-
-        std::string moduleName = pythonModulePath_;
-        std::filesystem::path path(pythonModulePath_);
+        std::string moduleName = modulePath;
+        std::filesystem::path path(modulePath);
 
         if (path.extension() == ".py" || std::filesystem::exists(path)) {
             // It's a file path - need to add parent to sys.path and import by stem name.
@@ -106,57 +117,173 @@ void SionnaPythonHook::loadPythonModule() {
         EV_INFO << "SionnaPythonHook: Loading Python module '" << moduleName << "'" << std::endl;
 
         // Import the module.
-        pythonModule_ = std::make_unique<object>(nanobind::module_::import_(moduleName.c_str()));
+        auto module = std::make_unique<object>(nanobind::module_::import_(moduleName.c_str()));
+        pythonModules_.push_back(std::move(module));
 
-        object module = *pythonModule_;
-
-        // Try to find a hook instance.
-        // First, check if the module has a 'hook' attribute (an instance).
-        try {
-            object hookAttr = module.attr("hook");
-            pythonHookInstance_ = std::make_unique<object>(hookAttr);
-            EV_INFO << "SionnaPythonHook: Using 'hook' attribute from module" << std::endl;
-        } catch (const nanobind::python_error&) {
-            // No 'hook' attribute, try to find a Hook class.
-            try {
-                object hookClass = module.attr("Hook");
-                // Instantiate the class.
-                pythonHookInstance_ = std::make_unique<object>(hookClass());
-                EV_INFO << "SionnaPythonHook: Instantiated 'Hook' class from module" << std::endl;
-            } catch (const nanobind::python_error&) {
-                // No Hook class either - use the module itself as the hook object.
-                pythonHookInstance_ = std::make_unique<object>(module);
-                EV_INFO << "SionnaPythonHook: Using module itself as hook object" << std::endl;
-            }
-        }
-
-        // Notify that Python module is loaded.
-        onPythonModuleLoaded();
-
-        EV_INFO << "SionnaPythonHook: Python module loaded successfully" << std::endl;
+        // Discover hook classes in the module.
+        discoverHooksInModule(*pythonModules_.back());
 
     } catch (const nanobind::python_error& e) {
         throw omnetpp::cRuntimeError("SionnaPythonHook: Failed to load Python module '%s': %s",
-                                     pythonModulePath_.c_str(), e.what());
+                                     modulePath.c_str(), e.what());
     } catch (const std::exception& e) {
         throw omnetpp::cRuntimeError("SionnaPythonHook: Failed to load Python module '%s': %s",
-                                     pythonModulePath_.c_str(), e.what());
+                                     modulePath.c_str(), e.what());
+    }
+}
+
+void SionnaPythonHook::loadPackage(const std::string& packagePath) {
+    try {
+        gil_scoped_acquire gil;
+
+        std::filesystem::path path(packagePath);
+
+        // Add package directory to sys.path if not already there.
+        nanobind::module_ sys = nanobind::module_::import_("sys");
+        nanobind::object pathList = sys.attr("path");
+
+        bool found = false;
+        for (auto item : pathList) {
+            if (nanobind::cast<std::string>(item) == path.string()) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            pathList.attr("append")(path.string());
+        }
+
+        // Iterate through all Python files in the directory.
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            if (entry.path().extension() == ".py") {
+                std::string stem = entry.path().stem().string();
+
+                // Skip __init__.py
+                if (stem == "__init__") {
+                    continue;
+                }
+
+                EV_INFO << "SionnaPythonHook: Loading Python module '" << stem
+                        << "' from package" << std::endl;
+
+                try {
+                    auto module = std::make_unique<object>(nanobind::module_::import_(stem.c_str()));
+                    pythonModules_.push_back(std::move(module));
+
+                    // Discover hook classes in the module.
+                    discoverHooksInModule(*pythonModules_.back());
+                } catch (const nanobind::python_error& e) {
+                    EV_WARN << "SionnaPythonHook: Failed to load module '" << stem << "': " << e.what() << std::endl;
+                }
+            }
+        }
+
+    } catch (const nanobind::python_error& e) {
+        throw omnetpp::cRuntimeError("SionnaPythonHook: Failed to load Python package '%s': %s",
+                                     packagePath.c_str(), e.what());
+    } catch (const std::exception& e) {
+        throw omnetpp::cRuntimeError("SionnaPythonHook: Failed to load Python package '%s': %s",
+                                     packagePath.c_str(), e.what());
+    }
+}
+
+void SionnaPythonHook::discoverHooksInModule(const nanobind::object& module) {
+    try {
+        gil_scoped_acquire gil;
+
+        object mod = module;
+        bool hookFound = false;
+
+        // First, check if the module has a 'hook' attribute (an instance).
+        try {
+            object hookAttr = mod.attr("hook");
+            pythonHookInstances_.push_back(std::make_unique<object>(hookAttr));
+            EV_INFO << "SionnaPythonHook: Using 'hook' attribute from module" << std::endl;
+            hookFound = true;
+        } catch (const nanobind::python_error&) {
+            // No 'hook' attribute, try to find a Hook class.
+            try {
+                object hookClass = mod.attr("Hook");
+                // Check if it's marked with @sionna_hook decorator
+                try {
+                    bool isMarked = nanobind::cast<bool>(hookClass.attr("_sionna_hook_marked"));
+                    if (isMarked) {
+                        // Instantiate the class.
+                        pythonHookInstances_.push_back(std::make_unique<object>(hookClass()));
+                        EV_INFO << "SionnaPythonHook: Instantiated decorated 'Hook' class from module" << std::endl;
+                        hookFound = true;
+                    }
+                } catch (const nanobind::python_error&) {
+                    // Not decorated, instantiate anyway for backward compatibility
+                    pythonHookInstances_.push_back(std::make_unique<object>(hookClass()));
+                    EV_INFO << "SionnaPythonHook: Instantiated 'Hook' class from module (not decorated)" << std::endl;
+                    hookFound = true;
+                }
+            } catch (const nanobind::python_error&) {
+                // No Hook class - scan for all classes marked with @sionna_hook
+                try {
+                    // Use Python's dir() to get all attribute names in the module
+                    nanobind::module_ builtins = nanobind::module_::import_("builtins");
+                    nanobind::object dir_func = builtins.attr("dir");
+                    nanobind::object dir_list = dir_func(mod);
+                    int n = nanobind::cast<int>(dir_list.attr("__len__")());
+                    for (int i = 0; i < n; ++i) {
+                        nanobind::object name_obj = dir_list.attr("__getitem__")(i);
+                        std::string name = nanobind::cast<std::string>(name_obj);
+                        nanobind::object obj = mod.attr(name.c_str());
+                        // Check if obj is a class (type)
+                        nanobind::object type_func = builtins.attr("type");
+                        nanobind::object obj_type = type_func(obj);
+                        nanobind::object type_type = type_func(type_func);
+                        if (obj_type.equal(type_type)) {
+                            // It's a class, check if it's marked with @sionna_hook
+                            try {
+                                bool isMarked = nanobind::cast<bool>(obj.attr("_sionna_hook_marked"));
+                                if (isMarked) {
+                                    // Instantiate the class
+                                    pythonHookInstances_.push_back(std::make_unique<object>(obj()));
+                                    EV_INFO << "SionnaPythonHook: Instantiated decorated class from module" << std::endl;
+                                    hookFound = true;
+                                }
+                            } catch (const nanobind::python_error&) {
+                                // Not marked, skip
+                            }
+                        }
+                    }
+                } catch (const nanobind::python_error& e) {
+                    EV_WARN << "SionnaPythonHook: Error scanning for decorated classes: " << e.what() << std::endl;
+                }
+            }
+        }
+
+        // If no hook found, use the module itself as the hook object (backward compatibility)
+        if (!hookFound) {
+            pythonHookInstances_.push_back(std::make_unique<object>(mod));
+            EV_INFO << "SionnaPythonHook: Using module itself as hook object (no decorated classes found)" << std::endl;
+        }
+
+    } catch (const nanobind::python_error& e) {
+        EV_WARN << "SionnaPythonHook: Error discovering hooks in module: " << e.what() << std::endl;
     }
 }
 
 void SionnaPythonHook::callPythonMethod(const std::string& methodName) {
-    if (!pythonHookInstance_) {
-        EV_WARN << "SionnaPythonHook: Python hook instance not loaded, skipping " << methodName << std::endl;
+    if (pythonHookInstances_.empty()) {
+        EV_WARN << "SionnaPythonHook: No Python hook instances loaded, skipping " << methodName << std::endl;
         return;
     }
 
     try {
         gil_scoped_acquire gil;
-        object hook = *pythonHookInstance_;
-        
-        // Use call from SB helpers
-        call<object>(hook, methodName);
-        EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "'" << std::endl;
+
+        // Call the method on all hook instances.
+        for (auto& hookInstance : pythonHookInstances_) {
+            // Use call from SB helpers (in artery::sionna namespace)
+            call(*hookInstance, methodName);
+        }
+
+        EV_DEBUG << "SionnaPythonHook: Called Python method '" << methodName << "' on "
+                 << pythonHookInstances_.size() << " hook instance(s)" << std::endl;
 
     } catch (const nanobind::python_error& e) {
         EV_ERROR << "SionnaPythonHook: Error calling Python method '" << methodName << "': " << e.what() << std::endl;
