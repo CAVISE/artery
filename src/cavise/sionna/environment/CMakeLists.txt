@@ -16,6 +16,7 @@ target_sources(sionna-phy
         config/dynamic/TraciCoordinateTransformer.cc
         config/dynamic/TraciRelaxedCoordinateTransformer.cc
         visualization/SionnaSceneVisualizer.cc
+        visualization/PythonRendererCallback.cc
     PUBLIC
         Compat.h
         Ground.h
@@ -36,6 +37,7 @@ target_sources(sionna-phy
         config/dynamic/TraciRelaxedCoordinateTransformer.h
         visualization/ISceneVisualizer.h
         visualization/SionnaSceneVisualizer.h
+        visualization/PythonRendererCallback.h
 )
 
 set_target_properties(sionna-phy

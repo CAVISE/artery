@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cavise/sionna/environment/visualization/ISceneVisualizer.h>
+#include <cavise/sionna/environment/visualization/PythonRendererCallback.h>
 #include <cavise/sionna/bridge/bindings/Camera.h>
 #include <cavise/sionna/bridge/bindings/Scene.h>
-
-#include <nanobind/nanobind.h>
 
 #include <omnetpp/cmessage.h>
 #include <omnetpp/csimplemodule.h>
@@ -36,12 +35,11 @@ namespace artery::sionna {
         std::vector<std::pair<std::string, py::Camera>> resolveCameras() const;
         std::filesystem::path framePath(const std::string& cameraId) const;
         void scheduleNextRender();
-        nanobind::object resolvePythonRenderer(const std::string& rendererSpec) const;
 
     private:
         std::optional<py::SionnaScene> scene_;
         omnetpp::cMessage* renderTimer_ = nullptr;
-        nanobind::object pythonRenderer_;
+        PythonRendererCallback pythonRenderer_;
 
         std::string outputDir_;
         std::string camera_;
