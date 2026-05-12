@@ -11,7 +11,9 @@ using namespace artery::sionna;
 
 Define_Module(TraciDynamicSceneConfigProvider);
 
-omnetpp::simsignal_t TraciDynamicSceneConfigProvider::sceneEdited = omnetpp::cComponent::registerSignal("sceneEdited");
+// Define static signal members
+omnetpp::simsignal_t TraciDynamicSceneConfigProvider::sceneEditBeginSignal = omnetpp::cComponent::registerSignal("sceneEditBegin");
+omnetpp::simsignal_t TraciDynamicSceneConfigProvider::sceneEditEndSignal = omnetpp::cComponent::registerSignal("sceneEditEnd");
 
 void TraciDynamicSceneConfigProvider::initialize() {
     api_ = ISionnaAPI::get(this);
@@ -33,6 +35,9 @@ void TraciDynamicSceneConfigProvider::receiveSignal(omnetpp::cComponent* /* sour
 }
 
 void TraciDynamicSceneConfigProvider::edit() {
+    // Emit signal before scene edit
+    emit(sceneEditBeginSignal, simTime());
     api_->dynamicConfiguration()->edit();
-    emit(sceneEdited, 1UL);
+    // Emit signal after scene edit
+    emit(sceneEditEndSignal, simTime());
 }

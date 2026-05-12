@@ -16,18 +16,18 @@ void DynamicSceneConfigListener::subscribeToDynamicSceneUpdates(omnetpp::cModule
         throw omnetpp::cRuntimeError("could not resolve Sionna dynamic scene config provider from module %s", context->getFullPath().c_str());
     }
 
-    dynamicSceneConfigProvider_->subscribe(TraciDynamicSceneConfigProvider::sceneEdited, this);
+    dynamicSceneConfigProvider_->subscribe(TraciDynamicSceneConfigProvider::sceneEditEndSignal, this);
 }
 
 void DynamicSceneConfigListener::unsubscribeFromDynamicSceneUpdates() {
     if (dynamicSceneConfigProvider_ != nullptr) {
-        dynamicSceneConfigProvider_->unsubscribe(TraciDynamicSceneConfigProvider::sceneEdited, this);
+        dynamicSceneConfigProvider_->unsubscribe(TraciDynamicSceneConfigProvider::sceneEditEndSignal, this);
         dynamicSceneConfigProvider_ = nullptr;
     }
 }
 
-void DynamicSceneConfigListener::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, unsigned long /* value */, omnetpp::cObject* /* details */) {
-    if (signal == TraciDynamicSceneConfigProvider::sceneEdited) {
+void DynamicSceneConfigListener::receiveSignal(omnetpp::cComponent* /* source */, omnetpp::simsignal_t signal, const omnetpp::SimTime& /* value */, omnetpp::cObject* /* details */) {
+    if (signal == TraciDynamicSceneConfigProvider::sceneEditEndSignal) {
         onDynamicSceneEdited();
     }
 }
