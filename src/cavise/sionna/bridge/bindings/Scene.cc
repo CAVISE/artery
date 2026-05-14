@@ -62,22 +62,17 @@ void py::SionnaScene::remove(const std::string& name) {
 void py::SionnaScene::renderToFile(
     std::variant<std::string, Camera> camera,
     const std::string& filename,
-    int numSamples,
-    int width,
-    int height,
-    std::optional<float> fov,
-    std::optional<Paths> paths,
-    bool showDevices) const {
+    const RenderOptions& options) const {
     sionna::call(
         bound_,
         "render_to_file",
         "camera"_a = std::move(camera),
         "filename"_a = filename,
-        "num_samples"_a = numSamples,
-        "resolution"_a = std::make_tuple(width, height),
-        "fov"_a = fov,
-        "paths"_a = paths,
-        "show_devices"_a = showDevices);
+        "num_samples"_a = options.numSamples,
+        "resolution"_a = std::make_tuple(options.width, options.height),
+        "fov"_a = options.fov,
+        "paths"_a = options.paths,
+        "show_devices"_a = options.showDevices);
 }
 
 py::SionnaScene::TSceneElement py::SionnaScene::get(const std::string& name) const {

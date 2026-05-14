@@ -10,6 +10,21 @@
 
 namespace artery::sionna::py {
 
+    struct PathSolverOptions {
+        int maxDepth = 3;
+        int maxNumPathsPerSrc = 1000000;
+        int samplesPerSrc = 1000000;
+        bool syntheticArray = true;
+        bool los = true;
+        bool specularReflection = true;
+        bool diffuseReflection = false;
+        bool refraction = true;
+        bool diffraction = false;
+        bool edgeDiffraction = false;
+        bool diffractionLitRegion = true;
+        int seed = 42;
+    };
+
     // Sionna path solver. These solvers generate paths objects containing calculated
     // signal paths, which may be visualized on render() call.
     class SIONNA_BRIDGE_API PathSolver
@@ -35,18 +50,7 @@ namespace artery::sionna::py {
         // 6) seed makes the stochastic path search reproducible
         Paths solve(
             const SionnaScene& scene,
-            int maxDepth = 3,
-            int maxNumPathsPerSrc = 1000000,
-            int samplesPerSrc = 1000000,
-            bool syntheticArray = true,
-            bool los = true,
-            bool specularReflection = true,
-            bool diffuseReflection = false,
-            bool refraction = true,
-            bool diffraction = false,
-            bool edgeDiffraction = false,
-            bool diffractionLitRegion = true,
-            int seed = 42) const;
+            const PathSolverOptions& options = {}) const;
     };
 
 } // namespace artery::sionna::py

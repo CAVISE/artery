@@ -4,10 +4,13 @@
 
 #include <cavise/sionna/bridge/Fwd.h>
 #include <cavise/sionna/bridge/bindings/AntennaArray.h>
+#include <cavise/sionna/bridge/bindings/Constants.h>
 #include <cavise/sionna/bridge/bindings/Modules.h>
 #include <cavise/sionna/bridge/capabilities/Calling.h>
 
 #include <drjit/tensor.h>
+
+#include <optional>
 
 namespace artery::sionna::py {
 
@@ -51,6 +54,10 @@ namespace artery::sionna::py {
         // Linear path gain for one receiver/transmitter pair, summed over remaining
         // antenna/path dimensions. rxIndex and txIndex use Sionna's receiver/transmitter order.
         double pathGain(std::size_t rxIndex, std::size_t txIndex) const;
+
+        // Interaction type of the strongest valid path for one receiver/transmitter
+        // pair. Returns std::nullopt when Sionna has no valid path for the pair.
+        std::optional<int> strongestPathInteraction(std::size_t rxIndex, std::size_t txIndex) const;
     };
 
 } // namespace artery::sionna::py

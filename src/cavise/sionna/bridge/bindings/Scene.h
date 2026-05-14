@@ -19,6 +19,15 @@
 
 namespace artery::sionna::py {
 
+    struct RenderOptions {
+        int numSamples = 512;
+        int width = 655;
+        int height = 500;
+        std::optional<float> fov = std::nullopt;
+        std::optional<Paths> paths = std::nullopt;
+        bool showDevices = true;
+    };
+
     // Wrapper for mitsuba scene that handles querying objects,
     // rendering, setting properties for propagating signals, etc.
     class SIONNA_BRIDGE_API SionnaScene
@@ -64,12 +73,7 @@ namespace artery::sionna::py {
         void renderToFile(
             std::variant<std::string, Camera> camera,
             const std::string& filename,
-            int numSamples = 512,
-            int width = 655,
-            int height = 500,
-            std::optional<float> fov = std::nullopt,
-            std::optional<Paths> paths = std::nullopt,
-            bool showDevices = true) const;
+            const RenderOptions& options = {}) const;
 
         // Query object from the scene, either physical like objects or Sionna components like radio devices.
         TSceneElement get(const std::string& name) const;

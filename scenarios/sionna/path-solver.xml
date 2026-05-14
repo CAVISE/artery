@@ -1,0 +1,14 @@
+<solver>
+    <maxDepth>1</maxDepth>
+    <maxNumPathsPerSrc>1000000</maxNumPathsPerSrc>
+    <samplesPerSrc>1000000</samplesPerSrc>
+    <syntheticArray>true</syntheticArray>
+    <los>true</los>
+    <specularReflection>true</specularReflection>
+    <diffuseReflection>false</diffuseReflection>
+    <refraction>false</refraction>
+    <diffraction>false</diffraction>
+    <edgeDiffraction>false</edgeDiffraction>
+    <diffractionLitRegion>true</diffractionLitRegion>
+    <seed>42</seed>
+</solver>

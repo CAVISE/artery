@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- generated on 2026-04-01T16:26:11.494015+00:00 by Eclipse SUMO netedit 1.25.0
+<!-- generated on 2026-05-12T22:10:57.231415+00:00 by Eclipse SUMO netedit v1.26.0-0000000000
 -->
 
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
     <!-- Vehicles, persons and containers (sorted by depart) -->
     <trip id="t_0" depart="0.00" from="24642837" to="149039343#0"/>
     <trip id="t_1" depart="0.00" from="-166682861#6" to="83551740#1"/>
-    <flow id="f_0" begin="0.00" end="3600.00" perHour="1800.00" from="673575586" to="149039343#0" via="-27320024#2"/>
-    <flow id="f_1" begin="0.00" end="3600.00" perHour="1800.00" from="673575586" to="149039343#0" via="775956653"/>
-    <flow id="f_2" begin="0.00" end="3600.00" perHour="1800.00" from="-166682861#6" to="427015320#0"/>
-    <flow id="f_3" begin="0.00" end="3600.00" perHour="1800.00" from="427015320#0" to="166682861#6"/>
+    <trip id="t_2" depart="0.00" from="427015320#0" to="83551740#1"/>
+    <trip id="t_3" depart="0.00" from="673575586" to="1330856120#2"/>
+    <trip id="t_4" depart="0.00" from="543574669#0" to="348513086#1"/>
+    <trip id="t_5" depart="0.00" from="-543556733#6" to="83551740#1"/>
+    <trip id="t_6" depart="0.00" from="543574669#0" to="83551740#1"/>
+    <trip id="t_7" depart="0.00" from="24635880#2" to="-543556733#0"/>
 </routes>

@@ -10,6 +10,7 @@ simple SionnaSceneVisualizer like ISceneVisualizer
         string camera = default("");
         string pathLoss = default(absPath("^.^.radioMedium.pathLoss"));
         xml cameraConfig = default(null);
+        xml interactionColorConfig = default(null);
         int spp = default(16);
         int width = default(1280);
         int height = default(720);
