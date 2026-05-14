@@ -34,6 +34,7 @@ def process_single(
 # %%
 
 results_dir = Path.cwd().parents[0] / "results" / "limassol"
+results_dir = Path("/home/fungor/Projects/artery/scenarios/sionna/.results-remote/los-reflection-diffuse/results")
 if not results_dir.is_dir():
     raise FileNotFoundError(
         f"Make sure directory {results_dir} exists in your scenario"

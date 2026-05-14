@@ -1,12 +1,12 @@
 <interactions>
     <!-- Gray: line-of-sight path segments. -->
     <interaction type="none" r="128" g="128" b="128"/>
-    <!-- Light blue: specular reflection path segments. -->
-    <interaction type="specular" r="153" g="153" b="255"/>
-    <!-- Light green: diffuse reflection path segments. -->
-    <interaction type="diffuse" r="153" g="255" b="153"/>
-    <!-- Light red: refraction/transmission path segments. -->
-    <interaction type="refraction" r="255" g="153" b="153"/>
+    <!-- Blue: specular reflection path segments. -->
+    <interaction type="specular" r="0" g="0" b="255"/>
+    <!-- Green: diffuse reflection path segments. -->
+    <interaction type="diffuse" r="0" g="255" b="0"/>
+    <!-- Red: refraction/transmission path segments. -->
+    <interaction type="refraction" r="255" g="0" b="0"/>
     <!-- Purple: diffraction path segments. -->
-    <interaction type="diffraction" r="153" g="0" b="153"/>
+    <interaction type="diffraction" r="128" g="0" b="128"/>
 </interactions>
