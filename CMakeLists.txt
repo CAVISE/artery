@@ -55,7 +55,11 @@ set(BUILD_SHARED_LIBS ON CACHE INTERNAL "Cached for propagation to sub-projects 
 ###############################
 
 find_package(OmnetPP 5.5.1 MODULE REQUIRED)
+<<<<<<< current
 find_package(Boost 1.59 REQUIRED COMPONENTS date_time CONFIG)
+=======
+find_package(Boost 1.69 REQUIRED COMPONENTS date_time CONFIG)
+>>>>>>> incoming
 
 include(AddOppRun)
 include(AddOppTarget)
