@@ -11,7 +11,11 @@ jobs:
 
     steps:
       - name: Checkout code
+<<<<<<< current
         uses: actions/checkout@v6
+=======
+        uses: actions/checkout@v7
+>>>>>>> incoming
         with:
           fetch-depth: 0
 

@@ -51,7 +51,12 @@ class InetVehicleMobility : public InetMobility, public VehicleMobility
 {
 public:
     void initialize(int stage) override;
+<<<<<<< current
     const std::string& getId() override { return mVehicleId; };
+=======
+    const std::string& getId() override  { return mVehicleId; };
+    double getMaxSpeed() const override;
+>>>>>>> incoming
 };
 
 class InetPersonMobility : public InetMobility, public PersonMobility
