@@ -13,7 +13,11 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+<<<<<<< current
       - uses: actions/checkout@v6
+=======
+      - uses: actions/checkout@v7
+>>>>>>> incoming
         with:
           submodules: recursive
           fetch-depth: 0

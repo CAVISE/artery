@@ -21,6 +21,18 @@
       "target": "/tmp/.X11-unix",
       "type": "bind",
     },
+<<<<<<< current
   ],
   "initializeCommand": "if [[ \"$XDG_SESSION_TYPE\" == \"x11\" ]]; then xhost +local:docker; fi",
 }
+=======
+    "mounts": [
+        {
+            "source": "/tmp/.X11-unix",
+            "target": "/tmp/.X11-unix",
+            "type": "bind"
+        }
+    ],
+    "initializeCommand": "if [[ \"$XDG_SESSION_TYPE\" == \"x11\" ]]; then xhost +local:docker; fi"
+}
+>>>>>>> incoming
