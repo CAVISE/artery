@@ -106,6 +106,7 @@ void CosimService::trigger() {
         }
 
         message->setContents(payload.c_str());
+        message->setByteLength(payload.size());
         const auto& vehicle = getFacilities().get_const<traci::VehicleController>();
         EV_INFO << "sending cosim payload from vehicle " << vehicle.getVehicleId()
                 << " on channel " << channel
