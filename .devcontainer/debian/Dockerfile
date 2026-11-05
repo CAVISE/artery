@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash-completion bison build-essential cmake flex git git-lfs python3 python3-pip \
     libboost-all-dev libcrypto++-dev libfox-1.6-dev libgdal-dev libgeographiclib-dev \
     libopenscenegraph-dev libproj-dev libqt5opengl5-dev libxerces-c-dev \
-    ninja-build qtbase5-dev sudo pkg-config libzmq5-dev libprotobuf-dev \
+    ninja-build qtbase5-dev pkg-config libzmq5-dev libprotobuf-dev \
     protobuf-compiler cppzmq-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN pip install --break-system-packages conan 
@@ -46,6 +46,8 @@ FROM setup AS final
 
 # User name for this container
 ARG USER=devcontainer
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
 COPY --from=build /omnetpp/include /omnetpp/include
@@ -55,8 +57,10 @@ COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
 COPY --from=build /opt/sumo/ /usr/local/
 
-RUN useradd -m -G sudo ${USER}
-RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
+RUN test "${USER_UID}" -gt 0 && test "${USER_GID}" -gt 0 && \
+    groupadd --gid ${USER_GID} ${USER} && \
+    useradd --create-home --uid ${USER_UID} --gid ${USER_GID} --shell /bin/bash ${USER}
+ENV HOME=/home/${USER}
 
 USER ${USER}
 

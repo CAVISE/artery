@@ -13,7 +13,7 @@ RUN pacman -Syu --noconfirm     \
     maven eigen flex bison git  \
     gcc sdl2 libsm openmp       \
     openscenegraph qt5-base     \
-    pacman-contrib sudo         \
+    pacman-contrib         \
     boost crypto++ xorg         \
     ttf-ubuntu-font-family      \
     ninja cppzmq protobuf       \
@@ -67,6 +67,8 @@ FROM setup AS final
 
 # User name for this container
 ARG USER=devcontainer
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 COPY --from=build /omnetpp/bin /omnetpp/bin
 COPY --from=build /omnetpp/include /omnetpp/include
@@ -76,8 +78,10 @@ COPY --from=build /omnetpp/Makefile.inc /omnetpp
 
 COPY --from=build /opt/inst/ /usr/local/
 
-RUN groupadd sudo && useradd -m -G sudo ${USER}
-RUN echo "${USER} ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/${USER}
+RUN test "${USER_UID}" -gt 0 && test "${USER_GID}" -gt 0 && \
+    groupadd --gid ${USER_GID} ${USER} && \
+    useradd --create-home --uid ${USER_UID} --gid ${USER_GID} --shell /bin/bash ${USER}
+ENV HOME=/home/${USER}
 
 USER ${USER}
 
