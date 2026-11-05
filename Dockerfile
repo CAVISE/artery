@@ -27,8 +27,9 @@ RUN apt-get update && apt-get install -y        \
 RUN git clone --recurse --depth 1 --branch ${OMNETPP_TAG} https://github.com/omnetpp/omnetpp
 WORKDIR /omnetpp
 RUN mv configure.user.dist configure.user
+# Artery runs in one OMNeT++ process; disable distributed simulation and MPI.
 RUN source setenv -f                                                                \
-    && ./configure WITH_QTENV=no WITH_TKENV=no WITH_OSG=no WITH_OSGEARTH=no WITH_MPI=no \
+    && ./configure WITH_QTENV=no WITH_TKENV=no WITH_OSG=no WITH_OSGEARTH=no WITH_PARSIM=no \
     && make -j$(nproc --all) base MODE=release
 
 WORKDIR /
@@ -36,9 +37,9 @@ RUN git clone --recurse --depth 1 --branch ${SUMO_TAG} https://github.com/eclips
 WORKDIR /sumo
 RUN cmake -B build .                                    \
         -G Ninja                                        \
-        -DCMAKE_BUILD_CONFIG=Release                    \
+        -DCMAKE_BUILD_TYPE=Release                      \
         -DCMAKE_INSTALL_PREFIX=/sumo-prefix             \
-        -DENABLE_GUI=OFF                                \
+        -DCMAKE_DISABLE_FIND_PACKAGE_FOX=ON             \
         -DENABLE_CS_BINDINGS=OFF                        \
         -DENABLE_JAVA_BINDINGS=OFF                      \
         -DENABLE_PYTHON_BINDINGS=OFF                    \
