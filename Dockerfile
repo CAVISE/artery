@@ -69,5 +69,12 @@ RUN git clone --depth 1 --branch v0.23.0 https://github.com/ZedThree/clang-tidy-
     python3 -m pip install --no-cache-dir --break-system-packages /tmp/clang-tidy-review/post/clang_tidy_review && \
     rm -rf /tmp/clang-tidy-review
 
+RUN useradd \
+	--uid 1001 \
+	--user-group \
+	--create-home \
+	--shell /bin/bash \
+	artery
+
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
