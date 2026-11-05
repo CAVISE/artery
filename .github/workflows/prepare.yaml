@@ -29,7 +29,6 @@ jobs:
         with:
           context: .
           push: true
-          target: ci
           tags: ghcr.io/cavise/artery:base
           cache-from: type=gha
           cache-to: type=gha,mode=max
