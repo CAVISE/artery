@@ -23,7 +23,8 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-
+      # System dependencies are installed in the Docker image.
+      # This job runs as a non-root user, so no apt-get step is needed here.
       - name: Prepare venv
         run: python3 -m venv venv
 
