@@ -74,13 +74,13 @@ ENV SUMO_HOME=/usr/local/share/sumo
 
 # Install system packages during image build; run CI without root or sudo.
 ARG USER=artery
-ARG USER_UID=1001
-ARG USER_GID=1001
+ARG uid=1001
+ARG gid=1001
 
-RUN test "${USER_UID}" -gt 0 && test "${USER_GID}" -gt 0 && \
-    groupadd --gid ${USER_GID} ${USER} && \
-    useradd --create-home --uid ${USER_UID} --gid ${USER_GID} --shell /bin/bash ${USER} && \
-    install -d -o ${USER_UID} -g ${USER_GID} /workspaces/artery /cached-build
+RUN test "${uid}" -gt 0 && test "${gid}" -gt 0 && \
+    groupadd --gid ${gid} ${USER} && \
+    useradd --create-home --uid ${uid} --gid ${gid} --shell /bin/bash ${USER} && \
+    install -d -o ${uid} -g ${gid} /workspaces/artery /cached-build
     
 ENV HOME=/home/${USER}
 USER ${USER}
