@@ -71,3 +71,17 @@ RUN git clone --depth 1 --branch v0.23.0 https://github.com/ZedThree/clang-tidy-
 
 ENV PATH=/omnetpp/bin:$PATH
 ENV SUMO_HOME=/usr/local/share/sumo
+
+# Install system packages during image build; run CI without root or sudo.
+ARG USER=artery
+ARG uid=1001
+ARG gid=1001
+
+RUN test "${uid}" -gt 0 && test "${gid}" -gt 0 && \
+    groupadd --gid ${gid} ${USER} && \
+    useradd --create-home --uid ${uid} --gid ${gid} --shell /bin/bash ${USER} && \
+    install -d -o ${uid} -g ${gid} /workspaces/artery /cached-build
+    
+ENV HOME=/home/${USER}
+USER ${USER}
+WORKDIR /workspaces/artery
